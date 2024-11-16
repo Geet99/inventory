@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/plans")
@@ -29,10 +30,15 @@ public class PlanController {
 
     @PutMapping("/{id}/process-batch")
     public ResponseEntity<Plan> processBatchToFinishedStock(
-            @PathVariable Long id,
+            @PathVariable String planNumber,
             @RequestParam String processedPairs
     ) {
-        Plan updatedPlan = planService.recordMachineBatch(id, processedPairs);
+        Plan updatedPlan = planService.recordMachineProcessing(planNumber, processedPairs, LocalDate.now(), LocalDate.now());
         return ResponseEntity.ok(updatedPlan);
+    }
+
+    @GetMapping("/active-orders-by-state")
+    public ResponseEntity<Map<String, Integer>> getActiveOrdersByState() {
+        return ResponseEntity.ok(planService.getActiveOrdersByState());
     }
 }

@@ -177,4 +177,13 @@ public class PlanService {
                 .mapToInt(pair -> Integer.parseInt(pair.split(":")[1]))
                 .sum();
     }
+
+    public Map<String, Integer> getActiveOrdersByState() {
+        List<Object[]> results = planRepository.getActiveOrdersByState();
+        Map<String, Integer> stateSummary = new HashMap<>();
+        for (Object[] row : results) {
+            stateSummary.put(row[0].toString(), ((Long) row[1]).intValue());
+        }
+        return stateSummary;
+    }
 }
