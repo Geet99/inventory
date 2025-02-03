@@ -1,37 +1,20 @@
 package com.skse.inventory.model;
 
-import jakarta.persistence.*;
 import lombok.Data;
 
-@Entity
 @Data
-public class FinishedStock {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "articleId", nullable = false)
-    private Article article;
-
+public class StockMovementRequest {
+    private String articleName;
     private String size;
     private String color;
     private int quantity;
 
-    public Long getId() {
-        return id;
+    public String getArticleName() {
+        return articleName;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Article getArticle() {
-        return article;
-    }
-
-    public void setArticle(Article article) {
-        this.article = article;
+    public void setArticleName(String articleName) {
+        this.articleName = articleName;
     }
 
     public String getSize() {

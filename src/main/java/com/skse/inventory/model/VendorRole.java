@@ -1,5 +1,5 @@
 package com.skse.inventory.model;
 
-public enum VendorRoles {
+public enum VendorRole {
     Cutting, Printing, Stitching
 }

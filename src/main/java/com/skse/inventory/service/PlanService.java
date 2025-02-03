@@ -2,10 +2,10 @@ package com.skse.inventory.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skse.inventory.model.BatchLog;
-import com.skse.inventory.model.Plan;
-import com.skse.inventory.model.PlanStatus;
+import com.skse.inventory.model.*;
+import com.skse.inventory.repository.ArticleRepository;
 import com.skse.inventory.repository.PlanRepository;
+import com.skse.inventory.repository.UpperStockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +21,12 @@ public class PlanService {
     @Autowired
     private ArticleService articleService;
 
+    @Autowired
+    private ArticleRepository articleRepository;
+
+    @Autowired
+    private UpperStockRepository upperStockRepository;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public Plan createPlan(Plan plan) {
@@ -29,108 +35,209 @@ public class PlanService {
         return planRepository.save(plan);
     }
 
-    public Plan updatePlanStatus(String planNumber, PlanStatus newStatus) {
+    public Plan updatePlan(String planNumber, Plan updatedPlan) {
+        Plan plan = planRepository.findByPlanNumber(planNumber);
+        if (plan != null) {
+            plan.setTotal(updatedPlan.getTotal());
+            plan.setSizeQuantityPairs(updatedPlan.getSizeQuantityPairs());
+            return planRepository.save(plan);
+        } else {
+            throw new IllegalArgumentException("Plan not found: " + planNumber);
+        }
+    }
+
+    public void deletePlan(String planNumber) {
+        Plan plan = planRepository.findByPlanNumber(planNumber);
+        if (plan != null) {
+            planRepository.delete(plan);
+        } else {
+            throw new IllegalArgumentException("Plan not found: " + planNumber);
+        }
+    }
+
+    public Plan moveToNextState(String planNumber) {
         Plan plan = planRepository.findByPlanNumber(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
 
-        // Validate the transition
-        if (!isValidStatusTransition(plan.getStatus(), newStatus)) {
-            throw new IllegalStateException(
-                    "Invalid status transition: " + plan.getStatus() + " to " + newStatus
-            );
+        PlanStatus nextStatus = getNextStatus(plan.getStatus());
+        if (nextStatus == null) {
+            throw new IllegalStateException("Invalid status transition");
         }
 
-        // Set timestamps based on the new status
-        switch (newStatus) {
-            case Cutting -> plan.setCuttingStartDate(LocalDate.now());
-            case Pending_Printing -> plan.setCuttingEndDate(LocalDate.now());
-            case Printing -> plan.setPrintingStartDate(LocalDate.now());
-            case Pending_Stitching -> plan.setPrintingEndDate(LocalDate.now());
-            case Stitching -> plan.setStitchingStartDate(LocalDate.now());
-            case Pending_Machine -> plan.setStitchingEndDate(LocalDate.now());
-            case Machine -> plan.setMachineStartDate(LocalDate.now());
-            case Completed -> plan.setMachineEndDate(LocalDate.now());
+        // Transition logic (timestamps and stock update)
+        switch (nextStatus) {
+            case Cutting:
+                plan.setCuttingStartDate(LocalDate.now());
+                break;
+            case Pending_Printing:
+                plan.setCuttingEndDate(LocalDate.now());
+                plan.setCuttingVendorPaymentDue(calculatePayment(plan, VendorRole.Cutting));
+                break;
+            case Printing:
+                plan.setPrintingStartDate(LocalDate.now());
+                break;
+            case Pending_Stitching:
+                plan.setPrintingEndDate(LocalDate.now());
+                plan.setPrintingVendorPaymentDue(calculatePayment(plan, VendorRole.Printing));
+                break;
+            case Stitching:
+                plan.setStitchingStartDate(LocalDate.now());
+                break;
+            case Completed:
+                plan.setStitchingVendorPaymentDue(calculatePayment(plan, VendorRole.Stitching));
+                articleService.updateUpperStockAfterCompletion(plan);
+                break;
         }
 
-        if (newStatus == PlanStatus.Pending_Machine) {
-            articleService.addUpperStockFromPlan(plan);
-        }
-
-        // Update the status and save the plan
-        plan.setStatus(newStatus);
+        plan.setStatus(nextStatus);
         return planRepository.save(plan);
     }
 
-    // Validate the transition logic
-    private boolean isValidStatusTransition(PlanStatus current, PlanStatus next) {
-        return switch (current) {
-            case Pending_Cutting -> next == PlanStatus.Cutting;
-            case Cutting -> next == PlanStatus.Pending_Printing;
-            case Pending_Printing -> next == PlanStatus.Printing;
-            case Printing -> next == PlanStatus.Pending_Stitching;
-            case Pending_Stitching -> next == PlanStatus.Stitching;
-            case Stitching -> next == PlanStatus.Pending_Machine;
-            case Pending_Machine -> next == PlanStatus.Machine;
-            case Machine -> next == PlanStatus.Completed;
-            case Completed -> false; // No transitions from Completed
+    private PlanStatus getNextStatus(PlanStatus currentStatus) {
+        return switch (currentStatus) {
+            case Pending_Cutting -> PlanStatus.Cutting;
+            case Cutting -> PlanStatus.Pending_Printing;
+            case Pending_Printing -> PlanStatus.Printing;
+            case Printing -> PlanStatus.Pending_Stitching;
+            case Pending_Stitching -> PlanStatus.Stitching;
+            case Stitching -> PlanStatus.Completed;
+            default -> null;
         };
     }
 
-    public Plan recordMachineProcessing(String planNumber, String processedPairs, LocalDate startDate, LocalDate endDate) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
-        if (plan == null)
-            throw new IllegalArgumentException("Plan not found with number: " + planNumber);
+    private double calculatePayment(Plan plan, VendorRole roleType) {
+        Article article = articleRepository.findByArticleName(plan.getArticleName()).get();
+        int totalQuantity = plan.getTotal();
+        double cost = switch (roleType) {
+            case Cutting -> article.getCuttingCost();
+            case Printing -> article.getPrintingCost();
+            case Stitching -> article.getStitchingCost();
+            default -> 0.0;
+        };
 
-        if (plan.getStatus() != PlanStatus.Machine) {
-            throw new IllegalStateException("Plan is not in Machine state");
+        return cost * totalQuantity;
+    }
+
+    public Map<String, Integer> getActiveOrdersByState() {
+        Map<String, Integer> activeOrders = new HashMap<>();
+
+        // Get the raw results from the repository
+        List<Object[]> results = planRepository.getActiveOrdersByState();
+
+        // Process each result and add to the map
+        for (Object[] result : results) {
+            String status = (String) result[0]; // Get status from the first element of the array
+            Long count = (Long) result[1];       // Get count from the second element of the array
+            activeOrders.put(status, count.intValue()); // Add to map (convert Long to int)
         }
 
-        articleService.processBatchToFinishedStock(plan, processedPairs);
+        return activeOrders;
+    }
 
-        // Parse and update processed pairs
-        String[] processedPairsArray = processedPairs.split(",");
-        List<BatchLog> batchLogs = new ArrayList<>();
+    private void updateStockFromPlan(Plan plan) {
+        String[] sizeQuantityPairs = plan.getSizeQuantityPairs().split(",");
+        for (String pair : sizeQuantityPairs) {
+            String[] sizeQuantity = pair.split(":");
+            String size = sizeQuantity[0];
+            int quantity = Integer.parseInt(sizeQuantity[1]);
 
-        try {
-            if (plan.getMachineBatchLogs() != null) {
-                batchLogs = objectMapper.readValue(plan.getMachineBatchLogs(), new TypeReference<>() {});
+            // Update upper stock and finished stock as per size and color
+            Optional<UpperStock> upperStock = upperStockRepository.findByArticleNameAndSizeAndColor(plan.getArticleName(), size, plan.getColor());
+            UpperStock stock = null;
+            if (upperStock.isPresent()) {
+                stock = upperStock.get();
+                stock.setQuantity(stock.getQuantity() + quantity);
+            } else {
+                stock = new UpperStock();
+                Article article = articleRepository.findByArticleName(plan.getArticleName()).get();
+                stock.setArticle(article);
+                stock.setSize(size);
+                stock.setColor(plan.getColor());
+                stock.setQuantity(quantity); // Initialize with quantity from the plan
             }
-        } catch (Exception e) {
-            throw new IllegalStateException("Error parsing existing batch logs", e);
+            upperStockRepository.save(stock);
+        }
+    }
+
+    public void assignVendorToPlan(String planNumber, VendorAssignmentRequest vendorAssignmentRequest) {
+        Plan plan = planRepository.findByPlanNumber(planNumber);
+        if (plan == null) {
+            throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
 
-        for (String pair : processedPairsArray) {
-            String[] sizeAndCount = pair.split(":");
-            BatchLog batchLog = new BatchLog(
-                    sizeAndCount[0],
-                    Integer.parseInt(sizeAndCount[1]),
-                    startDate,
-                    endDate
-            );
-            batchLogs.add(batchLog);
+        // Assign the vendor based on the role
+        switch (vendorAssignmentRequest.getRole()) {
+            case Cutting:
+                plan.setCuttingVendor(vendorAssignmentRequest.getVendorId());
+                break;
+            case Printing:
+                plan.setPrintingVendor(vendorAssignmentRequest.getVendorId());
+                break;
+            case Stitching:
+                plan.setStitchingVendor(vendorAssignmentRequest.getVendorId());
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid vendor role: " + vendorAssignmentRequest.getRole());
         }
 
-        // Update logs and processed pairs
-        try {
-            plan.setMachineBatchLogs(objectMapper.writeValueAsString(batchLogs));
-        } catch (Exception e) {
-            throw new IllegalStateException("Error updating batch logs", e);
-        }
+        planRepository.save(plan);
+    }
 
-        // Calculate total processed count
-        int totalProcessedCount = calculateTotalProcessed(plan, processedPairs);
-        int totalPlanCount = Arrays.stream(plan.getSizeQuantityPairs().split(","))
-                .mapToInt(pair -> Integer.parseInt(pair.split(":")[1]))
-                .sum();
-
-        // Update status if processing is complete
-        if (totalProcessedCount >= totalPlanCount) {
-            plan.setStatus(PlanStatus.Completed);
-            plan.setMachineEndDate(endDate);
-        }
-//        String[] existingPairsArray = plan.getMachineProcessedPairs() != null
+//    public Plan recordMachineProcessing(String planNumber, String processedPairs, LocalDate startDate, LocalDate endDate) {
+//        Plan plan = planRepository.findByPlanNumber(planNumber);
+//        if (plan == null)
+//            throw new IllegalArgumentException("Plan not found with number: " + planNumber);
+//
+//        if (plan.getStatus() != PlanStatus.Machine) {
+//            throw new IllegalStateException("Plan is not in Machine state");
+//        }
+//
+//        articleService.processBatchToFinishedStock(plan, processedPairs);
+//
+//        // Parse and update processed pairs
+//        String[] processedPairsArray = processedPairs.split(",");
+//        List<BatchLog> batchLogs = new ArrayList<>();
+//
+//        try {
+//            if (plan.getMachineBatchLogs() != null) {
+//                batchLogs = objectMapper.readValue(plan.getMachineBatchLogs(), new TypeReference<>() {});
+//            }
+//        } catch (Exception e) {
+//            throw new IllegalStateException("Error parsing existing batch logs", e);
+//        }
+//
+//        for (String pair : processedPairsArray) {
+//            String[] sizeAndCount = pair.split(":");
+//            BatchLog batchLog = new BatchLog(
+//                    sizeAndCount[0],
+//                    Integer.parseInt(sizeAndCount[1]),
+//                    startDate,
+//                    endDate
+//            );
+//            batchLogs.add(batchLog);
+//        }
+//
+//        // Update logs and processed pairs
+//        try {
+//            plan.setMachineBatchLogs(objectMapper.writeValueAsString(batchLogs));
+//        } catch (Exception e) {
+//            throw new IllegalStateException("Error updating batch logs", e);
+//        }
+//
+//        // Calculate total processed count
+//        int totalProcessedCount = calculateTotalProcessed(plan, processedPairs);
+//        int totalPlanCount = Arrays.stream(plan.getSizeQuantityPairs().split(","))
+//                .mapToInt(pair -> Integer.parseInt(pair.split(":")[1]))
+//                .sum();
+//
+//        // Update status if processing is complete
+//        if (totalProcessedCount >= totalPlanCount) {
+//            plan.setStatus(PlanStatus.Completed);
+//            plan.setMachineEndDate(endDate);
+//        }
+////        String[] existingPairsArray = plan.getMachineProcessedPairs() != null
 //                ? plan.getMachineProcessedPairs().split(",")
 //                : new String[0];
 //
@@ -169,21 +276,21 @@ public class PlanService {
 //            plan.setMachineEndDate(LocalDateTime.now());
 //        }
 
-        return planRepository.save(plan);
-    }
-
-    private int calculateTotalProcessed(Plan plan, String processedPairs) {
-        return Arrays.stream(processedPairs.split(","))
-                .mapToInt(pair -> Integer.parseInt(pair.split(":")[1]))
-                .sum();
-    }
-
-    public Map<String, Integer> getActiveOrdersByState() {
-        List<Object[]> results = planRepository.getActiveOrdersByState();
-        Map<String, Integer> stateSummary = new HashMap<>();
-        for (Object[] row : results) {
-            stateSummary.put(row[0].toString(), ((Long) row[1]).intValue());
-        }
-        return stateSummary;
-    }
+//        return planRepository.save(plan);
+//    }
+//
+//    private int calculateTotalProcessed(Plan plan, String processedPairs) {
+//        return Arrays.stream(processedPairs.split(","))
+//                .mapToInt(pair -> Integer.parseInt(pair.split(":")[1]))
+//                .sum();
+//    }
+//
+//    public Map<String, Integer> getActiveOrdersByState() {
+//        List<Object[]> results = planRepository.getActiveOrdersByState();
+//        Map<String, Integer> stateSummary = new HashMap<>();
+//        for (Object[] row : results) {
+//            stateSummary.put(row[0].toString(), ((Long) row[1]).intValue());
+//        }
+//        return stateSummary;
+//    }
 }

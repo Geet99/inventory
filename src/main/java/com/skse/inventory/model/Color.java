@@ -1,10 +1,9 @@
 package com.skse.inventory.model;
 
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
 
 @Entity
 @Data
@@ -14,4 +13,20 @@ public class Color {
     private Long id;
 
     private String colorName;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getColorName() {
+        return colorName;
+    }
+
+    public void setColorName(String colorName) {
+        this.colorName = colorName;
+    }
 }
