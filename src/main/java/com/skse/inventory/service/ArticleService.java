@@ -37,7 +37,7 @@ public class ArticleService {
 
     // Get article by Name
     public Optional<Article> getArticleByName(String name) {
-        return articleRepository.findByArticleName(name);
+        return articleRepository.findByName(name);
     }
 
     // Update an article
@@ -46,7 +46,7 @@ public class ArticleService {
 
         if (existingArticleOpt.isPresent()) {
             Article existingArticle = existingArticleOpt.get();
-            existingArticle.setArticleName(updatedArticle.getArticleName());
+            existingArticle.setName(updatedArticle.getName());
             existingArticle.setCuttingCost(updatedArticle.getCuttingCost());
             existingArticle.setPrintingCost(updatedArticle.getPrintingCost());
             existingArticle.setStitchingCost(updatedArticle.getStitchingCost());
@@ -70,5 +70,9 @@ public class ArticleService {
             stock.setQuantity(stock.getQuantity() + quantity);
             upperStockRepository.save(stock);
         }
+    }
+
+    public Optional<Article> getArticleById(Long id)  {
+        return articleRepository.findById(id);
     }
 }

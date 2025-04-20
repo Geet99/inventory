@@ -8,28 +8,28 @@ import lombok.Data;
 public class Article {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long articleId;
+    private Long id;
 
-    private String articleName;
+    private String name;
     private Double cuttingCost;
     private Double printingCost;
     private Double stitchingCost;
     private Double slipperCost;
 
-    public Long getArticleId() {
-        return articleId;
+    public Long getId() {
+        return id;
     }
 
-    public void setArticleId(Long articleId) {
-        this.articleId = articleId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public String getArticleName() {
-        return articleName;
+    public String getName() {
+        return name;
     }
 
-    public void setArticleName(String articleName) {
-        this.articleName = articleName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public Double getCuttingCost() {

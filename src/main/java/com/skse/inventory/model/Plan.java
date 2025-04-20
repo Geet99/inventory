@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 @Entity
 @Data
-public class  Plan {
+public class Plan {
     @Id
     private String planNumber; // Unique plan identifier
     private String articleName;

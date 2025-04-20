@@ -9,7 +9,6 @@ import com.skse.inventory.repository.VendorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,13 +97,21 @@ public class VendorService {
         return "Vendor not found!";
     }
 
-    public void incrementVendorPaymentDue(String vendorId, double payment) {
-        Vendor vendor = vendorRepository.findByVendorId(vendorId);
-        if (vendor == null) {
+    public void incrementVendorPaymentDue(Long vendorId, double payment) {
+        Optional<Vendor> vendorOptional = vendorRepository.findById(vendorId);
+        if (vendorOptional.isEmpty()) {
             throw new IllegalArgumentException("Vendor not found: " + vendorId);
         }
-
+        Vendor vendor = vendorOptional.get();
         vendor.setPaymentDue(vendor.getPaymentDue() + payment);
         vendorRepository.save(vendor);
+    }
+
+    public Optional<Vendor> getVendorById(Long id) {
+        return vendorRepository.findById(id);
+    }
+
+    public Object getAllVendors() {
+        return vendorRepository.findAll();
     }
 }

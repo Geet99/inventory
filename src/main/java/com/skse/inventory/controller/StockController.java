@@ -3,6 +3,7 @@ package com.skse.inventory.controller;
 import com.skse.inventory.model.StockMovementRequest;
 import com.skse.inventory.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/stock")
+@Tag(name = "Stock", description = "APIs to manage Stock")
 public class StockController {
 
     @Autowired

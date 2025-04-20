@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="fragments/header :: header"></div>
+<h2>Create New Plan</h2>
+<form th:action="@{/plans/add}" th:object="${plan}" method="post">
+    Plan Number: <input type="text" th:field="*{planNumber}" /><br/>
+    Total Quantity: <input type="number" th:field="*{total}" /><br/>
+    <!-- Add other fields like sizeQuantityMap etc. -->
+    <button type="submit">Save</button>
+</form>
+</body>
+</html>

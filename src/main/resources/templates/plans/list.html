@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="fragments/header :: header"></div>
+<h2>Plan List</h2>
+<a th:href="@{/plans/new}">Add New Plan</a>
+<table border="1">
+    <tr>
+        <th>Plan Number</th>
+        <th>Article</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    <tr th:each="plan : ${plans}">
+        <td th:text="${plan.planNumber}"></td>
+        <td th:text="${plan.article.name}"></td>
+        <td th:text="${plan.total}"></td>
+        <td th:text="${plan.status}"></td>
+        <td>
+            <a th:href="@{'/plans/' + ${plan.planNumber} + '/edit'}">Edit</a> |
+            <a th:href="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}">Assign Vendor</a> |
+            <form th:action="@{'/plans/' + ${plan.planNumber} + '/delete'}" method="post" style="display:inline">
+                <button type="submit">Delete</button>
+            </form>
+            <form th:action="@{'/plans/' + ${plan.planNumber} + '/move-to-next'}" method="post" style="display:inline">
+                <button type="submit">Next State</button>
+            </form>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

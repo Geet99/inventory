@@ -3,6 +3,7 @@ package com.skse.inventory.controller;
 import com.skse.inventory.model.Color;
 import com.skse.inventory.service.ColorService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/colors")
+@Tag(name = "Colors", description = "APIs to manage Colors")
 public class ColorController {
 
     @Autowired

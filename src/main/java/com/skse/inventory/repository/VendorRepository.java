@@ -11,7 +11,4 @@ import java.util.List;
 @Repository
 public interface VendorRepository extends JpaRepository<Vendor, Long> {
     List<Vendor> findByRole(VendorRole role);
-
-    @Query("SELECT v FROM Vendor v WHERE v.vendorId = :vendorId")
-    Vendor findByVendorId(String vendorId);
 }

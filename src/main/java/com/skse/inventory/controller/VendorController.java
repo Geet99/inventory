@@ -6,6 +6,7 @@ import com.skse.inventory.service.VendorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/vendors")
+@Tag(name = "Vendors", description = "APIs to manage Vendors (Cutting, Printing, Stitching)")
 public class VendorController {
 
     @Autowired

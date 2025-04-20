@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="fragments/header :: header"></div>
+<h2>Edit Plan</h2>
+<form th:action="@{'/plans/' + ${plan.planNumber} + '/update'}" th:object="${plan}" method="post">
+    Total Quantity: <input type="number" th:field="*{total}" /><br/>
+    <!-- Add other editable fields -->
+    <button type="submit">Update</button>
+</form>
+</body>
+</html>

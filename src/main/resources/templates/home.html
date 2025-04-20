@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head></head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<main>
+    <h2>Welcome to the Dashboard</h2>
+    <ul>
+        <li><a th:href="@{/stock}">Manage Stock</a></li>
+        <li><a th:href="@{/plans}">Manage Plans</a></li>
+        <li><a th:href="@{/vendors}">Manage Vendors</a></li>
+        <li><a th:href="@{/articles}">Manage Articles</a></li>
+        <li><a th:href="@{/colors}">Manage Colors</a></li>
+    </ul>
+</main>
+
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

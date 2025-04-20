@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Record Payment</title>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<h2>Record Vendor Payment</h2>
+<form th:action="@{/vendors/payment}" method="post">
+    <label for="vendorId">Vendor ID:</label>
+    <input type="number" id="vendorId" name="vendorId" required/><br/>
+
+    <label for="payment">Payment Amount:</label>
+    <input type="number" id="payment" name="payment" step="0.01" required/><br/>
+
+    <button type="submit">Record Payment</button>
+</form>
+</body>
+</html>

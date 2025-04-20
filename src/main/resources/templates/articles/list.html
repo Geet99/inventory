@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Articles</title></head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<h2>All Articles</h2>
+<a th:href="@{/articles/new}">Add New Article</a>
+<table border="1">
+    <tr><th>ID</th><th>Name</th><th>Actions</th></tr>
+    <tr th:each="article : ${articles}">
+        <td th:text="${article.id}"></td>
+        <td th:text="${article.name}"></td>
+        <td>
+            <a th:href="@{|/articles/edit/${article.id}|}">Edit</a>
+        </td>
+    </tr>
+</table>
+
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

@@ -7,6 +7,7 @@ import com.skse.inventory.service.ArticleService;
 import com.skse.inventory.service.PlanService;
 import com.skse.inventory.service.VendorService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/plans")
+@Tag(name = "Plans", description = "APIs to manage Plans")
 public class PlanController {
 
     @Autowired

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Vendors</title>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div>
+    <a th:href="@{/vendors/add}">Add New Vendor</a> |
+    <a th:href="@{/vendors/payment}">Record Payment</a>
+</div>
+
+<h2>Vendors</h2>
+<div>
+    <form method="get" th:action="@{/vendors}">
+        <label for="role">Filter by Role:</label>
+        <select id="role" name="role">
+            <option value="">All</option>
+            <option th:each="r : ${T(com.skse.inventory.model.VendorRole).values()}"
+                    th:value="${r}" th:text="${r}"
+                    th:selected="${r} == ${role}"></option>
+        </select>
+        <button type="submit">Filter</button>
+    </form>
+</div>
+<table border="1">
+    <thead>
+    <tr><th>Id</th><th>Name</th><th>Role</th><th>Contact</th><th>Address</th><th>Payment Due</th>><th>Actions</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="vendor : ${vendors}">
+        <td th:text="${vendor.id}">Id</td>
+        <td th:text="${vendor.name}">Name</td>
+        <td th:text="${vendor.role}">Role</td>
+        <td th:text="${vendor.contactInfo}">Contact</td>
+        <td th:text="${vendor.address}">Address</td>
+        <td th:text="${vendor.paymentDue}">Payment Due</td>
+        <td>
+            <a th:href="@{'/vendors/edit/' + ${vendor.id}}">Edit</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<th:block th:replace="~{fragments/footer :: footer}" />
+</body>
+</html>

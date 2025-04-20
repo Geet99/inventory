@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="fragments/header :: header"></div>
+<h2>Assign Vendor to Plan</h2>
+<form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
+    Role:
+    <select name="role">
+        <option th:each="role : ${roles}" th:value="${role}" th:text="${role}"></option>
+    </select><br/>
+    Vendor:
+    <select name="vendorId">
+        <option th:each="vendor : ${vendors}" th:value="${vendor.id}" th:text="${vendor.name}"></option>
+    </select><br/>
+    <button type="submit">Assign</button>
+</form>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!-- templates/fragments/header.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<header th:fragment="header">
+    <h1>Inventory Management System</h1>
+    <nav>
+        <a th:href="@{/}">Home</a> |
+        <a th:href="@{/stock}">Stock</a> |
+        <a th:href="@{/plans}">Plans</a> |
+        <a th:href="@{/vendors}">Vendors</a> |
+        <a th:href="@{/articles}">Articles</a> |
+        <a th:href="@{/colors}">Colors</a>
+    </nav>
+    <hr/>
+</header>
+</html>

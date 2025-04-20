@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Edit Article</title></head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<h2>Edit Article</h2>
+<form th:action="@{|/articles/update/${article.id}|}" th:object="${article}" method="post">
+    <label>Name: <input type="text" th:field="*{name}" /></label><br/>
+    <button type="submit">Update</button>
+</form>
+
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

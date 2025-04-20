@@ -108,7 +108,7 @@ public class PlanService {
     }
 
     private double calculatePayment(Plan plan, VendorRole roleType) {
-        Article article = articleRepository.findByArticleName(plan.getArticleName()).get();
+        Article article = articleRepository.findByName(plan.getArticleName()).get();
         int totalQuantity = plan.getTotal();
         double cost = switch (roleType) {
             case Cutting -> article.getCuttingCost();
@@ -151,7 +151,7 @@ public class PlanService {
                 stock.setQuantity(stock.getQuantity() + quantity);
             } else {
                 stock = new UpperStock();
-                Article article = articleRepository.findByArticleName(plan.getArticleName()).get();
+                Article article = articleRepository.findByName(plan.getArticleName()).get();
                 stock.setArticle(article);
                 stock.setSize(size);
                 stock.setColor(plan.getColor());
@@ -183,6 +183,14 @@ public class PlanService {
         }
 
         planRepository.save(plan);
+    }
+
+    public Plan getPlanByNumber(String planNumber) {
+        return planRepository.findByPlanNumber(planNumber);
+    }
+
+    public List<Plan> getAllPlans() {
+        return planRepository.findAll();
     }
 
 //    public Plan recordMachineProcessing(String planNumber, String processedPairs, LocalDate startDate, LocalDate endDate) {
