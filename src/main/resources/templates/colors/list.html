@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: head"></head>
+<body>
+    <div th:replace="fragments/header :: header"></div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">All Colors</h2>
+                <a th:href="@{/colors/new}" class="btn btn-success">➕ Add New Color</a>
+            </div>
+            
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="color : ${colors}">
+                        <td th:text="${color.id}"></td>
+                        <td th:text="${color.name}"></td>
+                        <td class="table-actions">
+                            <a th:href="@{|/colors/edit/${color.id}|}" class="btn btn-warning btn-sm">Edit</a>
+                            <form th:action="@{|/colors/delete/${color.id}|}" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this color?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html> 

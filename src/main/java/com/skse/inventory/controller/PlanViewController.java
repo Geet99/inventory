@@ -4,6 +4,7 @@ import com.skse.inventory.model.*;
 import com.skse.inventory.service.PlanService;
 import com.skse.inventory.service.VendorService;
 import com.skse.inventory.service.ArticleService;
+import com.skse.inventory.service.ColorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,9 +25,13 @@ public class PlanViewController {
     
     @Autowired
     private ArticleService articleService;
+    
+    @Autowired
+    private ColorService colorService;
 
     @GetMapping
     public String listPlans(Model model) {
+        model.addAttribute("title", "Plans");
         List<Plan> plans = planService.getAllPlans();
         model.addAttribute("plans", plans);
         return "plans/list";
@@ -34,9 +39,11 @@ public class PlanViewController {
 
     @GetMapping("/new")
     public String newPlanForm(Model model) {
+        model.addAttribute("title", "Create New Plan");
         model.addAttribute("plan", new Plan());
         model.addAttribute("roles", VendorRole.values());
         model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("colors", colorService.getAllColors());
         model.addAttribute("cuttingTypes", CuttingType.values());
         model.addAttribute("printingTypes", PrintingType.values());
         return "plans/new";
@@ -51,8 +58,10 @@ public class PlanViewController {
     @GetMapping("/{planNumber}/edit")
     public String editPlan(@PathVariable String planNumber, Model model) {
         Plan plan = planService.getPlanByNumber(planNumber);
+        model.addAttribute("title", "Edit Plan");
         model.addAttribute("plan", plan);
         model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("colors", colorService.getAllColors());
         model.addAttribute("cuttingTypes", CuttingType.values());
         model.addAttribute("printingTypes", PrintingType.values());
         return "plans/edit";
@@ -73,6 +82,7 @@ public class PlanViewController {
     @GetMapping("/{planNumber}/assign-vendor")
     public String assignVendorForm(@PathVariable String planNumber, Model model) {
         Plan plan = planService.getPlanByNumber(planNumber);
+        model.addAttribute("title", "Assign Vendor");
         model.addAttribute("plan", plan);
         model.addAttribute("vendors", vendorService.getAllVendors());
         model.addAttribute("roles", VendorRole.values());
@@ -100,6 +110,7 @@ public class PlanViewController {
     @GetMapping("/{planNumber}/final-quantity")
     public String finalQuantityForm(@PathVariable String planNumber, Model model) {
         Plan plan = planService.getPlanByNumber(planNumber);
+        model.addAttribute("title", "Update Final Quantity");
         model.addAttribute("plan", plan);
         return "plans/final-quantity";
     }
@@ -117,6 +128,7 @@ public class PlanViewController {
         if (plan.getStatus() != PlanStatus.Completed) {
             return "redirect:/plans?error=Plan must be completed before sending to machine";
         }
+        model.addAttribute("title", "Send to Machine");
         model.addAttribute("plan", plan);
         return "plans/send-to-machine";
     }
@@ -130,6 +142,7 @@ public class PlanViewController {
     
     @GetMapping("/dashboard")
     public String planDashboard(Model model) {
+        model.addAttribute("title", "Plan Dashboard");
         Map<String, Integer> activeOrders = planService.getActiveOrdersByState();
         model.addAttribute("activeOrders", activeOrders);
         return "plans/dashboard";

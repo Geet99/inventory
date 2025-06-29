@@ -1,49 +1,18 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>SKSE Inventory Management System</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 40px; }
-        .header h1 { color: #2c3e50; margin-bottom: 10px; }
-        .header p { color: #7f8c8d; font-size: 18px; }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-bottom: 40px; }
-        .dashboard-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; transition: transform 0.2s; }
-        .dashboard-card:hover { transform: translateY(-5px); }
-        .dashboard-card h3 { color: #2c3e50; margin-bottom: 20px; font-size: 24px; }
-        .dashboard-card .icon { font-size: 48px; margin-bottom: 20px; }
-        .dashboard-card .description { color: #7f8c8d; margin-bottom: 20px; }
-        .btn { display: inline-block; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.2s; }
-        .btn-primary { background-color: #3498db; color: white; }
-        .btn-primary:hover { background-color: #2980b9; }
-        .btn-success { background-color: #2ecc71; color: white; }
-        .btn-success:hover { background-color: #27ae60; }
-        .btn-warning { background-color: #f39c12; color: white; }
-        .btn-warning:hover { background-color: #e67e22; }
-        .btn-danger { background-color: #e74c3c; color: white; }
-        .btn-danger:hover { background-color: #c0392b; }
-        .quick-actions { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .quick-actions h3 { color: #2c3e50; margin-bottom: 20px; }
-        .action-buttons { display: flex; flex-wrap: wrap; gap: 15px; }
-        .system-info { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .system-info h3 { color: #2c3e50; margin-bottom: 20px; }
-        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .info-item { text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 5px; }
-        .info-item .label { font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
-        .info-item .value { font-size: 24px; color: #3498db; }
-    </style>
-</head>
+<head th:replace="fragments/header :: head"></head>
 <body>
     <div th:replace="fragments/header :: header"></div>
     
     <div class="container">
-        <div class="header">
-            <h1>Welcome to SKSE Inventory Management System</h1>
-            <p>Manage your slipper manufacturing business efficiently</p>
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title text-center">Welcome to SKSE Inventory Management System</h2>
+                <p class="text-center text-muted">Manage your slipper manufacturing business efficiently</p>
+            </div>
         </div>
         
-        <div class="dashboard-grid">
+        <div class="grid grid-4">
             <div class="dashboard-card">
                 <div class="icon">📋</div>
                 <h3>Plans Management</h3>
@@ -73,35 +42,40 @@
             </div>
         </div>
         
-        <div class="quick-actions">
-            <h3>Quick Actions</h3>
-            <div class="action-buttons">
-                <a th:href="@{/plans/new}" class="btn btn-primary">➕ Create New Plan</a>
-                <a th:href="@{/vendors/new}" class="btn btn-warning">➕ Add New Vendor</a>
-                <a th:href="@{/articles/new}" class="btn btn-success">➕ Add New Article</a>
-                <a th:href="@{/stock/movements}" class="btn btn-info">📊 View Stock Movements</a>
-                <a th:href="@{/vendors/report}" class="btn btn-danger">📈 Payment Report</a>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div class="grid grid-3">
+                <a th:href="@{/plans/new}" class="btn btn-primary btn-lg">➕ Create New Plan</a>
+                <a th:href="@{/vendors/new}" class="btn btn-warning btn-lg">➕ Add New Vendor</a>
+                <a th:href="@{/articles/new}" class="btn btn-success btn-lg">➕ Add New Article</a>
+                <a th:href="@{/colors/new}" class="btn btn-info btn-lg">➕ Add New Color</a>
+                <a th:href="@{/stock/movements}" class="btn btn-info btn-lg">📊 View Stock Movements</a>
+                <a th:href="@{/vendors/report}" class="btn btn-danger btn-lg">📈 Payment Report</a>
             </div>
         </div>
         
-        <div class="system-info">
-            <h3>System Overview</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="label">Active Plans</div>
-                    <div class="value">-</div>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">System Overview</h3>
+            </div>
+            <div class="grid grid-4">
+                <div class="text-center">
+                    <div class="badge badge-primary" style="font-size: 1.2rem; padding: 10px 20px;">Active Plans</div>
+                    <div class="mt-2" style="font-size: 2rem; color: #007bff; font-weight: bold;">-</div>
                 </div>
-                <div class="info-item">
-                    <div class="label">Total Vendors</div>
-                    <div class="value">-</div>
+                <div class="text-center">
+                    <div class="badge badge-success" style="font-size: 1.2rem; padding: 10px 20px;">Total Vendors</div>
+                    <div class="mt-2" style="font-size: 2rem; color: #28a745; font-weight: bold;">-</div>
                 </div>
-                <div class="info-item">
-                    <div class="label">Stock Items</div>
-                    <div class="value">-</div>
+                <div class="text-center">
+                    <div class="badge badge-warning" style="font-size: 1.2rem; padding: 10px 20px;">Stock Items</div>
+                    <div class="mt-2" style="font-size: 2rem; color: #ffc107; font-weight: bold;">-</div>
                 </div>
-                <div class="info-item">
-                    <div class="label">Pending Payments</div>
-                    <div class="value">-</div>
+                <div class="text-center">
+                    <div class="badge badge-danger" style="font-size: 1.2rem; padding: 10px 20px;">Pending Payments</div>
+                    <div class="mt-2" style="font-size: 2rem; color: #dc3545; font-weight: bold;">-</div>
                 </div>
             </div>
         </div>

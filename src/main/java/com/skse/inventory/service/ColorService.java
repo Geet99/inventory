@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ColorService {
@@ -19,5 +20,24 @@ public class ColorService {
 
     public List<Color> getAllColors() {
         return colorRepository.findAll();
+    }
+
+    public Color getColorById(Long id) {
+        Optional<Color> color = colorRepository.findById(id);
+        return color.orElse(null);
+    }
+
+    public Color updateColor(Long id, Color updatedColor) {
+        Optional<Color> existingColorOpt = colorRepository.findById(id);
+        if (existingColorOpt.isPresent()) {
+            Color existingColor = existingColorOpt.get();
+            existingColor.setName(updatedColor.getName());
+            return colorRepository.save(existingColor);
+        }
+        return null;
+    }
+
+    public void deleteColor(Long id) {
+        colorRepository.deleteById(id);
     }
 }
