@@ -3,37 +3,205 @@
 <head>
     <title>Vendor Management</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn { padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 5px; display: inline-block; }
-        .btn-primary { background-color: #007bff; color: white; }
-        .btn-success { background-color: #28a745; color: white; }
-        .btn-warning { background-color: #ffc107; color: black; }
-        .btn-danger { background-color: #dc3545; color: white; }
-        .btn-info { background-color: #17a2b8; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; font-weight: bold; }
-        .role-cutting { color: #17a2b8; font-weight: bold; }
-        .role-printing { color: #28a745; font-weight: bold; }
-        .role-stitching { color: #fd7e14; font-weight: bold; }
-        .status-active { color: #28a745; font-weight: bold; }
-        .status-inactive { color: #dc3545; font-weight: bold; }
-        .payment-high { color: #dc3545; font-weight: bold; }
-        .payment-medium { color: #ffc107; font-weight: bold; }
-        .payment-low { color: #28a745; font-weight: bold; }
-        .actions { display: flex; gap: 5px; flex-wrap: wrap; }
-        .filter-section { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        .filter-section h3 { margin-top: 0; }
-        .filter-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 18px; 
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .page-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+        }
+        .btn { 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 5px; 
+            display: inline-block; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn-primary { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success { 
+            background-color: #28a745; 
+            color: white; 
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-warning { 
+            background-color: #ffc107; 
+            color: black; 
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        .btn-danger { 
+            background-color: #dc3545; 
+            color: white; 
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-info { 
+            background-color: #17a2b8; 
+            color: white; 
+        }
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        th, td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 1px solid #ddd; 
+        }
+        th { 
+            background-color: #f8f9fa; 
+            font-weight: bold; 
+        }
+        .role-cutting { 
+            color: #17a2b8; 
+            font-weight: bold; 
+        }
+        .role-printing { 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .role-stitching { 
+            color: #fd7e14; 
+            font-weight: bold; 
+        }
+        .status-active { 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .status-inactive { 
+            color: #dc3545; 
+            font-weight: bold; 
+        }
+        .payment-high { 
+            color: #dc3545; 
+            font-weight: bold; 
+        }
+        .payment-medium { 
+            color: #ffc107; 
+            font-weight: bold; 
+        }
+        .payment-low { 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .actions { 
+            display: flex; 
+            gap: 5px; 
+            flex-wrap: wrap; 
+        }
+        .filter-section { 
+            background-color: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .filter-section h3 { 
+            margin-top: 0; 
+            color: #2c3e50;
+        }
+        .filter-buttons { 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+        }
     </style>
 </head>
 <body>
-    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="header">
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
+    </div>
+    
+    <nav class="nav">
+        <div class="nav-container">
+            <a th:href="@{/}">🏠 Home</a>
+            <a th:href="@{/plans}">📋 Plans</a>
+            <a th:href="@{/stock}">📦 Stock</a>
+            <a th:href="@{/vendors}" class="active">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}">💰 Payments</a>
+            <a th:href="@{/articles}">👟 Articles</a>
+            <a th:href="@{/colors}">🎨 Colors</a>
+        </div>
+    </nav>
     
     <div class="container">
-        <div class="header">
+        <div class="page-header">
             <h2>Vendor Management</h2>
             <div>
                 <a th:href="@{/vendors/summary}" class="btn btn-info">Payment Summary</a>

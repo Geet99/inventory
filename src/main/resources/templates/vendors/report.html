@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Vendor Payment Report</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 18px; 
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            background: #3498db;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .card-title {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .btn { 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 5px; 
+            display: inline-block; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success { 
+            background-color: #28a745; 
+            color: white; 
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-info { 
+            background-color: #17a2b8; 
+            color: white; 
+        }
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        .btn-secondary { 
+            background-color: #6c757d; 
+            color: white; 
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .filters h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select {
+            width: 200px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+        .amount-positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .amount-negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 0.9em;
+        }
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-value.total-orders {
+            color: #17a2b8;
+        }
+        .stat-value.total-payments {
+            color: #28a745;
+        }
+        .stat-value.total-pending {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Inventory Management System</h1>
+        <p>Comprehensive slipper manufacturing inventory management</p>
+    </div>
+    
+    <div class="nav">
+        <div class="nav-container">
+            <a href="/">🏠 Home</a>
+            <a href="/plans">📋 Plans</a>
+            <a href="/vendors" class="active">👥 Vendors</a>
+            <a href="/articles">📦 Articles</a>
+            <a href="/colors">🎨 Colors</a>
+            <a href="/stock">📊 Stock</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Vendor Payment Report</h2>
+                <div>
+                    <a th:href="@{/vendors}" class="btn btn-info">👥 Vendor List</a>
+                    <a th:href="@{/vendors/summary}" class="btn btn-success">💰 Payment Summary</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="filters">
+            <h3>Filter Report</h3>
+            <form th:action="@{/vendors/report}" method="get">
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label for="startDate">Start Date:</label>
+                        <input type="date" id="startDate" name="startDate" th:value="${startDate}">
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">End Date:</label>
+                        <input type="date" id="endDate" name="endDate" th:value="${endDate}">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Generate Report</button>
+                        <a th:href="@{/vendors/report}" class="btn btn-secondary">Clear</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="summary-stats">
+            <div class="stat-card">
+                <h3>Total Orders</h3>
+                <div class="stat-value total-orders" th:text="${report.size()}">0</div>
+                <p>Orders in selected period</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Payments</h3>
+                <div class="stat-value total-payments" th:text="${'₹' + #numbers.formatDecimal(#aggregates.sum(report.![amount]), 1, 2)}">₹0.00</div>
+                <p>Total amount paid</p>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Amount</h3>
+                <div class="stat-value total-pending" th:text="${'₹' + #numbers.formatDecimal(#aggregates.sum(report.![pendingAmount]), 1, 2)}">₹0.00</div>
+                <p>Amount still pending</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vendor Name</th>
+                        <th>Role</th>
+                        <th>Plan Number</th>
+                        <th>Order Date</th>
+                        <th>Payment Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(report)}">
+                        <td colspan="7" class="empty-state">
+                            <h3>No payment data found</h3>
+                            <p>Payment reports will appear here when vendors are assigned to plans and payments are recorded.</p>
+                        </td>
+                    </tr>
+                    <tr th:each="entry : ${report}">
+                        <td th:text="${entry.vendorName}"></td>
+                        <td th:text="${entry.role}"></td>
+                        <td th:text="${entry.planNumber}"></td>
+                        <td th:text="${entry.orderDate != null ? #temporals.format(entry.orderDate, 'dd/MM/yyyy') : '-'}"></td>
+                        <td th:text="${entry.paymentDate != null ? #temporals.format(entry.paymentDate, 'dd/MM/yyyy') : '-'}"></td>
+                        <td th:class="${entry.amount >= 0 ? 'amount-positive' : 'amount-negative'}" 
+                            th:text="${'₹' + #numbers.formatDecimal(entry.amount, 1, 2)}"></td>
+                        <td>
+                            <span th:if="${entry.paymentDate != null}" class="badge badge-success">Paid</span>
+                            <span th:if="${entry.paymentDate == null}" class="badge badge-warning">Pending</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html> 

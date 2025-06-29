@@ -182,11 +182,12 @@ public class VendorService {
             .map(h -> {
                 Map<String, Object> record = new HashMap<>();
                 record.put("vendorName", h.getVendor().getName());
-                record.put("vendorRole", h.getVendor().getRole());
+                record.put("role", h.getVendor().getRole().toString());
                 record.put("planNumber", h.getPlanNumber());
+                record.put("orderDate", h.getOrderDate());
+                record.put("paymentDate", h.getPaymentDate());
                 record.put("amount", h.getAmount());
-                record.put("type", h.getType());
-                record.put("date", h.getOrderDate() != null ? h.getOrderDate() : h.getPaymentDate());
+                record.put("pendingAmount", h.getOrderDate() != null && h.getPaymentDate() == null ? h.getAmount() : 0.0);
                 return record;
             })
             .collect(Collectors.toList());

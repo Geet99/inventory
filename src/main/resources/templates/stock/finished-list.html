@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Plans Management</title>
+    <title>Finished Stock List</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -105,26 +105,12 @@
         .btn-success:hover {
             background-color: #1e7e34;
         }
-        .btn-warning { 
-            background-color: #ffc107; 
-            color: #212529; 
-        }
-        .btn-warning:hover {
-            background-color: #e0a800;
-        }
         .btn-info { 
             background-color: #17a2b8; 
             color: white; 
         }
         .btn-info:hover {
             background-color: #138496;
-        }
-        .btn-danger { 
-            background-color: #dc3545; 
-            color: white; 
-        }
-        .btn-danger:hover {
-            background-color: #c82333;
         }
         table {
             width: 100%;
@@ -144,28 +130,25 @@
         tr:hover {
             background-color: #f8f9fa;
         }
-        .status-pending_cutting { color: #ffc107; font-weight: bold; }
-        .status-cutting { color: #17a2b8; font-weight: bold; }
-        .status-pending_printing { color: #fd7e14; font-weight: bold; }
-        .status-printing { color: #6f42c1; font-weight: bold; }
-        .status-pending_stitching { color: #e83e8c; font-weight: bold; }
-        .status-stitching { color: #20c997; font-weight: bold; }
-        .status-completed { color: #28a745; font-weight: bold; }
-        .actions {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+        .quantity-high { 
+            color: #28a745; 
+            font-weight: bold; 
         }
-        .actions .btn {
-            padding: 5px 10px;
-            font-size: 0.8em;
+        .quantity-medium { 
+            color: #ffc107; 
+            font-weight: bold; 
         }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+        .quantity-low { 
+            color: #dc3545; 
+            font-weight: bold; 
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        .empty-state h3 {
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -178,71 +161,57 @@
     <div class="nav">
         <div class="nav-container">
             <a href="/">🏠 Home</a>
-            <a href="/plans" class="active">📋 Plans</a>
+            <a href="/plans">📋 Plans</a>
             <a href="/vendors">👥 Vendors</a>
             <a href="/articles">📦 Articles</a>
             <a href="/colors">🎨 Colors</a>
-            <a href="/stock">📊 Stock</a>
+            <a href="/stock" class="active">📊 Stock</a>
         </div>
     </div>
 
     <div class="container">
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Plans Management</h2>
+                <h2 class="card-title">Finished Stock List</h2>
                 <div>
                     <a th:href="@{/stock}" class="btn btn-info">📊 Stock Dashboard</a>
-                    <a th:href="@{/plans/new}" class="btn btn-success">➕ Add New Plan</a>
+                    <a th:href="@{/stock/upper}" class="btn btn-primary">Upper Stock</a>
+                    <a th:href="@{/stock/movements}" class="btn btn-success">Stock Movements</a>
                 </div>
             </div>
         </div>
-        
-        <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
         
         <div class="card">
             <table>
                 <thead>
                     <tr>
-                        <th>Plan Number</th>
                         <th>Article</th>
                         <th>Color</th>
-                        <th>Total Quantity</th>
-                        <th>Final Quantity</th>
-                        <th>Status</th>
-                        <th>Cutting Vendor</th>
-                        <th>Printing Vendor</th>
-                        <th>Stitching Vendor</th>
-                        <th>Created Date</th>
-                        <th>Actions</th>
+                        <th>Size</th>
+                        <th>Quantity</th>
+                        <th>Value</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="plan : ${plans}">
-                        <td th:text="${plan.planNumber}"></td>
-                        <td th:text="${plan.articleName}"></td>
-                        <td th:text="${plan.color}"></td>
-                        <td th:text="${plan.total}"></td>
-                        <td th:text="${plan.finalQuantity}"></td>
-                        <td>
-                            <span th:class="${'status-' + plan.status.name().toLowerCase()}" 
-                                  th:text="${plan.status.name().replace('_', ' ')}"></span>
+                    <tr th:if="${#lists.isEmpty(finishedStocks)}">
+                        <td colspan="5" class="empty-state">
+                            <h3>No finished stock found</h3>
+                            <p>Finished stock will appear here when you complete plans and send them to machine processing.</p>
                         </td>
-                        <td th:text="${plan.cuttingVendor?.name ?: '-'}"></td>
-                        <td th:text="${plan.printingVendor?.name ?: '-'}"></td>
-                        <td th:text="${plan.stitchingVendor?.name ?: '-'}"></td>
-                        <td th:text="${#temporals.format(plan.createDate, 'dd/MM/yyyy')}"></td>
+                    </tr>
+                    <tr th:each="stock : ${finishedStocks}">
+                        <td th:text="${stock.article.name}"></td>
+                        <td th:text="${stock.color}"></td>
+                        <td th:text="${stock.size}"></td>
                         <td>
-                            <div class="actions">
-                                <a th:href="@{/plans/{planNumber}/edit(planNumber=${plan.planNumber})}" class="btn btn-warning">Edit</a>
-                                <a th:href="@{/plans/{planNumber}/assign-vendor(planNumber=${plan.planNumber})}" class="btn btn-info">Assign Vendor</a>
-                                <a th:href="@{/plans/{planNumber}/send-to-machine(planNumber=${plan.planNumber})}" class="btn btn-primary">Send to Machine</a>
-                                <a th:href="@{/plans/{planNumber}/final-quantity(planNumber=${plan.planNumber})}" class="btn btn-success">Final Quantity</a>
-                            </div>
+                            <span th:class="${stock.quantity > 50 ? 'quantity-high' : (stock.quantity > 20 ? 'quantity-medium' : 'quantity-low')}"
+                                  th:text="${stock.quantity}"></span>
                         </td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(stock.quantity * stock.article.slipperCost, 1, 2)}"></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 </body>
-</html>
+</html> 
