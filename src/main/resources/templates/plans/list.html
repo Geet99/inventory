@@ -1,8 +1,187 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/header :: head}"></head>
+<head>
+    <title>Plans Management</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 18px; 
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            margin: 0;
+            color: #2c3e50;
+        }
+        .btn { 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 5px; 
+            display: inline-block; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn-primary { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success { 
+            background-color: #28a745; 
+            color: white; 
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-warning { 
+            background-color: #ffc107; 
+            color: black; 
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        .btn-danger { 
+            background-color: #dc3545; 
+            color: white; 
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-info { 
+            background-color: #17a2b8; 
+            color: white; 
+        }
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 1px solid #ddd; 
+        }
+        th { 
+            background-color: #f8f9fa; 
+            font-weight: bold; 
+        }
+        .status-pending { 
+            color: #ffc107; 
+            font-weight: bold; 
+        }
+        .status-cutting { 
+            color: #17a2b8; 
+            font-weight: bold; 
+        }
+        .status-printing { 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .status-stitching { 
+            color: #fd7e14; 
+            font-weight: bold; 
+        }
+        .status-completed { 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .actions { 
+            display: flex; 
+            gap: 5px; 
+            flex-wrap: wrap; 
+        }
+        .error { 
+            color: red; 
+            margin: 10px 0; 
+        }
+    </style>
+</head>
 <body>
-    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="header">
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
+    </div>
+    
+    <nav class="nav">
+        <div class="nav-container">
+            <a th:href="@{/}" th:class="${#httpServletRequest.requestURI == '/' ? 'active' : ''}">🏠 Home</a>
+            <a th:href="@{/plans}" th:class="${#httpServletRequest.requestURI.startsWith('/plans') ? 'active' : ''}">📋 Plans</a>
+            <a th:href="@{/stock}" th:class="${#httpServletRequest.requestURI.startsWith('/stock') ? 'active' : ''}">📦 Stock</a>
+            <a th:href="@{/vendors}" th:class="${#httpServletRequest.requestURI.startsWith('/vendors') and !#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}" th:class="${#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}">💰 Payments</a>
+            <a th:href="@{/articles}" th:class="${#httpServletRequest.requestURI.startsWith('/articles') ? 'active' : ''}">👟 Articles</a>
+            <a th:href="@{/colors}" th:class="${#httpServletRequest.requestURI.startsWith('/colors') ? 'active' : ''}">🎨 Colors</a>
+        </div>
+    </nav>
     
     <div class="container">
         <div class="card">
@@ -13,17 +192,19 @@
                     <a th:href="@{/plans/new}" class="btn btn-success">➕ Add New Plan</a>
                 </div>
             </div>
-            
-            <div th:if="${param.error}" class="alert alert-danger" th:text="${param.error}"></div>
-            
-            <table class="table">
+        </div>
+        
+        <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
+        
+        <div class="card">
+            <table>
                 <thead>
                     <tr>
                         <th>Plan Number</th>
                         <th>Article</th>
                         <th>Color</th>
-                        <th>Total Qty</th>
-                        <th>Final Qty</th>
+                        <th>Total Quantity</th>
+                        <th>Final Quantity</th>
                         <th>Status</th>
                         <th>Cutting Vendor</th>
                         <th>Printing Vendor</th>
@@ -35,51 +216,29 @@
                 <tbody>
                     <tr th:each="plan : ${plans}">
                         <td th:text="${plan.planNumber}"></td>
-                        <td th:text="${plan.articleName}"></td>
-                        <td th:text="${plan.color}"></td>
-                        <td th:text="${plan.total}"></td>
-                        <td th:text="${plan.finalQuantity != 0 ? plan.finalQuantity : '-'}"></td>
+                        <td th:text="${plan.article.name}"></td>
+                        <td th:text="${plan.color.name}"></td>
+                        <td th:text="${plan.totalQuantity}"></td>
+                        <td th:text="${plan.finalQuantity}"></td>
                         <td>
-                            <span th:class="${'badge badge-' + 
-                                (plan.status == 'Pending_Cutting' ? 'warning' : 
-                                plan.status == 'Cutting' ? 'info' : 
-                                plan.status == 'Printing' ? 'primary' : 
-                                plan.status == 'Stitching' ? 'warning' : 
-                                plan.status == 'Completed' ? 'success' : 'secondary')}" 
-                                  th:text="${plan.status}"></span>
+                            <span th:class="${'status-' + plan.status.name().toLowerCase()}" 
+                                  th:text="${plan.status.displayName}"></span>
                         </td>
-                        <td th:text="${plan.cuttingVendor != null ? plan.cuttingVendor.name : '-'}"></td>
-                        <td th:text="${plan.printingVendor != null ? plan.printingVendor.name : '-'}"></td>
-                        <td th:text="${plan.stitchingVendor != null ? plan.stitchingVendor.name : '-'}"></td>
-                        <td th:text="${#temporals.format(plan.createDate, 'dd/MM/yyyy')}"></td>
-                        <td class="table-actions">
-                            <a th:href="@{'/plans/' + ${plan.planNumber} + '/edit'}" class="btn btn-warning btn-sm">Edit</a>
-                            <a th:href="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" class="btn btn-info btn-sm">Assign</a>
-                            
-                            <form th:action="@{'/plans/' + ${plan.planNumber} + '/move-to-next'}" method="post" style="display:inline">
-                                <button type="submit" class="btn btn-success btn-sm" 
-                                        th:disabled="${plan.status == 'Completed'}">Next</button>
-                            </form>
-                            
-                            <a th:if="${plan.status == 'Completed'}" 
-                               th:href="@{'/plans/' + ${plan.planNumber} + '/send-to-machine'}" 
-                               class="btn btn-primary btn-sm">Machine</a>
-                            
-                            <a th:href="@{'/plans/' + ${plan.planNumber} + '/final-quantity'}" 
-                               class="btn btn-info btn-sm">Final Qty</a>
-                            
-                            <form th:action="@{'/plans/' + ${plan.planNumber} + '/delete'}" method="post" style="display:inline">
-                                <button type="submit" class="btn btn-danger btn-sm" 
-                                        onclick="return confirm('Are you sure you want to delete this plan?')">Delete</button>
-                            </form>
+                        <td th:text="${plan.cuttingVendor?.name ?: '-'}"></td>
+                        <td th:text="${plan.printingVendor?.name ?: '-'}"></td>
+                        <td th:text="${plan.stitchingVendor?.name ?: '-'}"></td>
+                        <td th:text="${#temporals.format(plan.createdDate, 'dd/MM/yyyy')}"></td>
+                        <td>
+                            <div class="actions">
+                                <a th:href="@{/plans/{id}/edit(id=${plan.id})}" class="btn btn-warning">Edit</a>
+                                <a th:href="@{/plans/{id}/assign-vendor(id=${plan.id})}" class="btn btn-info">Assign Vendor</a>
+                                <a th:href="@{/plans/{id}/send-to-machine(id=${plan.id})}" class="btn btn-primary">Send to Machine</a>
+                                <a th:href="@{/plans/{id}/final-quantity(id=${plan.id})}" class="btn btn-success">Final Quantity</a>
+                            </div>
                         </td>
                     </tr>
                 </tbody>
             </table>
-            
-            <div th:if="${#lists.isEmpty(plans)}" class="text-center mt-4">
-                <p class="text-muted">No plans found. <a th:href="@{/plans/new}" class="btn btn-success">Create your first plan</a></p>
-            </div>
         </div>
     </div>
 </body>
