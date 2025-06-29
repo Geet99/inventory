@@ -3,67 +3,200 @@
 <head>
     <title>Add New Vendor</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .btn { padding: 12px 24px; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; margin: 5px; }
-        .btn-primary { background-color: #007bff; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .checkbox-group { display: flex; align-items: center; gap: 10px; }
-        .checkbox-group input[type="checkbox"] { width: auto; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 18px; 
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .card-title {
+            margin: 0;
+            color: #2c3e50;
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+            padding: 0 20px;
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            box-sizing: border-box; 
+            font-size: 16px;
+        }
+        .btn { 
+            padding: 12px 24px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            border: none; 
+            cursor: pointer; 
+            margin: 5px; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn-primary { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary { 
+            background-color: #6c757d; 
+            color: white; 
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .checkbox-group { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .checkbox-group input[type="checkbox"] { 
+            width: auto; 
+        }
+        .text-muted {
+            color: #6c757d;
+            font-size: 12px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
-    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="header">
+        <h1>Inventory Management System</h1>
+        <p>Comprehensive slipper manufacturing inventory management</p>
+    </div>
+    
+    <div class="nav">
+        <div class="nav-container">
+            <a href="/">🏠 Home</a>
+            <a href="/plans">📋 Plans</a>
+            <a href="/vendors" class="active">👥 Vendors</a>
+            <a href="/articles">📦 Articles</a>
+            <a href="/colors">🎨 Colors</a>
+            <a href="/stock">📊 Stock</a>
+        </div>
+    </div>
     
     <div class="container">
-        <h2>Add New Vendor</h2>
-        
-        <form th:action="@{/vendors/add}" th:object="${vendor}" method="post">
-            <div class="form-group">
-                <label for="name">Vendor Name *</label>
-                <input type="text" id="name" th:field="*{name}" required>
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Add New Vendor</h2>
             </div>
             
-            <div class="form-group">
-                <label for="role">Vendor Role *</label>
-                <select id="role" th:field="*{role}" required>
-                    <option value="">Select Role</option>
-                    <option th:each="role : ${roles}" 
-                            th:value="${role}" 
-                            th:text="${role}"></option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="contactInfo">Contact Information *</label>
-                <input type="text" id="contactInfo" th:field="*{contactInfo}" 
-                       placeholder="Phone number or email" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="address">Address</label>
-                <textarea id="address" th:field="*{address}" rows="3" 
-                          placeholder="Vendor's address"></textarea>
-            </div>
-            
-            <div class="form-group">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="isActive" th:field="*{isActive}">
-                    <label for="isActive">Active Vendor</label>
+            <form th:action="@{/vendors/add}" th:object="${vendor}" method="post">
+                <div class="form-group">
+                    <label for="name">Vendor Name *</label>
+                    <input type="text" id="name" th:field="*{name}" required>
                 </div>
-                <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                    Check this if the vendor is currently active and accepting orders
-                </p>
-            </div>
-            
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Add Vendor</button>
-                <a th:href="@{/vendors}" class="btn btn-secondary">Cancel</a>
-            </div>
-        </form>
+                
+                <div class="form-group">
+                    <label for="role">Vendor Role *</label>
+                    <select id="role" th:field="*{role}" required>
+                        <option value="">Select Role</option>
+                        <option th:each="role : ${roles}" 
+                                th:value="${role}" 
+                                th:text="${role}"></option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="contactInfo">Contact Information *</label>
+                    <input type="text" id="contactInfo" th:field="*{contactInfo}" 
+                           placeholder="Phone number or email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea id="address" th:field="*{address}" rows="3" 
+                              placeholder="Vendor's address"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="active" th:field="*{active}">
+                        <label for="active">Active Vendor</label>
+                    </div>
+                    <p class="text-muted">
+                        Check this if the vendor is currently active and accepting orders
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Add Vendor</button>
+                    <a th:href="@{/vendors}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
 </body>
 </html>

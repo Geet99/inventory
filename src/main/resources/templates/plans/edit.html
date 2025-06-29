@@ -1,12 +1,224 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Edit Plan</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 18px; 
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .card-title {
+            margin: 0;
+            color: #2c3e50;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .text-muted {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .btn { 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 5px; 
+            display: inline-block; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-success { 
+            background-color: #28a745; 
+            color: white; 
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-secondary { 
+            background-color: #6c757d; 
+            color: white; 
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+    </style>
+</head>
 <body>
-<div th:replace="~{fragments/header :: header}"></div>
-<h2>Edit Plan</h2>
-<form th:action="@{'/plans/' + ${plan.planNumber} + '/update'}" th:object="${plan}" method="post">
-    Total Quantity: <input type="number" th:field="*{total}" /><br/>
-    <!-- Add other editable fields -->
-    <button type="submit">Update</button>
-</form>
+    <div class="header">
+        <h1>Inventory Management System</h1>
+        <p>Comprehensive slipper manufacturing inventory management</p>
+    </div>
+    
+    <div class="nav">
+        <div class="nav-container">
+            <a href="/">🏠 Home</a>
+            <a href="/plans" class="active">📋 Plans</a>
+            <a href="/vendors">👥 Vendors</a>
+            <a href="/articles">📦 Articles</a>
+            <a href="/colors">🎨 Colors</a>
+            <a href="/stock">📊 Stock</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Edit Plan</h2>
+            </div>
+            
+            <form th:action="@{'/plans/' + ${plan.planNumber} + '/update'}" th:object="${plan}" method="post">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="planNumber">Plan Number</label>
+                        <input type="text" id="planNumber" th:field="*{planNumber}" readonly>
+                        <small class="text-muted">Plan number cannot be changed</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="articleName">Article</label>
+                        <select id="articleName" th:field="*{articleName}" required>
+                            <option value="">Select Article</option>
+                            <option th:each="article : ${articles}" 
+                                    th:value="${article.name}" 
+                                    th:text="${article.name}"></option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="color">Color</label>
+                        <select id="color" th:field="*{color}" required>
+                            <option value="">Select Color</option>
+                            <option th:each="color : ${colors}" 
+                                    th:value="${color.name}" 
+                                    th:text="${color.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="total">Total Quantity</label>
+                        <input type="number" id="total" th:field="*{total}" required min="1">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sizeQuantityPairs">Size:Quantity Pairs</label>
+                    <textarea id="sizeQuantityPairs" th:field="*{sizeQuantityPairs}" rows="3" required 
+                              placeholder="Format: 38:50, 39:30, 40:20"></textarea>
+                    <small class="text-muted">Enter size:quantity pairs separated by commas (e.g., 38:50, 39:30, 40:20)</small>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cuttingType">Cutting Type</label>
+                        <select id="cuttingType" th:field="*{cuttingType}">
+                            <option value="">Select Cutting Type</option>
+                            <option th:each="type : ${cuttingTypes}" 
+                                    th:value="${type}" 
+                                    th:text="${type}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="printingType">Printing Type</label>
+                        <select id="printingType" th:field="*{printingType}">
+                            <option value="">Select Printing Type</option>
+                            <option th:each="type : ${printingTypes}" 
+                                    th:value="${type}" 
+                                    th:text="${type}"></option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success">Update Plan</button>
+                    <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
