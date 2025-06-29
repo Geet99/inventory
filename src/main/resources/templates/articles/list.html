@@ -146,13 +146,13 @@
     
     <nav class="nav">
         <div class="nav-container">
-            <a th:href="@{/}" th:class="${#httpServletRequest.requestURI == '/' ? 'active' : ''}">🏠 Home</a>
-            <a th:href="@{/plans}" th:class="${#httpServletRequest.requestURI.startsWith('/plans') ? 'active' : ''}">📋 Plans</a>
-            <a th:href="@{/stock}" th:class="${#httpServletRequest.requestURI.startsWith('/stock') ? 'active' : ''}">📦 Stock</a>
-            <a th:href="@{/vendors}" th:class="${#httpServletRequest.requestURI.startsWith('/vendors') and !#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}">👥 Vendors</a>
-            <a th:href="@{/vendors/summary}" th:class="${#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}">💰 Payments</a>
-            <a th:href="@{/articles}" th:class="${#httpServletRequest.requestURI.startsWith('/articles') ? 'active' : ''}">👟 Articles</a>
-            <a th:href="@{/colors}" th:class="${#httpServletRequest.requestURI.startsWith('/colors') ? 'active' : ''}">🎨 Colors</a>
+            <a th:href="@{/}">🏠 Home</a>
+            <a th:href="@{/plans}">📋 Plans</a>
+            <a th:href="@{/stock}">📦 Stock</a>
+            <a th:href="@{/vendors}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}">💰 Payments</a>
+            <a th:href="@{/articles}" class="active">👟 Articles</a>
+            <a th:href="@{/colors}">🎨 Colors</a>
         </div>
     </nav>
     
