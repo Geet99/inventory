@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Create New Plan</title>
+    <title>Create New Plan - SKSE Inventory</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -9,13 +9,13 @@
             background-color: #f5f5f5; 
         }
         .container { 
-            max-width: 800px; 
+            max-width: 1200px; 
             margin: 0 auto; 
             padding: 20px;
         }
         .header { 
             text-align: center; 
-            margin-bottom: 40px; 
+            margin-bottom: 30px; 
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -24,10 +24,12 @@
         .header h1 { 
             color: #2c3e50; 
             margin-bottom: 10px; 
+            font-size: 28px;
         }
         .header p { 
             color: #7f8c8d; 
-            font-size: 18px; 
+            font-size: 16px; 
+            margin: 0;
         }
         .nav {
             background: white;
@@ -41,19 +43,21 @@
             margin: 0 auto;
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             flex-wrap: wrap;
         }
         .nav a {
             text-decoration: none;
-            padding: 10px 20px;
+            padding: 10px 15px;
             border-radius: 5px;
             color: #2c3e50;
             font-weight: bold;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            font-size: 14px;
         }
         .nav a:hover {
             background-color: #ecf0f1;
+            transform: translateY(-1px);
         }
         .nav a.active {
             background-color: #3498db;
@@ -63,7 +67,7 @@
             background: white;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .card-header {
             padding: 20px;
@@ -72,9 +76,10 @@
         .card-title {
             margin: 0;
             color: #2c3e50;
+            font-size: 20px;
         }
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             padding: 0 20px;
         }
         .form-group label {
@@ -88,13 +93,13 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 14px;
             box-sizing: border-box;
         }
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 15px;
         }
         .text-muted {
             color: #6c757d;
@@ -111,6 +116,7 @@
             transition: background-color 0.2s;
             border: none;
             cursor: pointer;
+            font-size: 14px;
         }
         .btn-success { 
             background-color: #28a745; 
@@ -126,24 +132,34 @@
         .btn-secondary:hover {
             background-color: #545b62;
         }
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Inventory Management System</h1>
-        <p>Comprehensive slipper manufacturing inventory management</p>
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
     </div>
     
-    <div class="nav">
+    <nav class="nav">
         <div class="nav-container">
-            <a href="/">🏠 Home</a>
-            <a href="/plans" class="active">📋 Plans</a>
-            <a href="/vendors">👥 Vendors</a>
-            <a href="/articles">📦 Articles</a>
-            <a href="/colors">🎨 Colors</a>
-            <a href="/stock">📊 Stock</a>
+            <a th:href="@{/}">🏠 Home</a>
+            <a th:href="@{/plans}" class="active">📋 Plans</a>
+            <a th:href="@{/stock}">📦 Stock</a>
+            <a th:href="@{/vendors}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}">💰 Payments</a>
+            <a th:href="@{/articles}">👟 Articles</a>
+            <a th:href="@{/colors}">🎨 Colors</a>
         </div>
-    </div>
+    </nav>
     
     <div class="container">
         <div class="card">

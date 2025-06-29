@@ -1,28 +1,275 @@
 <!-- templates/fragments/header.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:fragment="head">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+<head>
     <title th:text="${title} ? ${title} + ' - SKSE Inventory' : 'SKSE Inventory Management System'">SKSE Inventory</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+            font-size: 28px;
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 16px; 
+            margin: 0;
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+            transform: translateY(-1px);
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .card-title {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .btn { 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 5px; 
+            display: inline-block; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-success { 
+            background-color: #28a745; 
+            color: white; 
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary { 
+            background-color: #6c757d; 
+            color: white; 
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-in-progress {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
-<header th:fragment="header">
+<body>
     <div class="header">
-        <div class="container">
-            <h1>SKSE Inventory Management System</h1>
-        </div>
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
     </div>
+    
     <nav class="nav">
         <div class="nav-container">
             <a th:href="@{/}" th:class="${#httpServletRequest.requestURI == '/' ? 'active' : ''}">🏠 Home</a>
-            <a th:href="@{/plans}" th:class="${#httpServletRequest.requestURI.startsWith('/plans') ? 'active' : ''}">📋 Plans</a>
-            <a th:href="@{/stock}" th:class="${#httpServletRequest.requestURI.startsWith('/stock') ? 'active' : ''}">📦 Stock</a>
-            <a th:href="@{/vendors}" th:class="${#httpServletRequest.requestURI.startsWith('/vendors') and !#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}">👥 Vendors</a>
-            <a th:href="@{/vendors/summary}" th:class="${#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}">💰 Payments</a>
-            <a th:href="@{/articles}" th:class="${#httpServletRequest.requestURI.startsWith('/articles') ? 'active' : ''}">👟 Articles</a>
-            <a th:href="@{/colors}" th:class="${#httpServletRequest.requestURI.startsWith('/colors') ? 'active' : ''}">🎨 Colors</a>
+            <a th:href="@{/plans}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/plans') ? 'active' : ''}">📋 Plans</a>
+            <a th:href="@{/stock}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/stock') ? 'active' : ''}">📦 Stock</a>
+            <a th:href="@{/vendors}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/vendors') and !#strings.startsWith(#httpServletRequest.requestURI, '/vendors/summary') ? 'active' : ''}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/vendors/summary') ? 'active' : ''}">💰 Payments</a>
+            <a th:href="@{/articles}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/articles') ? 'active' : ''}">👟 Articles</a>
+            <a th:href="@{/colors}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/colors') ? 'active' : ''}">🎨 Colors</a>
         </div>
     </nav>
-</header>
+    
+    <div class="container">
+        <!-- Content will be inserted here -->
+    </div>
+</body>
 </html>

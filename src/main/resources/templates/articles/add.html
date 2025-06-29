@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Add New Article</title>
+    <title>Add New Article - SKSE Inventory</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -9,13 +9,13 @@
             background-color: #f5f5f5; 
         }
         .container { 
-            max-width: 800px; 
+            max-width: 1200px; 
             margin: 0 auto; 
             padding: 20px;
         }
         .header { 
             text-align: center; 
-            margin-bottom: 40px; 
+            margin-bottom: 30px; 
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -24,10 +24,12 @@
         .header h1 { 
             color: #2c3e50; 
             margin-bottom: 10px; 
+            font-size: 28px;
         }
         .header p { 
             color: #7f8c8d; 
-            font-size: 18px; 
+            font-size: 16px; 
+            margin: 0;
         }
         .nav {
             background: white;
@@ -41,19 +43,21 @@
             margin: 0 auto;
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             flex-wrap: wrap;
         }
         .nav a {
             text-decoration: none;
-            padding: 10px 20px;
+            padding: 10px 15px;
             border-radius: 5px;
             color: #2c3e50;
             font-weight: bold;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            font-size: 14px;
         }
         .nav a:hover {
             background-color: #ecf0f1;
+            transform: translateY(-1px);
         }
         .nav a.active {
             background-color: #3498db;
@@ -63,7 +67,7 @@
             background: white;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .card-header {
             padding: 20px;
@@ -72,9 +76,10 @@
         .card-title {
             margin: 0;
             color: #2c3e50;
+            font-size: 20px;
         }
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .form-group label {
             display: block;
@@ -87,7 +92,13 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
         .btn { 
             padding: 10px 20px; 
@@ -99,6 +110,7 @@
             transition: background-color 0.2s;
             border: none;
             cursor: pointer;
+            font-size: 14px;
         }
         .btn-success { 
             background-color: #28a745; 
@@ -113,6 +125,15 @@
         }
         .btn-secondary:hover {
             background-color: #545b62;
+        }
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -153,25 +174,25 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="cuttingCost">Cutting Cost (₹)</label>
-                        <input type="number" id="cuttingCost" th:field="*{cuttingCost}" class="form-control" placeholder="0.00" step="0.01" min="0" required>
+                        <label for="cuttingCost">Cutting Cost (₹)</label>
+                        <input type="number" id="cuttingCost" th:field="*{cuttingCost}" placeholder="0.00" step="0.01" min="0" required>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label" for="printingCost">Printing Cost (₹)</label>
-                        <input type="number" id="printingCost" th:field="*{printingCost}" class="form-control" placeholder="0.00" step="0.01" min="0" required>
+                        <label for="printingCost">Printing Cost (₹)</label>
+                        <input type="number" id="printingCost" th:field="*{printingCost}" placeholder="0.00" step="0.01" min="0" required>
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label" for="stitchingCost">Stitching Cost (₹)</label>
-                        <input type="number" id="stitchingCost" th:field="*{stitchingCost}" class="form-control" placeholder="0.00" step="0.01" min="0" required>
+                        <label for="stitchingCost">Stitching Cost (₹)</label>
+                        <input type="number" id="stitchingCost" th:field="*{stitchingCost}" placeholder="0.00" step="0.01" min="0" required>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label" for="slipperCost">Selling Price (₹)</label>
-                        <input type="number" id="slipperCost" th:field="*{slipperCost}" class="form-control" placeholder="0.00" step="0.01" min="0" required>
+                        <label for="slipperCost">Selling Price (₹)</label>
+                        <input type="number" id="slipperCost" th:field="*{slipperCost}" placeholder="0.00" step="0.01" min="0" required>
                     </div>
                 </div>
                 

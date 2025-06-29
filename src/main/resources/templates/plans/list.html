@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Plans Management</title>
+    <title>Plans Management - SKSE Inventory</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -15,7 +15,7 @@
         }
         .header { 
             text-align: center; 
-            margin-bottom: 40px; 
+            margin-bottom: 30px; 
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -24,10 +24,12 @@
         .header h1 { 
             color: #2c3e50; 
             margin-bottom: 10px; 
+            font-size: 28px;
         }
         .header p { 
             color: #7f8c8d; 
-            font-size: 18px; 
+            font-size: 16px; 
+            margin: 0;
         }
         .nav {
             background: white;
@@ -41,19 +43,21 @@
             margin: 0 auto;
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             flex-wrap: wrap;
         }
         .nav a {
             text-decoration: none;
-            padding: 10px 20px;
+            padding: 10px 15px;
             border-radius: 5px;
             color: #2c3e50;
             font-weight: bold;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            font-size: 14px;
         }
         .nav a:hover {
             background-color: #ecf0f1;
+            transform: translateY(-1px);
         }
         .nav a.active {
             background-color: #3498db;
@@ -78,7 +82,7 @@
         }
         .card-title {
             margin: 0;
-            font-size: 1.5em;
+            font-size: 20px;
         }
         .btn { 
             padding: 10px 20px; 
@@ -90,6 +94,7 @@
             transition: background-color 0.2s;
             border: none;
             cursor: pointer;
+            font-size: 14px;
         }
         .btn-primary { 
             background-color: #007bff; 
@@ -126,23 +131,23 @@
         .btn-danger:hover {
             background-color: #c82333;
         }
-        table {
+        .table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 10px;
         }
-        th, td {
+        .table th, .table td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
-        th {
+        .table th {
             background-color: #f8f9fa;
             font-weight: bold;
-            color: #495057;
+            color: #2c3e50;
         }
-        tr:hover {
-            background-color: #f8f9fa;
+        .table tr:hover {
+            background-color: #f5f5f5;
         }
         .status-pending_cutting { color: #ffc107; font-weight: bold; }
         .status-cutting { color: #17a2b8; font-weight: bold; }
@@ -158,7 +163,7 @@
         }
         .actions .btn {
             padding: 5px 10px;
-            font-size: 0.8em;
+            font-size: 12px;
         }
         .error {
             background-color: #f8d7da;
@@ -167,24 +172,36 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .card-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Inventory Management System</h1>
-        <p>Comprehensive slipper manufacturing inventory management</p>
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
     </div>
     
-    <div class="nav">
+    <nav class="nav">
         <div class="nav-container">
-            <a href="/">🏠 Home</a>
-            <a href="/plans" class="active">📋 Plans</a>
-            <a href="/vendors">👥 Vendors</a>
-            <a href="/articles">📦 Articles</a>
-            <a href="/colors">🎨 Colors</a>
-            <a href="/stock">📊 Stock</a>
+            <a th:href="@{/}">🏠 Home</a>
+            <a th:href="@{/plans}" class="active">📋 Plans</a>
+            <a th:href="@{/stock}">📦 Stock</a>
+            <a th:href="@{/vendors}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}">💰 Payments</a>
+            <a th:href="@{/articles}">👟 Articles</a>
+            <a th:href="@{/colors}">🎨 Colors</a>
         </div>
-    </div>
+    </nav>
 
     <div class="container">
         <div class="card">
@@ -200,7 +217,7 @@
         <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
         
         <div class="card">
-            <table>
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Plan Number</th>
@@ -237,14 +254,14 @@
                                 <a th:href="@{/plans/{planNumber}/assign-vendor(planNumber=${plan.planNumber})}" class="btn btn-info">Assign Vendor</a>
                                 <form th:action="@{/plans/{planNumber}/move-to-next(planNumber=${plan.planNumber})}" method="post" style="display:inline">
                                     <button type="submit" class="btn btn-primary" 
-                                            th:disabled="${plan.status == T(com.skse.inventory.model.PlanStatus).COMPLETED}">
+                                            th:disabled="${plan.status == T(com.skse.inventory.model.PlanStatus).Completed}">
                                         Next State
                                     </button>
                                 </form>
                                 <a th:href="@{/plans/{planNumber}/final-quantity(planNumber=${plan.planNumber})}" class="btn btn-success">Final Quantity</a>
                                 <form th:action="@{/plans/{planNumber}/send-to-machine(planNumber=${plan.planNumber})}" method="post" style="display:inline">
                                     <button type="submit" class="btn btn-danger" 
-                                            th:disabled="${plan.status != T(com.skse.inventory.model.PlanStatus).COMPLETED}">
+                                            th:disabled="${plan.status != T(com.skse.inventory.model.PlanStatus).Completed}">
                                         Send to Machine
                                     </button>
                                 </form>

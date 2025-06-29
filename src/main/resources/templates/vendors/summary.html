@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Vendor Payment Summary</title>
+    <title>Vendor Payment Summary - SKSE Inventory</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -15,7 +15,7 @@
         }
         .header { 
             text-align: center; 
-            margin-bottom: 40px; 
+            margin-bottom: 30px; 
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -24,10 +24,12 @@
         .header h1 { 
             color: #2c3e50; 
             margin-bottom: 10px; 
+            font-size: 28px;
         }
         .header p { 
             color: #7f8c8d; 
-            font-size: 18px; 
+            font-size: 16px; 
+            margin: 0;
         }
         .nav {
             background: white;
@@ -41,19 +43,21 @@
             margin: 0 auto;
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             flex-wrap: wrap;
         }
         .nav a {
             text-decoration: none;
-            padding: 10px 20px;
+            padding: 10px 15px;
             border-radius: 5px;
             color: #2c3e50;
             font-weight: bold;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            font-size: 14px;
         }
         .nav a:hover {
             background-color: #ecf0f1;
+            transform: translateY(-1px);
         }
         .nav a.active {
             background-color: #3498db;
@@ -73,6 +77,9 @@
             display: inline-block; 
             font-weight: bold;
             transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
         }
         .btn-primary { 
             background-color: #007bff; 
@@ -97,16 +104,17 @@
         .stat-card { 
             background: white; 
             padding: 20px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
             text-align: center; 
         }
         .stat-card h3 { 
             margin: 0 0 10px 0; 
-            color: #333; 
+            color: #2c3e50; 
+            font-size: 16px;
         }
         .stat-value { 
-            font-size: 2em; 
+            font-size: 32px; 
             font-weight: bold; 
             margin: 10px 0; 
         }
@@ -133,20 +141,25 @@
             border-bottom: 2px solid #007bff; 
             padding-bottom: 10px; 
             margin-top: 0;
+            color: #2c3e50;
         }
-        table { 
+        .table {
             width: 100%; 
             border-collapse: collapse; 
-            margin-top: 20px; 
+            margin-top: 10px; 
         }
-        th, td { 
+        .table th, .table td { 
             padding: 12px; 
             text-align: left; 
             border-bottom: 1px solid #ddd; 
         }
-        th { 
+        .table th { 
             background-color: #f8f9fa; 
             font-weight: bold; 
+            color: #2c3e50;
+        }
+        .table tr:hover {
+            background-color: #f5f5f5;
         }
         .payment-high { 
             color: #dc3545; 
@@ -159,6 +172,20 @@
         .payment-low { 
             color: #28a745; 
             font-weight: bold; 
+        }
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -197,24 +224,24 @@
             </div>
             <div class="stat-card">
                 <h3>Cutting Vendors Due</h3>
-                <div class="stat-value cutting" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.Cutting, 1, 2)}"></div>
+                <div class="stat-value cutting" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.get(T(com.skse.inventory.model.VendorRole).Cutting), 1, 2)}"></div>
                 <p>Amount due to cutting vendors</p>
             </div>
             <div class="stat-card">
                 <h3>Printing Vendors Due</h3>
-                <div class="stat-value printing" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.Printing, 1, 2)}"></div>
+                <div class="stat-value printing" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.get(T(com.skse.inventory.model.VendorRole).Printing), 1, 2)}"></div>
                 <p>Amount due to printing vendors</p>
             </div>
             <div class="stat-card">
                 <h3>Stitching Vendors Due</h3>
-                <div class="stat-value stitching" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.Stitching, 1, 2)}"></div>
+                <div class="stat-value stitching" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.get(T(com.skse.inventory.model.VendorRole).Stitching), 1, 2)}"></div>
                 <p>Amount due to stitching vendors</p>
             </div>
         </div>
         
         <div class="summary-section">
             <h3>Top Vendors by Payment Due</h3>
-            <table>
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Vendor Name</th>
@@ -244,7 +271,7 @@
         
         <div class="summary-section">
             <h3>Payment Due by Role</h3>
-            <table>
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Vendor Role</th>

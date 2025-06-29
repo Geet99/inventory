@@ -1,27 +1,181 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Assign Vendor to Plan</title>
+    <title>Assign Vendor to Plan - SKSE Inventory</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .btn { padding: 12px 24px; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; margin: 5px; }
-        .btn-primary { background-color: #007bff; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .plan-info { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        .plan-info h3 { margin-top: 0; }
-        .vendor-section { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 5px; }
-        .vendor-section h4 { margin-top: 0; color: #007bff; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+            font-size: 28px;
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 16px; 
+            margin: 0;
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+            transform: translateY(-1px);
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .card-title {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 20px;
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+            padding: 0 20px;
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            box-sizing: border-box; 
+            font-size: 14px;
+        }
+        .btn { 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            border: none; 
+            cursor: pointer; 
+            margin: 5px; 
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn-primary { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary { 
+            background-color: #6c757d; 
+            color: white; 
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .plan-info { 
+            background-color: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            border: 1px solid #ecf0f1;
+        }
+        .plan-info h3 { 
+            margin-top: 0; 
+            color: #2c3e50;
+        }
+        .vendor-section { 
+            border: 1px solid #ddd; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border-radius: 10px; 
+            background-color: #f8f9fa;
+        }
+        .vendor-section h4 { 
+            margin-top: 0; 
+            color: #007bff; 
+            font-size: 16px;
+        }
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
     </style>
 </head>
 <body>
-    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="header">
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
+    </div>
+    
+    <nav class="nav">
+        <div class="nav-container">
+            <a th:href="@{/}">🏠 Home</a>
+            <a th:href="@{/plans}" class="active">📋 Plans</a>
+            <a th:href="@{/stock}">📦 Stock</a>
+            <a th:href="@{/vendors}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}">💰 Payments</a>
+            <a th:href="@{/articles}">👟 Articles</a>
+            <a th:href="@{/colors}">🎨 Colors</a>
+        </div>
+    </nav>
     
     <div class="container">
-        <h2>Assign Vendors to Plan</h2>
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Assign Vendors to Plan</h2>
+            </div>
+        </div>
         
         <div class="plan-info">
             <h3>Plan Details</h3>
@@ -32,73 +186,74 @@
             <p><strong>Status:</strong> <span th:text="${plan.status}"></span></p>
         </div>
         
-        <form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
-            <div class="vendor-section">
-                <h4>Cutting Vendor</h4>
-                <div class="form-group">
-                    <label for="cuttingVendor">Select Cutting Vendor:</label>
-                    <select id="cuttingVendor" name="vendorId" th:if="${role == 'Cutting'}">
-                        <option value="">Select Vendor</option>
-                        <option th:each="vendor : ${vendors}" 
-                                th:if="${vendor.role == 'Cutting'}"
-                                th:value="${vendor.id}" 
-                                th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
-                    </select>
-                    <p th:if="${plan.cuttingVendor != null}">
-                        <strong>Current:</strong> <span th:text="${plan.cuttingVendor.name}"></span>
-                    </p>
+        <div class="card">
+            <form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
+                <div class="vendor-section">
+                    <h4>Cutting Vendor</h4>
+                    <div class="form-group">
+                        <label for="cuttingVendor">Select Cutting Vendor:</label>
+                        <select id="cuttingVendor" name="vendorId">
+                            <option value="">Select Vendor</option>
+                            <option th:each="vendor : ${vendors}" 
+                                    th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Cutting}"
+                                    th:value="${vendor.id}" 
+                                    th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
+                        </select>
+                        <p th:if="${plan.cuttingVendor != null}">
+                            <strong>Current:</strong> <span th:text="${plan.cuttingVendor.name}"></span>
+                        </p>
+                        <input type="hidden" name="role" value="Cutting">
+                        <button type="submit" class="btn btn-primary">Assign Cutting Vendor</button>
+                    </div>
                 </div>
-            </div>
+            </form>
             
-            <div class="vendor-section">
-                <h4>Printing Vendor</h4>
-                <div class="form-group">
-                    <label for="printingVendor">Select Printing Vendor:</label>
-                    <select id="printingVendor" name="vendorId" th:if="${role == 'Printing'}">
-                        <option value="">Select Vendor</option>
-                        <option th:each="vendor : ${vendors}" 
-                                th:if="${vendor.role == 'Printing'}"
-                                th:value="${vendor.id}" 
-                                th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
-                    </select>
-                    <p th:if="${plan.printingVendor != null}">
-                        <strong>Current:</strong> <span th:text="${plan.printingVendor.name}"></span>
-                    </p>
+            <form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
+                <div class="vendor-section">
+                    <h4>Printing Vendor</h4>
+                    <div class="form-group">
+                        <label for="printingVendor">Select Printing Vendor:</label>
+                        <select id="printingVendor" name="vendorId">
+                            <option value="">Select Vendor</option>
+                            <option th:each="vendor : ${vendors}" 
+                                    th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Printing}"
+                                    th:value="${vendor.id}" 
+                                    th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
+                        </select>
+                        <p th:if="${plan.printingVendor != null}">
+                            <strong>Current:</strong> <span th:text="${plan.printingVendor.name}"></span>
+                        </p>
+                        <input type="hidden" name="role" value="Printing">
+                        <button type="submit" class="btn btn-primary">Assign Printing Vendor</button>
+                    </div>
                 </div>
-            </div>
+            </form>
             
-            <div class="vendor-section">
-                <h4>Stitching Vendor</h4>
-                <div class="form-group">
-                    <label for="stitchingVendor">Select Stitching Vendor:</label>
-                    <select id="stitchingVendor" name="vendorId" th:if="${role == 'Stitching'}">
-                        <option value="">Select Vendor</option>
-                        <option th:each="vendor : ${vendors}" 
-                                th:if="${vendor.role == 'Stitching'}"
-                                th:value="${vendor.id}" 
-                                th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
-                    </select>
-                    <p th:if="${plan.stitchingVendor != null}">
-                        <strong>Current:</strong> <span th:text="${plan.stitchingVendor.name}"></span>
-                    </p>
+            <form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
+                <div class="vendor-section">
+                    <h4>Stitching Vendor</h4>
+                    <div class="form-group">
+                        <label for="stitchingVendor">Select Stitching Vendor:</label>
+                        <select id="stitchingVendor" name="vendorId">
+                            <option value="">Select Vendor</option>
+                            <option th:each="vendor : ${vendors}" 
+                                    th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Stitching}"
+                                    th:value="${vendor.id}" 
+                                    th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
+                        </select>
+                        <p th:if="${plan.stitchingVendor != null}">
+                            <strong>Current:</strong> <span th:text="${plan.stitchingVendor.name}"></span>
+                        </p>
+                        <input type="hidden" name="role" value="Stitching">
+                        <button type="submit" class="btn btn-primary">Assign Stitching Vendor</button>
+                    </div>
                 </div>
-            </div>
+            </form>
             
             <div class="form-group">
-                <label for="role">Vendor Role:</label>
-                <select id="role" name="role" required>
-                    <option value="">Select Role</option>
-                    <option th:each="role : ${roles}" 
-                            th:value="${role}" 
-                            th:text="${role}"></option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Assign Vendor</button>
                 <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
             </div>
-        </form>
+        </div>
     </div>
 </body>
 </html>
