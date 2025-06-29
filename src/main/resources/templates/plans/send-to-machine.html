@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Send to Machine</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn { padding: 12px 24px; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; margin: 5px; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .plan-info { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .plan-info h3 { margin-top: 0; }
+        .warning { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .warning h4 { margin-top: 0; color: #856404; }
+        .stock-info { background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .stock-info h4 { margin-top: 0; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div th:replace="fragments/header :: header"></div>
+    
+    <div class="container">
+        <h2>Send to Machine Processing</h2>
+        
+        <div class="plan-info">
+            <h3>Plan Details</h3>
+            <p><strong>Plan Number:</strong> <span th:text="${plan.planNumber}"></span></p>
+            <p><strong>Article:</strong> <span th:text="${plan.articleName}"></span></p>
+            <p><strong>Color:</strong> <span th:text="${plan.color}"></span></p>
+            <p><strong>Status:</strong> <span th:text="${plan.status}"></span></p>
+            <p><strong>Planned Total:</strong> <span th:text="${plan.total}"></span></p>
+            <p><strong>Final Quantity:</strong> <span th:text="${plan.finalQuantity}"></span></p>
+        </div>
+        
+        <div class="warning">
+            <h4>Important Notice</h4>
+            <p>This action will:</p>
+            <ul>
+                <li>Move stock from Upper Stock to Finished Stock</li>
+                <li>Record the machine processing date</li>
+                <li>Update the final quantity for this plan</li>
+            </ul>
+            <p><strong>This action cannot be undone!</strong></p>
+        </div>
+        
+        <div class="stock-info">
+            <h4>Stock Movement Summary</h4>
+            <p><strong>Article:</strong> <span th:text="${plan.articleName}"></span></p>
+            <p><strong>Color:</strong> <span th:text="${plan.color}"></span></p>
+            <p><strong>Quantity to Process:</strong> <span th:text="${plan.finalQuantity}"></span></p>
+            <p><strong>Size:Quantity Breakdown:</strong> <span th:text="${plan.sizeQuantityPairs}"></span></p>
+        </div>
+        
+        <form th:action="@{'/plans/' + ${plan.planNumber} + '/send-to-machine'}" method="post">
+            <div class="form-group">
+                <label for="finalQuantity">Confirm Final Quantity *</label>
+                <input type="number" id="finalQuantity" name="finalQuantity" 
+                       th:value="${plan.finalQuantity}"
+                       min="1" max="9999" required>
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                    Confirm the final quantity to be processed by the machine
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary" 
+                        onclick="return confirm('Are you sure you want to send this plan to machine processing?')">
+                    Send to Machine
+                </button>
+                <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html> 

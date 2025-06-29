@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @Entity
 @Data
@@ -14,15 +15,26 @@ public class Plan {
     private String color;
     private String planSize;
     private int total;
+    private int finalQuantity; // Actual quantity produced
 
     @Column(length = 1000) // Increase column size to handle larger pairs
     private String sizeQuantityPairs; // Example: "38:50, 39:30" //ToDo make it map
 
-    private String cuttingVendor;
+    @ManyToOne
+    @JoinColumn(name = "cutting_vendor_id")
+    private Vendor cuttingVendor;
+    
     private CuttingType cuttingType;
-    private String printingVendor;
+    
+    @ManyToOne
+    @JoinColumn(name = "printing_vendor_id")
+    private Vendor printingVendor;
+    
     private PrintingType printingType;
-    private String stitchingVendor;
+    
+    @ManyToOne
+    @JoinColumn(name = "stitching_vendor_id")
+    private Vendor stitchingVendor;
 
     @Enumerated(EnumType.STRING)
     private PlanStatus status;
@@ -34,6 +46,7 @@ public class Plan {
     private LocalDate printingEndDate;
     private LocalDate stitchingStartDate;
     private LocalDate stitchingEndDate;
+    private LocalDate machineProcessingDate; // When sent to machine
 
     private double cuttingVendorPaymentDue;
     private double printingVendorPaymentDue;
@@ -87,11 +100,11 @@ public class Plan {
         this.sizeQuantityPairs = sizeQuantityPairs;
     }
 
-    public String getCuttingVendor() {
+    public Vendor getCuttingVendor() {
         return cuttingVendor;
     }
 
-    public void setCuttingVendor(String cuttingVendor) {
+    public void setCuttingVendor(Vendor cuttingVendor) {
         this.cuttingVendor = cuttingVendor;
     }
 
@@ -103,11 +116,11 @@ public class Plan {
         this.cuttingType = cuttingType;
     }
 
-    public String getPrintingVendor() {
+    public Vendor getPrintingVendor() {
         return printingVendor;
     }
 
-    public void setPrintingVendor(String printingVendor) {
+    public void setPrintingVendor(Vendor printingVendor) {
         this.printingVendor = printingVendor;
     }
 
@@ -119,11 +132,11 @@ public class Plan {
         this.printingType = printingType;
     }
 
-    public String getStitchingVendor() {
+    public Vendor getStitchingVendor() {
         return stitchingVendor;
     }
 
-    public void setStitchingVendor(String stitchingVendor) {
+    public void setStitchingVendor(Vendor stitchingVendor) {
         this.stitchingVendor = stitchingVendor;
     }
 
@@ -213,5 +226,21 @@ public class Plan {
 
     public void setStitchingVendorPaymentDue(double stitchingVendorPaymentDue) {
         this.stitchingVendorPaymentDue = stitchingVendorPaymentDue;
+    }
+
+    public int getFinalQuantity() {
+        return finalQuantity;
+    }
+
+    public void setFinalQuantity(int finalQuantity) {
+        this.finalQuantity = finalQuantity;
+    }
+
+    public LocalDate getMachineProcessingDate() {
+        return machineProcessingDate;
+    }
+
+    public void setMachineProcessingDate(LocalDate machineProcessingDate) {
+        this.machineProcessingDate = machineProcessingDate;
     }
 }

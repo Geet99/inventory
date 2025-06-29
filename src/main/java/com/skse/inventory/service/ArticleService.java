@@ -36,8 +36,9 @@ public class ArticleService {
     }
 
     // Get article by Name
-    public Optional<Article> getArticleByName(String name) {
-        return articleRepository.findByName(name);
+    public Article getArticleByName(String name) {
+        Optional<Article> article = articleRepository.findByName(name);
+        return article.orElse(null);
     }
 
     // Update an article

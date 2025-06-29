@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Vendor Payment Summary</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 5px; display: inline-block; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-info { background-color: #17a2b8; color: white; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+        .stat-card h3 { margin: 0 0 10px 0; color: #333; }
+        .stat-value { font-size: 2em; font-weight: bold; margin: 10px 0; }
+        .stat-value.total { color: #dc3545; }
+        .stat-value.cutting { color: #17a2b8; }
+        .stat-value.printing { color: #28a745; }
+        .stat-value.stitching { color: #fd7e14; }
+        .summary-section { margin-bottom: 30px; }
+        .summary-section h3 { border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .payment-high { color: #dc3545; font-weight: bold; }
+        .payment-medium { color: #ffc107; font-weight: bold; }
+        .payment-low { color: #28a745; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div th:replace="fragments/header :: header"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h2>Vendor Payment Summary</h2>
+            <div>
+                <a th:href="@{/vendors}" class="btn btn-info">All Vendors</a>
+                <a th:href="@{/vendors/report}" class="btn btn-primary">Payment Report</a>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Payment Due</h3>
+                <div class="stat-value total" th:text="${'₹' + #numbers.formatDecimal(summary.totalPaymentDue, 1, 2)}"></div>
+                <p>Total amount due to all vendors</p>
+            </div>
+            <div class="stat-card">
+                <h3>Cutting Vendors Due</h3>
+                <div class="stat-value cutting" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.Cutting, 1, 2)}"></div>
+                <p>Amount due to cutting vendors</p>
+            </div>
+            <div class="stat-card">
+                <h3>Printing Vendors Due</h3>
+                <div class="stat-value printing" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.Printing, 1, 2)}"></div>
+                <p>Amount due to printing vendors</p>
+            </div>
+            <div class="stat-card">
+                <h3>Stitching Vendors Due</h3>
+                <div class="stat-value stitching" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.Stitching, 1, 2)}"></div>
+                <p>Amount due to stitching vendors</p>
+            </div>
+        </div>
+        
+        <div class="summary-section">
+            <h3>Top Vendors by Payment Due</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vendor Name</th>
+                        <th>Role</th>
+                        <th>Contact Info</th>
+                        <th>Payment Due</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="vendor : ${summary.topVendors}">
+                        <td th:text="${vendor.name}"></td>
+                        <td th:text="${vendor.role}"></td>
+                        <td th:text="${vendor.contactInfo}"></td>
+                        <td>
+                            <span th:class="${vendor.paymentDue > 10000 ? 'payment-high' : (vendor.paymentDue > 5000 ? 'payment-medium' : 'payment-low')}"
+                                  th:text="${'₹' + #numbers.formatDecimal(vendor.paymentDue, 1, 2)}"></span>
+                        </td>
+                        <td>
+                            <a th:href="@{'/vendors/' + ${vendor.id} + '/details'}" class="btn btn-info">Details</a>
+                            <a th:href="@{'/vendors/' + ${vendor.id} + '/payment'}" class="btn btn-primary">Record Payment</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="summary-section">
+            <h3>Payment Due by Role</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vendor Role</th>
+                        <th>Total Payment Due</th>
+                        <th>Number of Vendors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="entry : ${summary.paymentByRole}">
+                        <td th:text="${entry.key}"></td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(entry.value, 1, 2)}"></td>
+                        <td th:text="${#lists.size(summary.topVendors.?[role == entry.key])}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html> 

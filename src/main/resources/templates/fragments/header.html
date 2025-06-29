@@ -2,15 +2,15 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <header th:fragment="header">
-    <h1>Inventory Management System</h1>
-    <nav>
-        <a th:href="@{/}">Home</a> |
-        <a th:href="@{/stock}">Stock</a> |
-        <a th:href="@{/plans}">Plans</a> |
-        <a th:href="@{/vendors}">Vendors</a> |
-        <a th:href="@{/articles}">Articles</a> |
-        <a th:href="@{/colors}">Colors</a>
+    <h1>SKSE Inventory Management System</h1>
+    <nav style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+        <a th:href="@{/}" style="margin-right: 15px; text-decoration: none; color: #007bff;">🏠 Home</a> |
+        <a th:href="@{/plans}" style="margin: 0 15px; text-decoration: none; color: #007bff;">📋 Plans</a> |
+        <a th:href="@{/stock}" style="margin: 0 15px; text-decoration: none; color: #007bff;">📦 Stock</a> |
+        <a th:href="@{/vendors}" style="margin: 0 15px; text-decoration: none; color: #007bff;">👥 Vendors</a> |
+        <a th:href="@{/vendors/summary}" style="margin: 0 15px; text-decoration: none; color: #007bff;">💰 Payments</a> |
+        <a th:href="@{/articles}" style="margin: 0 15px; text-decoration: none; color: #007bff;">👟 Articles</a> |
+        <a th:href="@{/colors}" style="margin: 0 15px; text-decoration: none; color: #007bff;">🎨 Colors</a>
     </nav>
-    <hr/>
 </header>
 </html>

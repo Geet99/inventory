@@ -6,6 +6,7 @@ import com.skse.inventory.model.*;
 import com.skse.inventory.repository.ArticleRepository;
 import com.skse.inventory.repository.PlanRepository;
 import com.skse.inventory.repository.UpperStockRepository;
+import com.skse.inventory.repository.StockMovementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,9 @@ public class PlanService {
 
     @Autowired
     private UpperStockRepository upperStockRepository;
+    
+    @Autowired
+    private StockMovementRepository stockMovementRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -74,6 +78,7 @@ public class PlanService {
             case Pending_Printing:
                 plan.setCuttingEndDate(LocalDate.now());
                 plan.setCuttingVendorPaymentDue(calculatePayment(plan, VendorRole.Cutting));
+                updateUpperStockFromPlan(plan);
                 break;
             case Printing:
                 plan.setPrintingStartDate(LocalDate.now());
@@ -86,13 +91,66 @@ public class PlanService {
                 plan.setStitchingStartDate(LocalDate.now());
                 break;
             case Completed:
+                plan.setStitchingEndDate(LocalDate.now());
                 plan.setStitchingVendorPaymentDue(calculatePayment(plan, VendorRole.Stitching));
-                articleService.updateUpperStockAfterCompletion(plan);
                 break;
         }
 
         plan.setStatus(nextStatus);
         return planRepository.save(plan);
+    }
+
+    public Plan sendToMachine(String planNumber, int finalQuantity) {
+        Plan plan = planRepository.findByPlanNumber(planNumber);
+        if (plan == null) {
+            throw new IllegalArgumentException("Plan not found with number: " + planNumber);
+        }
+
+        if (plan.getStatus() != PlanStatus.Completed) {
+            throw new IllegalStateException("Plan must be completed before sending to machine");
+        }
+
+        plan.setFinalQuantity(finalQuantity);
+        plan.setMachineProcessingDate(LocalDate.now());
+        
+        // Move stock from upper to finished
+        moveStockFromUpperToFinished(plan, finalQuantity);
+        
+        return planRepository.save(plan);
+    }
+
+    private void moveStockFromUpperToFinished(Plan plan, int finalQuantity) {
+        String[] sizeQuantityPairs = plan.getSizeQuantityPairs().split(",");
+        for (String pair : sizeQuantityPairs) {
+            String[] sizeQuantity = pair.trim().split(":");
+            String size = sizeQuantity[0].trim();
+            int plannedQuantity = Integer.parseInt(sizeQuantity[1].trim());
+            
+            // Calculate proportional final quantity for this size
+            double proportion = (double) plannedQuantity / plan.getTotal();
+            int finalSizeQuantity = (int) Math.round(finalQuantity * proportion);
+            
+            // Reduce upper stock
+            Optional<UpperStock> upperStockOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+                plan.getArticleName(), size, plan.getColor());
+            
+            if (upperStockOpt.isPresent()) {
+                UpperStock upperStock = upperStockOpt.get();
+                upperStock.setQuantity(upperStock.getQuantity() - finalSizeQuantity);
+                upperStockRepository.save(upperStock);
+                
+                // Record stock movement
+                StockMovementRequest movement = new StockMovementRequest();
+                movement.setPlan(plan);
+                movement.setArticleName(plan.getArticleName());
+                movement.setColor(plan.getColor());
+                movement.setSize(size);
+                movement.setQuantity(finalSizeQuantity);
+                movement.setMovementDate(LocalDate.now());
+                movement.setMovementType("UPPER_TO_FINISHED");
+                stockMovementRepository.save(movement);
+            }
+        }
     }
 
     private PlanStatus getNextStatus(PlanStatus currentStatus) {
@@ -136,12 +194,12 @@ public class PlanService {
         return activeOrders;
     }
 
-    private void updateStockFromPlan(Plan plan) {
+    private void updateUpperStockFromPlan(Plan plan) {
         String[] sizeQuantityPairs = plan.getSizeQuantityPairs().split(",");
         for (String pair : sizeQuantityPairs) {
-            String[] sizeQuantity = pair.split(":");
-            String size = sizeQuantity[0];
-            int quantity = Integer.parseInt(sizeQuantity[1]);
+            String[] sizeQuantity = pair.trim().split(":");
+            String size = sizeQuantity[0].trim();
+            int quantity = Integer.parseInt(sizeQuantity[1].trim());
 
             // Update upper stock and finished stock as per size and color
             Optional<UpperStock> upperStock = upperStockRepository.findByArticleNameAndSizeAndColor(plan.getArticleName(), size, plan.getColor());
@@ -170,13 +228,13 @@ public class PlanService {
         // Assign the vendor based on the role
         switch (vendorAssignmentRequest.getRole()) {
             case Cutting:
-                plan.setCuttingVendor(vendorAssignmentRequest.getVendorId());
+                plan.setCuttingVendor(vendorAssignmentRequest.getVendor());
                 break;
             case Printing:
-                plan.setPrintingVendor(vendorAssignmentRequest.getVendorId());
+                plan.setPrintingVendor(vendorAssignmentRequest.getVendor());
                 break;
             case Stitching:
-                plan.setStitchingVendor(vendorAssignmentRequest.getVendorId());
+                plan.setStitchingVendor(vendorAssignmentRequest.getVendor());
                 break;
             default:
                 throw new IllegalArgumentException("Invalid vendor role: " + vendorAssignmentRequest.getRole());
@@ -193,112 +251,13 @@ public class PlanService {
         return planRepository.findAll();
     }
 
-//    public Plan recordMachineProcessing(String planNumber, String processedPairs, LocalDate startDate, LocalDate endDate) {
-//        Plan plan = planRepository.findByPlanNumber(planNumber);
-//        if (plan == null)
-//            throw new IllegalArgumentException("Plan not found with number: " + planNumber);
-//
-//        if (plan.getStatus() != PlanStatus.Machine) {
-//            throw new IllegalStateException("Plan is not in Machine state");
-//        }
-//
-//        articleService.processBatchToFinishedStock(plan, processedPairs);
-//
-//        // Parse and update processed pairs
-//        String[] processedPairsArray = processedPairs.split(",");
-//        List<BatchLog> batchLogs = new ArrayList<>();
-//
-//        try {
-//            if (plan.getMachineBatchLogs() != null) {
-//                batchLogs = objectMapper.readValue(plan.getMachineBatchLogs(), new TypeReference<>() {});
-//            }
-//        } catch (Exception e) {
-//            throw new IllegalStateException("Error parsing existing batch logs", e);
-//        }
-//
-//        for (String pair : processedPairsArray) {
-//            String[] sizeAndCount = pair.split(":");
-//            BatchLog batchLog = new BatchLog(
-//                    sizeAndCount[0],
-//                    Integer.parseInt(sizeAndCount[1]),
-//                    startDate,
-//                    endDate
-//            );
-//            batchLogs.add(batchLog);
-//        }
-//
-//        // Update logs and processed pairs
-//        try {
-//            plan.setMachineBatchLogs(objectMapper.writeValueAsString(batchLogs));
-//        } catch (Exception e) {
-//            throw new IllegalStateException("Error updating batch logs", e);
-//        }
-//
-//        // Calculate total processed count
-//        int totalProcessedCount = calculateTotalProcessed(plan, processedPairs);
-//        int totalPlanCount = Arrays.stream(plan.getSizeQuantityPairs().split(","))
-//                .mapToInt(pair -> Integer.parseInt(pair.split(":")[1]))
-//                .sum();
-//
-//        // Update status if processing is complete
-//        if (totalProcessedCount >= totalPlanCount) {
-//            plan.setStatus(PlanStatus.Completed);
-//            plan.setMachineEndDate(endDate);
-//        }
-////        String[] existingPairsArray = plan.getMachineProcessedPairs() != null
-//                ? plan.getMachineProcessedPairs().split(",")
-//                : new String[0];
-//
-//        Map<String, Integer> totalPairs = new HashMap<>();
-//
-//        // Add existing processed pairs
-//        for (String pair : existingPairsArray) {
-//            String[] sizeAndCount = pair.split(":");
-//            totalPairs.put(sizeAndCount[0], totalPairs.getOrDefault(sizeAndCount[0], 0) + Integer.parseInt(sizeAndCount[1]));
-//        }
-//
-//        // Add new processed pairs
-//        for (String pair : processedPairsArray) {
-//            String[] sizeAndCount = pair.split(":");
-//            totalPairs.put(sizeAndCount[0], totalPairs.getOrDefault(sizeAndCount[0], 0) + Integer.parseInt(sizeAndCount[1]));
-//        }
-//
-//        // Rebuild processed pairs as a string
-//        StringBuilder updatedPairs = new StringBuilder();
-//        int totalProcessedCount = 0;
-//        for (Map.Entry<String, Integer> entry : totalPairs.entrySet()) {
-//            if (updatedPairs.length() > 0) updatedPairs.append(",");
-//            updatedPairs.append(entry.getKey()).append(":").append(entry.getValue());
-//            totalProcessedCount += entry.getValue();
-//        }
-//
-//        plan.setMachineProcessedPairs(updatedPairs.toString());
-//
-//        // Check if the plan is complete
-//        int totalPlanCount = Arrays.stream(plan.getSizeQuantityPairs().split(","))
-//                .mapToInt(pair -> Integer.parseInt(pair.split(":")[1]))
-//                .sum();
-//
-//        if (totalProcessedCount >= totalPlanCount) {
-//            plan.setStatus(PlanStatus.Completed);
-//            plan.setMachineEndDate(LocalDateTime.now());
-//        }
-
-//        return planRepository.save(plan);
-//    }
-//
-//    private int calculateTotalProcessed(Plan plan, String processedPairs) {
-//        return Arrays.stream(processedPairs.split(","))
-//                .mapToInt(pair -> Integer.parseInt(pair.split(":")[1]))
-//                .sum();
-//    }
-//
-//    public Map<String, Integer> getActiveOrdersByState() {
-//        List<Object[]> results = planRepository.getActiveOrdersByState();
-//        Map<String, Integer> stateSummary = new HashMap<>();
-//        for (Object[] row : results) {
-//            stateSummary.put(row[0].toString(), ((Long) row[1]).intValue());
-//        }
-//        return stateSummary;
-//    }
+    public Plan updateFinalQuantity(String planNumber, int finalQuantity) {
+        Plan plan = planRepository.findByPlanNumber(planNumber);
+        if (plan == null) {
+            throw new IllegalArgumentException("Plan not found with number: " + planNumber);
+        }
+        
+        plan.setFinalQuantity(finalQuantity);
+        return planRepository.save(plan);
+    }
 }

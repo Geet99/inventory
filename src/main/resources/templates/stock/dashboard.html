@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Stock Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 5px; display: inline-block; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-info { background-color: #17a2b8; color: white; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+        .stat-card h3 { margin: 0 0 10px 0; color: #333; }
+        .stat-value { font-size: 2em; font-weight: bold; margin: 10px 0; }
+        .stat-value.upper { color: #17a2b8; }
+        .stat-value.finished { color: #28a745; }
+        .stock-section { margin-bottom: 30px; }
+        .stock-section h3 { border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .quantity-high { color: #28a745; font-weight: bold; }
+        .quantity-medium { color: #ffc107; font-weight: bold; }
+        .quantity-low { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div th:replace="fragments/header :: header"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h2>Stock Dashboard</h2>
+            <div>
+                <a th:href="@{/stock/upper}" class="btn btn-info">Upper Stock</a>
+                <a th:href="@{/stock/finished}" class="btn btn-success">Finished Stock</a>
+                <a th:href="@{/stock/movements}" class="btn btn-primary">Stock Movements</a>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Upper Stock Value</h3>
+                <div class="stat-value upper" th:text="${'₹' + #numbers.formatDecimal(totalUpperValue, 1, 2)}"></div>
+                <p>Total value of upper stock</p>
+            </div>
+            <div class="stat-card">
+                <h3>Finished Stock Value</h3>
+                <div class="stat-value finished" th:text="${'₹' + #numbers.formatDecimal(totalFinishedValue, 1, 2)}"></div>
+                <p>Total value of finished stock</p>
+            </div>
+            <div class="stat-card">
+                <h3>Upper Stock Items</h3>
+                <div class="stat-value upper" th:text="${upperStocks.size()}"></div>
+                <p>Different stock items</p>
+            </div>
+            <div class="stat-card">
+                <h3>Finished Stock Items</h3>
+                <div class="stat-value finished" th:text="${finishedStocks.size()}"></div>
+                <p>Different finished items</p>
+            </div>
+        </div>
+        
+        <div class="stock-section">
+            <h3>Upper Stock Summary</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th>Color</th>
+                        <th>Size</th>
+                        <th>Quantity</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="stock : ${upperStocks}">
+                        <td th:text="${stock.article.name}"></td>
+                        <td th:text="${stock.color}"></td>
+                        <td th:text="${stock.size}"></td>
+                        <td>
+                            <span th:class="${stock.quantity > 50 ? 'quantity-high' : (stock.quantity > 20 ? 'quantity-medium' : 'quantity-low')}"
+                                  th:text="${stock.quantity}"></span>
+                        </td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(stock.quantity * stock.article.slipperCost, 1, 2)}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="stock-section">
+            <h3>Finished Stock Summary</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th>Color</th>
+                        <th>Size</th>
+                        <th>Quantity</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="stock : ${finishedStocks}">
+                        <td th:text="${stock.article.name}"></td>
+                        <td th:text="${stock.color}"></td>
+                        <td th:text="${stock.size}"></td>
+                        <td>
+                            <span th:class="${stock.quantity > 50 ? 'quantity-high' : (stock.quantity > 20 ? 'quantity-medium' : 'quantity-low')}"
+                                  th:text="${stock.quantity}"></span>
+                        </td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(stock.quantity * stock.article.slipperCost, 1, 2)}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html> 

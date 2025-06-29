@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -19,61 +20,97 @@ public class VendorViewController {
     private VendorService vendorService;
 
     @GetMapping
-    public String listVendors(@RequestParam(name = "role", required = false) VendorRole role, Model model) {
-        List<Vendor> vendors = (role != null)
-                ? vendorService.getVendorsByRole(role)
-                : vendorService.getVendorsByRole(VendorRole.Cutting); // default view
-
+    public String listVendors(Model model) {
+        List<Vendor> vendors = vendorService.getAllVendors();
         model.addAttribute("vendors", vendors);
-        model.addAttribute("roles", VendorRole.values());
-        model.addAttribute("selectedRole", role != null ? role : VendorRole.Cutting);
         return "vendors/list";
     }
 
-    @GetMapping("/summary")
-    public String vendorSummary(Model model) {
-        Map<String, Object> summary = vendorService.getVendorSummary();
-        model.addAttribute("summary", summary);
-        return "vendors/summary";
+    @GetMapping("/new")
+    public String newVendorForm(Model model) {
+        model.addAttribute("vendor", new Vendor());
+        model.addAttribute("roles", VendorRole.values());
+        return "vendors/add";
     }
 
-    @GetMapping("/payments-due")
-    public String paymentsDue(Model model) {
-        Map<String, Double> payments = vendorService.getVendorPaymentsDue();
-        model.addAttribute("payments", payments);
-        return "vendors/payments-due";
+    @PostMapping("/add")
+    public String addVendor(@ModelAttribute Vendor vendor) {
+        vendorService.createVendor(vendor);
+        return "redirect:/vendors";
     }
 
-    @GetMapping("/edit/{id}")
-    public String editVendorForm(@PathVariable Long id, Model model) {
-        Vendor vendor = vendorService.getVendorById(id).orElseThrow(); // Make sure this method exists in service
+    @GetMapping("/{id}/edit")
+    public String editVendor(@PathVariable Long id, Model model) {
+        Vendor vendor = vendorService.getVendorById(id);
         model.addAttribute("vendor", vendor);
         model.addAttribute("roles", VendorRole.values());
         return "vendors/edit";
     }
 
-    @PostMapping("/add")
-    public String addVendor(@RequestParam String name,
-                            @RequestParam VendorRole role,
-                            Model model) {
-        Vendor vendor = new Vendor();
-        vendor.setName(name);
-        vendor.setRole(role);
-        vendorService.addVendor(vendor);
-        return "redirect:/vendors?role=" + role; // Refresh list after adding
-    }
-
-    @PostMapping("/payment")
-    public String recordPayment(@RequestParam Long vendorId,
-                                @RequestParam double payment,
-                                Model model) {
-        vendorService.recordVendorPayment(vendorId, payment);
+    @PostMapping("/{id}/update")
+    public String updateVendor(@PathVariable Long id, @ModelAttribute Vendor vendor) {
+        vendorService.updateVendor(id, vendor);
         return "redirect:/vendors";
     }
 
-    @PostMapping("/edit/{id}")
-    public String updateVendor(@PathVariable Long id, @ModelAttribute Vendor vendor) {
-        vendorService.updateVendor(id, vendor);
-        return "redirect:/vendors?role=" + vendor.getRole();
+    @PostMapping("/{id}/delete")
+    public String deleteVendor(@PathVariable Long id) {
+        vendorService.deleteVendor(id);
+        return "redirect:/vendors";
+    }
+
+    @GetMapping("/summary")
+    public String vendorSummary(Model model) {
+        Map<String, Object> summary = vendorService.getVendorPaymentSummary();
+        model.addAttribute("summary", summary);
+        return "vendors/summary";
+    }
+
+    @GetMapping("/{id}/details")
+    public String vendorDetails(@PathVariable Long id, Model model) {
+        Map<String, Object> details = vendorService.getVendorDetailedSummary(id);
+        if (details == null) {
+            return "redirect:/vendors";
+        }
+        model.addAttribute("details", details);
+        return "vendors/details";
+    }
+
+    @GetMapping("/{id}/payment")
+    public String vendorPaymentForm(@PathVariable Long id, Model model) {
+        Vendor vendor = vendorService.getVendorById(id);
+        model.addAttribute("vendor", vendor);
+        return "vendors/payment";
+    }
+
+    @PostMapping("/{id}/payment")
+    public String recordPayment(@PathVariable Long id, 
+                               @RequestParam double amount,
+                               @RequestParam String planNumber) {
+        vendorService.recordVendorPayment(id, amount, planNumber);
+        return "redirect:/vendors/" + id + "/details";
+    }
+
+    @GetMapping("/report")
+    public String vendorReport(Model model,
+                              @RequestParam(required = false) String startDate,
+                              @RequestParam(required = false) String endDate) {
+        LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusDays(30);
+        LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+        
+        List<Map<String, Object>> report = vendorService.getVendorPaymentReport(start, end);
+        model.addAttribute("report", report);
+        model.addAttribute("startDate", start);
+        model.addAttribute("endDate", end);
+        
+        return "vendors/report";
+    }
+
+    @GetMapping("/by-role/{role}")
+    public String vendorsByRole(@PathVariable VendorRole role, Model model) {
+        List<Vendor> vendors = vendorService.getVendorsByRole(role);
+        model.addAttribute("vendors", vendors);
+        model.addAttribute("role", role);
+        return "vendors/by-role";
     }
 }

@@ -1,13 +1,101 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Create New Plan</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn { padding: 12px 24px; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; margin: 5px; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .row { display: flex; gap: 20px; }
+        .col { flex: 1; }
+        .help-text { font-size: 12px; color: #666; margin-top: 5px; }
+    </style>
+</head>
 <body>
-<div th:replace="fragments/header :: header"></div>
-<h2>Create New Plan</h2>
-<form th:action="@{/plans/add}" th:object="${plan}" method="post">
-    Plan Number: <input type="text" th:field="*{planNumber}" /><br/>
-    Total Quantity: <input type="number" th:field="*{total}" /><br/>
-    <!-- Add other fields like sizeQuantityMap etc. -->
-    <button type="submit">Save</button>
-</form>
+    <div th:replace="fragments/header :: header"></div>
+    
+    <div class="container">
+        <h2>Create New Plan</h2>
+        
+        <form th:action="@{/plans/add}" th:object="${plan}" method="post">
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="planNumber">Plan Number *</label>
+                        <input type="text" id="planNumber" th:field="*{planNumber}" required>
+                        <div class="help-text">Unique identifier for the plan (e.g., PLAN-2024-001)</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="articleName">Article *</label>
+                        <select id="articleName" th:field="*{articleName}" required>
+                            <option value="">Select Article</option>
+                            <option th:each="article : ${articles}" 
+                                    th:value="${article.name}" 
+                                    th:text="${article.name}"></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="color">Color *</label>
+                        <input type="text" id="color" th:field="*{color}" required>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="total">Total Quantity *</label>
+                        <input type="number" id="total" th:field="*{total}" required min="1">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="sizeQuantityPairs">Size:Quantity Pairs *</label>
+                <textarea id="sizeQuantityPairs" th:field="*{sizeQuantityPairs}" rows="3" required 
+                          placeholder="Format: 38:50, 39:30, 40:20"></textarea>
+                <div class="help-text">Enter size:quantity pairs separated by commas (e.g., 38:50, 39:30, 40:20)</div>
+            </div>
+            
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="cuttingType">Cutting Type</label>
+                        <select id="cuttingType" th:field="*{cuttingType}">
+                            <option value="">Select Cutting Type</option>
+                            <option th:each="type : ${cuttingTypes}" 
+                                    th:value="${type}" 
+                                    th:text="${type}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="printingType">Printing Type</label>
+                        <select id="printingType" th:field="*{printingType}">
+                            <option value="">Select Printing Type</option>
+                            <option th:each="type : ${printingTypes}" 
+                                    th:value="${type}" 
+                                    th:text="${type}"></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Create Plan</button>
+                <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

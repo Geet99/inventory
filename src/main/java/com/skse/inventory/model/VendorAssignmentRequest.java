@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class VendorAssignmentRequest {
     private VendorRole role;
-    private String vendorId;
+    private Vendor vendor;
 
     public VendorRole getRole() {
         return role;
@@ -15,11 +15,11 @@ public class VendorAssignmentRequest {
         this.role = role;
     }
 
-    public String getVendorId() {
-        return vendorId;
+    public Vendor getVendor() {
+        return vendor;
     }
 
-    public void setVendorId(String vendorId) {
-        this.vendorId = vendorId;
+    public void setVendor(Vendor vendor) {
+        this.vendor = vendor;
     }
 }
