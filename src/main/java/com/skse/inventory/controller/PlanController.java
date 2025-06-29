@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -30,6 +31,23 @@ public class PlanController {
         return ResponseEntity.ok(createdPlan);
     }
 
+    @Operation(summary = "Get all plans", description = "Retrieves all plans in the system.")
+    @GetMapping
+    public ResponseEntity<List<Plan>> getAllPlans() {
+        List<Plan> plans = planService.getAllPlans();
+        return ResponseEntity.ok(plans);
+    }
+
+    @Operation(summary = "Get plan by number", description = "Retrieves a specific plan by its plan number.")
+    @GetMapping("/{planNumber}")
+    public ResponseEntity<Plan> getPlanByNumber(@PathVariable String planNumber) {
+        Plan plan = planService.getPlanByNumber(planNumber);
+        if (plan == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(plan);
+    }
+
     @Operation(summary = "Assign vendor to a Plan", description = "Assigns cutting, printing, or stitching vendor to the plan.")
     @PostMapping("/{planNumber}/assign-vendor")
     public ResponseEntity<String> assignVendorsToPlan(
@@ -43,6 +61,24 @@ public class PlanController {
     @PutMapping("/{planNumber}/update")
     public ResponseEntity<Plan> updatePlan(@PathVariable String planNumber, @RequestBody Plan updatedPlan) {
         Plan plan = planService.updatePlan(planNumber, updatedPlan);
+        return ResponseEntity.ok(plan);
+    }
+
+    @Operation(summary = "Update final quantity", description = "Updates the final quantity produced for a plan.")
+    @PutMapping("/{planNumber}/final-quantity")
+    public ResponseEntity<Plan> updateFinalQuantity(
+            @PathVariable String planNumber,
+            @RequestParam int finalQuantity) {
+        Plan plan = planService.updateFinalQuantity(planNumber, finalQuantity);
+        return ResponseEntity.ok(plan);
+    }
+
+    @Operation(summary = "Send plan to machine", description = "Sends a completed plan to machine processing.")
+    @PostMapping("/{planNumber}/send-to-machine")
+    public ResponseEntity<Plan> sendToMachine(
+            @PathVariable String planNumber,
+            @RequestParam int finalQuantity) {
+        Plan plan = planService.sendToMachine(planNumber, finalQuantity);
         return ResponseEntity.ok(plan);
     }
 

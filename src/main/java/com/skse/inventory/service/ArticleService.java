@@ -25,14 +25,20 @@ public class ArticleService {
     @Autowired
     private FinishedStockRepository finishedStockRepository;
 
-    // Add a new article
-    public Article addArticle(Article article) {
+    // Create a new article
+    public Article createArticle(Article article) {
         return articleRepository.save(article);
     }
 
     // Get all articles
     public List<Article> getAllArticles() {
         return articleRepository.findAll();
+    }
+
+    // Get article by ID
+    public Article getArticleById(Long id) {
+        Optional<Article> article = articleRepository.findById(id);
+        return article.orElse(null);
     }
 
     // Get article by Name
@@ -55,8 +61,13 @@ public class ArticleService {
 
             return articleRepository.save(existingArticle);
         } else {
-            throw new RuntimeException("Article not found with ID: " + id);
+            return null;
         }
+    }
+
+    // Delete an article
+    public void deleteArticle(Long id) {
+        articleRepository.deleteById(id);
     }
 
     public void updateUpperStockAfterCompletion(Plan plan) {
@@ -71,9 +82,5 @@ public class ArticleService {
             stock.setQuantity(stock.getQuantity() + quantity);
             upperStockRepository.save(stock);
         }
-    }
-
-    public Optional<Article> getArticleById(Long id)  {
-        return articleRepository.findById(id);
     }
 }
