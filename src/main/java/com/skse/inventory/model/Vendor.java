@@ -72,6 +72,10 @@ public class Vendor {
         isActive = active;
     }
 
+    public boolean getActive() {
+        return isActive;
+    }
+
     public double getPaymentDue() {
         return paymentDue;
     }

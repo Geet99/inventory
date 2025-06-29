@@ -235,8 +235,19 @@
                             <div class="actions">
                                 <a th:href="@{/plans/{planNumber}/edit(planNumber=${plan.planNumber})}" class="btn btn-warning">Edit</a>
                                 <a th:href="@{/plans/{planNumber}/assign-vendor(planNumber=${plan.planNumber})}" class="btn btn-info">Assign Vendor</a>
-                                <a th:href="@{/plans/{planNumber}/send-to-machine(planNumber=${plan.planNumber})}" class="btn btn-primary">Send to Machine</a>
+                                <form th:action="@{/plans/{planNumber}/move-to-next(planNumber=${plan.planNumber})}" method="post" style="display:inline">
+                                    <button type="submit" class="btn btn-primary" 
+                                            th:disabled="${plan.status == T(com.skse.inventory.model.PlanStatus).COMPLETED}">
+                                        Next State
+                                    </button>
+                                </form>
                                 <a th:href="@{/plans/{planNumber}/final-quantity(planNumber=${plan.planNumber})}" class="btn btn-success">Final Quantity</a>
+                                <form th:action="@{/plans/{planNumber}/send-to-machine(planNumber=${plan.planNumber})}" method="post" style="display:inline">
+                                    <button type="submit" class="btn btn-danger" 
+                                            th:disabled="${plan.status != T(com.skse.inventory.model.PlanStatus).COMPLETED}">
+                                        Send to Machine
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
