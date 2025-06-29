@@ -140,7 +140,7 @@
                 <h2 class="card-title">Add New Article</h2>
             </div>
             
-            <form th:action="@{/articles/add}" th:object="${article}" method="post" style="padding: 20px;">
+            <form th:action="@{/articles}" th:object="${article}" method="post" style="padding: 20px;">
                 <div class="form-group">
                     <label for="name">Article Name:</label>
                     <input type="text" id="name" th:field="*{name}" required>
