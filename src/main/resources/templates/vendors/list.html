@@ -1,47 +1,104 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Vendors</title>
+    <title>Vendor Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 5px; display: inline-block; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-info { background-color: #17a2b8; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .role-cutting { color: #17a2b8; font-weight: bold; }
+        .role-printing { color: #28a745; font-weight: bold; }
+        .role-stitching { color: #fd7e14; font-weight: bold; }
+        .status-active { color: #28a745; font-weight: bold; }
+        .status-inactive { color: #dc3545; font-weight: bold; }
+        .payment-high { color: #dc3545; font-weight: bold; }
+        .payment-medium { color: #ffc107; font-weight: bold; }
+        .payment-low { color: #28a745; font-weight: bold; }
+        .actions { display: flex; gap: 5px; flex-wrap: wrap; }
+        .filter-section { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .filter-section h3 { margin-top: 0; }
+        .filter-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+    </style>
 </head>
 <body>
-<div th:replace="fragments/header :: header"></div>
-
-<div>
-    <a th:href="@{/vendors/add}">Add New Vendor</a> |
-    <a th:href="@{/vendors/payment}">Record Payment</a>
-</div>
-
-<h2>Vendors</h2>
-<div>
-    <form method="get" th:action="@{/vendors}">
-        <label for="role">Filter by Role:</label>
-        <select id="role" name="role">
-            <option value="">All</option>
-            <option th:each="r : ${T(com.skse.inventory.model.VendorRole).values()}"
-                    th:value="${r}" th:text="${r}"
-                    th:selected="${r} == ${role}"></option>
-        </select>
-        <button type="submit">Filter</button>
-    </form>
-</div>
-<table border="1">
-    <thead>
-    <tr><th>Id</th><th>Name</th><th>Role</th><th>Contact</th><th>Address</th><th>Payment Due</th>><th>Actions</th></tr>
-    </thead>
-    <tbody>
-    <tr th:each="vendor : ${vendors}">
-        <td th:text="${vendor.id}">Id</td>
-        <td th:text="${vendor.name}">Name</td>
-        <td th:text="${vendor.role}">Role</td>
-        <td th:text="${vendor.contactInfo}">Contact</td>
-        <td th:text="${vendor.address}">Address</td>
-        <td th:text="${vendor.paymentDue}">Payment Due</td>
-        <td>
-            <a th:href="@{'/vendors/edit/' + ${vendor.id}}">Edit</a>
-        </td>
-    </tr>
-    </tbody>
-</table>
-<th:block th:replace="~{fragments/footer :: footer}" />
+    <div th:replace="fragments/header :: header"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h2>Vendor Management</h2>
+            <div>
+                <a th:href="@{/vendors/summary}" class="btn btn-info">Payment Summary</a>
+                <a th:href="@{/vendors/report}" class="btn btn-primary">Payment Report</a>
+                <a th:href="@{/vendors/new}" class="btn btn-success">Add New Vendor</a>
+            </div>
+        </div>
+        
+        <div class="filter-section">
+            <h3>Filter by Role</h3>
+            <div class="filter-buttons">
+                <a th:href="@{/vendors}" class="btn btn-primary">All Vendors</a>
+                <a th:href="@{/vendors/by-role/Cutting}" class="btn btn-info">Cutting</a>
+                <a th:href="@{/vendors/by-role/Printing}" class="btn btn-success">Printing</a>
+                <a th:href="@{/vendors/by-role/Stitching}" class="btn btn-warning">Stitching</a>
+            </div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Contact Info</th>
+                    <th>Address</th>
+                    <th>Status</th>
+                    <th>Payment Due</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="vendor : ${vendors}">
+                    <td th:text="${vendor.name}"></td>
+                    <td>
+                        <span th:class="${'role-' + #strings.toLowerCase(vendor.role)}" 
+                              th:text="${vendor.role}"></span>
+                    </td>
+                    <td th:text="${vendor.contactInfo}"></td>
+                    <td th:text="${vendor.address}"></td>
+                    <td>
+                        <span th:class="${vendor.active ? 'status-active' : 'status-inactive'}" 
+                              th:text="${vendor.active ? 'Active' : 'Inactive'}"></span>
+                    </td>
+                    <td>
+                        <span th:class="${vendor.paymentDue > 10000 ? 'payment-high' : (vendor.paymentDue > 5000 ? 'payment-medium' : 'payment-low')}"
+                              th:text="${'₹' + #numbers.formatDecimal(vendor.paymentDue, 1, 2)}"></span>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a th:href="@{'/vendors/' + ${vendor.id} + '/details'}" class="btn btn-info">Details</a>
+                            <a th:href="@{'/vendors/' + ${vendor.id} + '/edit'}" class="btn btn-warning">Edit</a>
+                            <a th:href="@{'/vendors/' + ${vendor.id} + '/payment'}" class="btn btn-primary">Record Payment</a>
+                            <form th:action="@{'/vendors/' + ${vendor.id} + '/delete'}" method="post" style="display:inline">
+                                <button type="submit" class="btn btn-danger" 
+                                        onclick="return confirm('Are you sure you want to delete this vendor?')">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div th:if="${#lists.isEmpty(vendors)}" style="text-align: center; margin-top: 50px; color: #666;">
+            <p>No vendors found. <a th:href="@{/vendors/new}">Add your first vendor</a></p>
+        </div>
+    </div>
 </body>
 </html>

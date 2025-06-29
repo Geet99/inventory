@@ -16,4 +16,8 @@ public interface VendorOrderHistoryRepository extends JpaRepository<VendorOrderH
     List<VendorOrderHistory> findByVendorIdAndOrderDateGreaterThanEqual(Long vendorId, LocalDate startDate);
     
     List<VendorOrderHistory> findByOrderDateBetween(LocalDate startDate, LocalDate endDate);
+    
+    List<VendorOrderHistory> findByVendorIdAndType(Long vendorId, String type);
+    
+    List<VendorOrderHistory> findByVendorIdAndTypeOrderByOrderDateDesc(Long vendorId, String type);
 }

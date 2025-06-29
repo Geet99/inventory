@@ -1,20 +1,85 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Record Payment</title>
+    <title>Record Vendor Payment</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn { padding: 12px 24px; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; margin: 5px; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .vendor-info { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .vendor-info h3 { margin-top: 0; }
+        .payment-warning { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .payment-warning h4 { margin-top: 0; color: #856404; }
+    </style>
 </head>
 <body>
-<div th:replace="fragments/header :: header"></div>
-
-<h2>Record Vendor Payment</h2>
-<form th:action="@{/vendors/payment}" method="post">
-    <label for="vendorId">Vendor ID:</label>
-    <input type="number" id="vendorId" name="vendorId" required/><br/>
-
-    <label for="payment">Payment Amount:</label>
-    <input type="number" id="payment" name="payment" step="0.01" required/><br/>
-
-    <button type="submit">Record Payment</button>
-</form>
+    <div th:replace="fragments/header :: header"></div>
+    
+    <div class="container">
+        <h2>Record Vendor Payment</h2>
+        
+        <div class="vendor-info">
+            <h3>Vendor Information</h3>
+            <p><strong>Name:</strong> <span th:text="${vendor.name}"></span></p>
+            <p><strong>Role:</strong> <span th:text="${vendor.role}"></span></p>
+            <p><strong>Contact:</strong> <span th:text="${vendor.contactInfo}"></span></p>
+            <p><strong>Current Payment Due:</strong> 
+                <span style="font-weight: bold; color: #dc3545;" 
+                      th:text="${'₹' + #numbers.formatDecimal(vendor.paymentDue, 1, 2)}"></span>
+            </p>
+        </div>
+        
+        <div class="payment-warning">
+            <h4>Payment Information</h4>
+            <p>This will reduce the vendor's payment due amount and record the payment in the system.</p>
+        </div>
+        
+        <form th:action="@{'/vendors/' + ${vendor.id} + '/payment'}" method="post">
+            <div class="form-group">
+                <label for="amount">Payment Amount *</label>
+                <input type="number" id="amount" name="amount" 
+                       th:max="${vendor.paymentDue}" step="0.01" required>
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                    Maximum payment amount: ₹<span th:text="${#numbers.formatDecimal(vendor.paymentDue, 1, 2)}"></span>
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <label for="planNumber">Plan Number (Optional)</label>
+                <input type="text" id="planNumber" name="planNumber" 
+                       placeholder="Reference plan number if applicable">
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                    Enter the plan number if this payment is for a specific plan
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary" 
+                        onclick="return confirm('Are you sure you want to record this payment?')">
+                    Record Payment
+                </button>
+                <a th:href="@{/vendors}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        // Validate payment amount
+        document.getElementById('amount').addEventListener('input', function() {
+            const amount = parseFloat(this.value);
+            const maxAmount = parseFloat(this.getAttribute('max'));
+            
+            if (amount > maxAmount) {
+                this.setCustomValidity('Payment amount cannot exceed the payment due amount');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
 </body>
 </html>

@@ -17,8 +17,16 @@ public class VendorOrderHistory {
     private Vendor vendor;
 
     private String planNumber; // Reference to Plan
-    private LocalDate orderDate;
-    private double paymentAmount;
+    
+    @Enumerated(EnumType.STRING)
+    private VendorRole role; // Role of the vendor for this order
+    
+    private String type; // "ORDER" or "PAYMENT"
+    
+    private LocalDate orderDate; // Date when order was placed
+    private LocalDate paymentDate; // Date when payment was made
+    
+    private double amount; // Amount for order or payment
 
     public Long getId() {
         return id;
@@ -44,6 +52,22 @@ public class VendorOrderHistory {
         this.planNumber = planNumber;
     }
 
+    public VendorRole getRole() {
+        return role;
+    }
+
+    public void setRole(VendorRole role) {
+        this.role = role;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
     public LocalDate getOrderDate() {
         return orderDate;
     }
@@ -52,11 +76,19 @@ public class VendorOrderHistory {
         this.orderDate = orderDate;
     }
 
-    public double getPaymentAmount() {
-        return paymentAmount;
+    public LocalDate getPaymentDate() {
+        return paymentDate;
     }
 
-    public void setPaymentAmount(double paymentAmount) {
-        this.paymentAmount = paymentAmount;
+    public void setPaymentDate(LocalDate paymentDate) {
+        this.paymentDate = paymentDate;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(double amount) {
+        this.amount = amount;
     }
 }

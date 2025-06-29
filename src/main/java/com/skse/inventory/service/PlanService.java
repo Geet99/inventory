@@ -30,6 +30,9 @@ public class PlanService {
     
     @Autowired
     private StockMovementRepository stockMovementRepository;
+    
+    @Autowired
+    private VendorService vendorService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -77,7 +80,12 @@ public class PlanService {
                 break;
             case Pending_Printing:
                 plan.setCuttingEndDate(LocalDate.now());
-                plan.setCuttingVendorPaymentDue(calculatePayment(plan, VendorRole.Cutting));
+                // Record vendor order for cutting
+                if (plan.getCuttingVendor() != null) {
+                    double cuttingPayment = calculatePayment(plan, VendorRole.Cutting);
+                    plan.setCuttingVendorPaymentDue(cuttingPayment);
+                    vendorService.recordVendorOrder(plan.getCuttingVendor().getId(), planNumber, cuttingPayment, VendorRole.Cutting);
+                }
                 updateUpperStockFromPlan(plan);
                 break;
             case Printing:
@@ -85,14 +93,24 @@ public class PlanService {
                 break;
             case Pending_Stitching:
                 plan.setPrintingEndDate(LocalDate.now());
-                plan.setPrintingVendorPaymentDue(calculatePayment(plan, VendorRole.Printing));
+                // Record vendor order for printing
+                if (plan.getPrintingVendor() != null) {
+                    double printingPayment = calculatePayment(plan, VendorRole.Printing);
+                    plan.setPrintingVendorPaymentDue(printingPayment);
+                    vendorService.recordVendorOrder(plan.getPrintingVendor().getId(), planNumber, printingPayment, VendorRole.Printing);
+                }
                 break;
             case Stitching:
                 plan.setStitchingStartDate(LocalDate.now());
                 break;
             case Completed:
                 plan.setStitchingEndDate(LocalDate.now());
-                plan.setStitchingVendorPaymentDue(calculatePayment(plan, VendorRole.Stitching));
+                // Record vendor order for stitching
+                if (plan.getStitchingVendor() != null) {
+                    double stitchingPayment = calculatePayment(plan, VendorRole.Stitching);
+                    plan.setStitchingVendorPaymentDue(stitchingPayment);
+                    vendorService.recordVendorOrder(plan.getStitchingVendor().getId(), planNumber, stitchingPayment, VendorRole.Stitching);
+                }
                 break;
         }
 

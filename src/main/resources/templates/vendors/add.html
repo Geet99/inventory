@@ -1,24 +1,69 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Add Vendor</title>
+    <title>Add New Vendor</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn { padding: 12px 24px; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; margin: 5px; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+    </style>
 </head>
 <body>
-<div th:replace="fragments/header :: header"></div>
-
-<h2>Add New Vendor</h2>
-<form th:action="@{/vendors/add}" method="post">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" required/><br/>
-
-    <label for="role">Role:</label>
-    <select id="role" name="role" required>
-        <option value="CUTTING">Cutting</option>
-        <option value="PRINTING">Printing</option>
-        <option value="STITCHING">Stitching</option>
-    </select><br/>
-
-    <button type="submit">Add Vendor</button>
-</form>
+    <div th:replace="fragments/header :: header"></div>
+    
+    <div class="container">
+        <h2>Add New Vendor</h2>
+        
+        <form th:action="@{/vendors/add}" th:object="${vendor}" method="post">
+            <div class="form-group">
+                <label for="name">Vendor Name *</label>
+                <input type="text" id="name" th:field="*{name}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="role">Vendor Role *</label>
+                <select id="role" th:field="*{role}" required>
+                    <option value="">Select Role</option>
+                    <option th:each="role : ${roles}" 
+                            th:value="${role}" 
+                            th:text="${role}"></option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="contactInfo">Contact Information *</label>
+                <input type="text" id="contactInfo" th:field="*{contactInfo}" 
+                       placeholder="Phone number or email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="address">Address</label>
+                <textarea id="address" th:field="*{address}" rows="3" 
+                          placeholder="Vendor's address"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="isActive" th:field="*{isActive}">
+                    <label for="isActive">Active Vendor</label>
+                </div>
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                    Check this if the vendor is currently active and accepting orders
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Add Vendor</button>
+                <a th:href="@{/vendors}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>
