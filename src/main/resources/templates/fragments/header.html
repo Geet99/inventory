@@ -4,8 +4,6 @@
 <head th:fragment="head">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <title th:text="${title} ? ${title} + ' - SKSE Inventory' : 'SKSE Inventory Management System'">SKSE Inventory</title>
 </head>
@@ -17,40 +15,13 @@
     </div>
     <nav class="nav">
         <div class="nav-container">
-            <!-- Home -->
-            <a th:href="@{/}" 
-               th:class="${#httpServletRequest.requestURI == '/' ? 'active' : ''}"
-               th:title="Home Dashboard">🏠 Home</a>
-            
-            <!-- Plans -->
-            <a th:href="@{/plans}" 
-               th:class="${#httpServletRequest.requestURI.startsWith('/plans') ? 'active' : ''}"
-               th:title="Production Plans">📋 Plans</a>
-            
-            <!-- Stock -->
-            <a th:href="@{/stock}" 
-               th:class="${#httpServletRequest.requestURI.startsWith('/stock') ? 'active' : ''}"
-               th:title="Stock Management">📦 Stock</a>
-            
-            <!-- Vendors -->
-            <a th:href="@{/vendors}" 
-               th:class="${#httpServletRequest.requestURI.startsWith('/vendors') and !#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}"
-               th:title="Vendor Management">👥 Vendors</a>
-            
-            <!-- Payments -->
-            <a th:href="@{/vendors/summary}" 
-               th:class="${#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}"
-               th:title="Payment Summary">💰 Payments</a>
-            
-            <!-- Articles -->
-            <a th:href="@{/articles}" 
-               th:class="${#httpServletRequest.requestURI.startsWith('/articles') ? 'active' : ''}"
-               th:title="Article Management">👟 Articles</a>
-            
-            <!-- Colors -->
-            <a th:href="@{/colors}" 
-               th:class="${#httpServletRequest.requestURI.startsWith('/colors') ? 'active' : ''}"
-               th:title="Color Management">🎨 Colors</a>
+            <a th:href="@{/}" th:class="${#httpServletRequest.requestURI == '/' ? 'active' : ''}">🏠 Home</a>
+            <a th:href="@{/plans}" th:class="${#httpServletRequest.requestURI.startsWith('/plans') ? 'active' : ''}">📋 Plans</a>
+            <a th:href="@{/stock}" th:class="${#httpServletRequest.requestURI.startsWith('/stock') ? 'active' : ''}">📦 Stock</a>
+            <a th:href="@{/vendors}" th:class="${#httpServletRequest.requestURI.startsWith('/vendors') and !#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}" th:class="${#httpServletRequest.requestURI.startsWith('/vendors/summary') ? 'active' : ''}">💰 Payments</a>
+            <a th:href="@{/articles}" th:class="${#httpServletRequest.requestURI.startsWith('/articles') ? 'active' : ''}">👟 Articles</a>
+            <a th:href="@{/colors}" th:class="${#httpServletRequest.requestURI.startsWith('/colors') ? 'active' : ''}">🎨 Colors</a>
         </div>
     </nav>
 </header>
