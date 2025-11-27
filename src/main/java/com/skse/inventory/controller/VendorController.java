@@ -34,7 +34,7 @@ public class VendorController {
             description = "Updates the details of a vendor using their ID.")
     @PutMapping("/{id}")
     public Vendor updateVendor(@PathVariable Long id, @RequestBody Vendor vendor) {
-        return vendorService.updateVendor(id, vendor);
+        return vendorService.updateVendor(id, vendor.getName(), vendor.getRole(), vendor.isActive());
     }
 
     @Operation(summary = "Get vendor by ID",

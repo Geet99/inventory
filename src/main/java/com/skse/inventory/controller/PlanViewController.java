@@ -5,6 +5,7 @@ import com.skse.inventory.service.PlanService;
 import com.skse.inventory.service.VendorService;
 import com.skse.inventory.service.ArticleService;
 import com.skse.inventory.service.ColorService;
+import com.skse.inventory.service.RateHeadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,6 +29,9 @@ public class PlanViewController {
     
     @Autowired
     private ColorService colorService;
+    
+    @Autowired
+    private RateHeadService rateHeadService;
 
     @GetMapping
     public String listPlans(Model model) {
@@ -45,7 +49,7 @@ public class PlanViewController {
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         model.addAttribute("cuttingTypes", CuttingType.values());
-        model.addAttribute("printingTypes", PrintingType.values());
+        model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
         return "plans/new";
     }
 
@@ -63,7 +67,7 @@ public class PlanViewController {
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         model.addAttribute("cuttingTypes", CuttingType.values());
-        model.addAttribute("printingTypes", PrintingType.values());
+        model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
         return "plans/edit";
     }
 
@@ -91,34 +95,16 @@ public class PlanViewController {
 
     @PostMapping("/{planNumber}/assign-vendor")
     public String assignVendor(@PathVariable String planNumber,
-                               @RequestParam VendorRole role,
-                               @RequestParam Long vendorId) {
-        Vendor vendor = vendorService.getVendorById(vendorId);
-        VendorAssignmentRequest request = new VendorAssignmentRequest();
-        request.setRole(role);
-        request.setVendor(vendor);
-        planService.assignVendorToPlan(planNumber, request);
+                               @RequestParam(required = false) Long cuttingVendorId,
+                               @RequestParam(required = false) Long printingVendorId,
+                               @RequestParam(required = false) Long stitchingVendorId) {
+        planService.assignVendorsToPlan(planNumber, cuttingVendorId, printingVendorId, stitchingVendorId);
         return "redirect:/plans";
     }
 
     @PostMapping("/{planNumber}/move-to-next")
     public String moveToNextState(@PathVariable String planNumber) {
         planService.moveToNextState(planNumber);
-        return "redirect:/plans";
-    }
-    
-    @GetMapping("/{planNumber}/final-quantity")
-    public String finalQuantityForm(@PathVariable String planNumber, Model model) {
-        Plan plan = planService.getPlanByNumber(planNumber);
-        model.addAttribute("title", "Update Final Quantity");
-        model.addAttribute("plan", plan);
-        return "plans/final-quantity";
-    }
-    
-    @PostMapping("/{planNumber}/final-quantity")
-    public String updateFinalQuantity(@PathVariable String planNumber, 
-                                     @RequestParam int finalQuantity) {
-        planService.updateFinalQuantity(planNumber, finalQuantity);
         return "redirect:/plans";
     }
     
@@ -134,9 +120,8 @@ public class PlanViewController {
     }
     
     @PostMapping("/{planNumber}/send-to-machine")
-    public String sendToMachine(@PathVariable String planNumber, 
-                               @RequestParam int finalQuantity) {
-        planService.sendToMachine(planNumber, finalQuantity);
+    public String sendToMachine(@PathVariable String planNumber) {
+        planService.sendToMachine(planNumber);
         return "redirect:/plans";
     }
     

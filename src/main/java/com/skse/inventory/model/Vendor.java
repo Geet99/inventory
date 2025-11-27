@@ -15,10 +15,7 @@ public class Vendor {
 
     @Enumerated(EnumType.STRING)
     private VendorRole role;
-
-    private String contactInfo;
-    private String address;
-    private boolean isActive;
+    private boolean isActive = true;
     private double paymentDue;
 
     @OneToMany(mappedBy = "vendor", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -46,22 +43,6 @@ public class Vendor {
 
     public void setRole(VendorRole role) {
         this.role = role;
-    }
-
-    public String getContactInfo() {
-        return contactInfo;
-    }
-
-    public void setContactInfo(String contactInfo) {
-        this.contactInfo = contactInfo;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
     }
 
     public boolean isActive() {

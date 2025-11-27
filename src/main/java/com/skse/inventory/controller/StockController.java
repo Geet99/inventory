@@ -3,6 +3,7 @@ package com.skse.inventory.controller;
 import com.skse.inventory.model.*;
 import com.skse.inventory.service.StockService;
 import com.skse.inventory.service.ArticleService;
+import com.skse.inventory.service.ColorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,9 @@ public class StockController {
     
     @Autowired
     private ArticleService articleService;
+    
+    @Autowired
+    private ColorService colorService;
 
     @GetMapping
     public String stockDashboard(Model model) {
@@ -160,5 +164,60 @@ public class StockController {
         summary.put("finishedStockCount", stockService.getAllFinishedStock().size());
         
         return ResponseEntity.ok(summary);
+    }
+    
+    @GetMapping("/move-to-finished")
+    public String showMoveToFinishedForm(Model model) {
+        model.addAttribute("upperStock", stockService.getAllUpperStock());
+        model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("colors", colorService.getAllColors());
+        return "stock/move-to-finished";
+    }
+    
+    @PostMapping("/move-to-finished")
+    public String moveToFinished(@RequestParam String articleName,
+                                 @RequestParam String sizeQuantityPairs,
+                                 @RequestParam String color,
+                                 Model model) {
+        try {
+            Article article = articleService.getArticleByName(articleName);
+            if (article == null) {
+                model.addAttribute("error", "Article not found");
+                model.addAttribute("upperStock", stockService.getAllUpperStock());
+                model.addAttribute("articles", articleService.getAllArticles());
+                model.addAttribute("colors", colorService.getAllColors());
+                return "stock/move-to-finished";
+            }
+            
+            // Parse size:quantity pairs (e.g., "6:50, 7:30, 8:20")
+            String[] pairs = sizeQuantityPairs.split(",");
+            int totalMoved = 0;
+            
+            for (String pair : pairs) {
+                String[] parts = pair.trim().split(":");
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException("Invalid format. Use size:quantity (e.g., 6:50, 7:30)");
+                }
+                
+                String size = parts[0].trim();
+                int quantity = Integer.parseInt(parts[1].trim());
+                
+                stockService.moveFromUpperToFinished(article, size, color, quantity);
+                totalMoved += quantity;
+            }
+            
+            model.addAttribute("success", 
+                String.format("Successfully moved %d units of %s (%s) to finished stock", 
+                    totalMoved, articleName, color));
+        } catch (NumberFormatException e) {
+            model.addAttribute("error", "Invalid quantity format. Please use numbers only.");
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to move stock: " + e.getMessage());
+        }
+        
+        model.addAttribute("upperStock", stockService.getAllUpperStock());
+        model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("colors", colorService.getAllColors());
+        return "stock/move-to-finished";
     }
 }

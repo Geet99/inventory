@@ -6,6 +6,7 @@ import com.skse.inventory.model.*;
 import com.skse.inventory.repository.ArticleRepository;
 import com.skse.inventory.repository.PlanRepository;
 import com.skse.inventory.repository.UpperStockRepository;
+import com.skse.inventory.repository.FinishedStockRepository;
 import com.skse.inventory.repository.StockMovementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,9 @@ public class PlanService {
 
     @Autowired
     private UpperStockRepository upperStockRepository;
+    
+    @Autowired
+    private FinishedStockRepository finishedStockRepository;
     
     @Autowired
     private StockMovementRepository stockMovementRepository;
@@ -80,11 +84,18 @@ public class PlanService {
                 break;
             case Pending_Printing:
                 plan.setCuttingEndDate(LocalDate.now());
-                // Record vendor order for cutting
+                // Record vendor order for cutting - using COMPLETION DATE
                 if (plan.getCuttingVendor() != null) {
                     double cuttingPayment = calculatePayment(plan, VendorRole.Cutting);
                     plan.setCuttingVendorPaymentDue(cuttingPayment);
-                    vendorService.recordVendorOrder(plan.getCuttingVendor().getId(), planNumber, cuttingPayment, VendorRole.Cutting);
+                    // Use the cutting END date for monthly accounting
+                    vendorService.recordVendorOrderToMonth(
+                        plan.getCuttingVendor().getId(), 
+                        planNumber, 
+                        cuttingPayment, 
+                        VendorRole.Cutting,
+                        plan.getCuttingEndDate() // Completion date
+                    );
                 }
                 updateUpperStockFromPlan(plan);
                 break;
@@ -93,11 +104,18 @@ public class PlanService {
                 break;
             case Pending_Stitching:
                 plan.setPrintingEndDate(LocalDate.now());
-                // Record vendor order for printing
+                // Record vendor order for printing - using COMPLETION DATE
                 if (plan.getPrintingVendor() != null) {
                     double printingPayment = calculatePayment(plan, VendorRole.Printing);
                     plan.setPrintingVendorPaymentDue(printingPayment);
-                    vendorService.recordVendorOrder(plan.getPrintingVendor().getId(), planNumber, printingPayment, VendorRole.Printing);
+                    // Use the printing END date for monthly accounting
+                    vendorService.recordVendorOrderToMonth(
+                        plan.getPrintingVendor().getId(), 
+                        planNumber, 
+                        printingPayment, 
+                        VendorRole.Printing,
+                        plan.getPrintingEndDate() // Completion date
+                    );
                 }
                 break;
             case Stitching:
@@ -105,11 +123,18 @@ public class PlanService {
                 break;
             case Completed:
                 plan.setStitchingEndDate(LocalDate.now());
-                // Record vendor order for stitching
+                // Record vendor order for stitching - using COMPLETION DATE
                 if (plan.getStitchingVendor() != null) {
                     double stitchingPayment = calculatePayment(plan, VendorRole.Stitching);
                     plan.setStitchingVendorPaymentDue(stitchingPayment);
-                    vendorService.recordVendorOrder(plan.getStitchingVendor().getId(), planNumber, stitchingPayment, VendorRole.Stitching);
+                    // Use the stitching END date for monthly accounting
+                    vendorService.recordVendorOrderToMonth(
+                        plan.getStitchingVendor().getId(), 
+                        planNumber, 
+                        stitchingPayment, 
+                        VendorRole.Stitching,
+                        plan.getStitchingEndDate() // Completion date
+                    );
                 }
                 break;
         }
@@ -118,7 +143,7 @@ public class PlanService {
         return planRepository.save(plan);
     }
 
-    public Plan sendToMachine(String planNumber, int finalQuantity) {
+    public Plan sendToMachine(String planNumber) {
         Plan plan = planRepository.findByPlanNumber(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
@@ -128,17 +153,49 @@ public class PlanService {
             throw new IllegalStateException("Plan must be completed before sending to machine");
         }
 
-        plan.setFinalQuantity(finalQuantity);
         plan.setMachineProcessingDate(LocalDate.now());
         
-        // Move stock from upper to finished
-        moveStockFromUpperToFinished(plan, finalQuantity);
+        // Move stock from upper to finished using the total quantity
+        moveStockFromUpperToFinished(plan, plan.getTotal());
         
         return planRepository.save(plan);
     }
 
     private void moveStockFromUpperToFinished(Plan plan, int finalQuantity) {
         String[] sizeQuantityPairs = plan.getSizeQuantityPairs().split(",");
+        
+        // First, validate that we have sufficient upper stock for all sizes
+        for (String pair : sizeQuantityPairs) {
+            String[] sizeQuantity = pair.trim().split(":");
+            String size = sizeQuantity[0].trim();
+            int plannedQuantity = Integer.parseInt(sizeQuantity[1].trim());
+            
+            // Calculate proportional final quantity for this size
+            double proportion = (double) plannedQuantity / plan.getTotal();
+            int finalSizeQuantity = (int) Math.round(finalQuantity * proportion);
+            
+            // Check upper stock availability
+            Optional<UpperStock> upperStockOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+                plan.getArticleName(), size, plan.getColor());
+            
+            if (!upperStockOpt.isPresent()) {
+                throw new IllegalStateException(
+                    String.format("No upper stock found for Article: %s, Size: %s, Color: %s", 
+                        plan.getArticleName(), size, plan.getColor()));
+            }
+            
+            UpperStock upperStock = upperStockOpt.get();
+            if (upperStock.getQuantity() < finalSizeQuantity) {
+                throw new IllegalStateException(
+                    String.format("Insufficient upper stock for Article: %s, Size: %s, Color: %s. Required: %d, Available: %d", 
+                        plan.getArticleName(), size, plan.getColor(), finalSizeQuantity, upperStock.getQuantity()));
+            }
+        }
+        
+        // Now move the stock
+        Article article = articleRepository.findByName(plan.getArticleName())
+            .orElseThrow(() -> new IllegalArgumentException("Article not found: " + plan.getArticleName()));
+        
         for (String pair : sizeQuantityPairs) {
             String[] sizeQuantity = pair.trim().split(":");
             String size = sizeQuantity[0].trim();
@@ -149,25 +206,38 @@ public class PlanService {
             int finalSizeQuantity = (int) Math.round(finalQuantity * proportion);
             
             // Reduce upper stock
-            Optional<UpperStock> upperStockOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+            UpperStock upperStock = upperStockRepository.findByArticleNameAndSizeAndColor(
+                plan.getArticleName(), size, plan.getColor()).get();
+            upperStock.setQuantity(upperStock.getQuantity() - finalSizeQuantity);
+            upperStockRepository.save(upperStock);
+            
+            // Add to finished stock
+            Optional<FinishedStock> finishedStockOpt = finishedStockRepository.findByArticleNameAndSizeAndColor(
                 plan.getArticleName(), size, plan.getColor());
             
-            if (upperStockOpt.isPresent()) {
-                UpperStock upperStock = upperStockOpt.get();
-                upperStock.setQuantity(upperStock.getQuantity() - finalSizeQuantity);
-                upperStockRepository.save(upperStock);
-                
-                // Record stock movement
-                StockMovementRequest movement = new StockMovementRequest();
-                movement.setPlan(plan);
-                movement.setArticleName(plan.getArticleName());
-                movement.setColor(plan.getColor());
-                movement.setSize(size);
-                movement.setQuantity(finalSizeQuantity);
-                movement.setMovementDate(LocalDate.now());
-                movement.setMovementType("UPPER_TO_FINISHED");
-                stockMovementRepository.save(movement);
+            if (finishedStockOpt.isPresent()) {
+                FinishedStock finishedStock = finishedStockOpt.get();
+                finishedStock.setQuantity(finishedStock.getQuantity() + finalSizeQuantity);
+                finishedStockRepository.save(finishedStock);
+            } else {
+                FinishedStock newFinishedStock = new FinishedStock();
+                newFinishedStock.setArticle(article);
+                newFinishedStock.setSize(size);
+                newFinishedStock.setColor(plan.getColor());
+                newFinishedStock.setQuantity(finalSizeQuantity);
+                finishedStockRepository.save(newFinishedStock);
             }
+            
+            // Record stock movement
+            StockMovementRequest movement = new StockMovementRequest();
+            movement.setPlan(plan);
+            movement.setArticleName(plan.getArticleName());
+            movement.setColor(plan.getColor());
+            movement.setSize(size);
+            movement.setQuantity(finalSizeQuantity);
+            movement.setMovementDate(LocalDate.now());
+            movement.setMovementType("UPPER_TO_FINISHED");
+            stockMovementRepository.save(movement);
         }
     }
 
@@ -188,7 +258,9 @@ public class PlanService {
         int totalQuantity = plan.getTotal();
         double cost = switch (roleType) {
             case Cutting -> article.getCuttingCost();
-            case Printing -> article.getPrintingCost();
+            case Printing -> (plan.getPrintingRateHead() != null) 
+                ? plan.getPrintingRateHead().getCost() 
+                : article.getPrintingCost();
             case Stitching -> article.getStitchingCost();
             default -> 0.0;
         };
@@ -260,6 +332,40 @@ public class PlanService {
 
         planRepository.save(plan);
     }
+    
+    public void assignVendorsToPlan(String planNumber, Long cuttingVendorId, Long printingVendorId, Long stitchingVendorId) {
+        Plan plan = planRepository.findByPlanNumber(planNumber);
+        if (plan == null) {
+            throw new IllegalArgumentException("Plan not found with number: " + planNumber);
+        }
+
+        // Only update vendors that were selected (not null or empty)
+        if (cuttingVendorId != null && cuttingVendorId > 0) {
+            Vendor cuttingVendor = vendorService.getVendorById(cuttingVendorId);
+            if (cuttingVendor == null) {
+                throw new IllegalArgumentException("Cutting vendor not found");
+            }
+            plan.setCuttingVendor(cuttingVendor);
+        }
+        
+        if (printingVendorId != null && printingVendorId > 0) {
+            Vendor printingVendor = vendorService.getVendorById(printingVendorId);
+            if (printingVendor == null) {
+                throw new IllegalArgumentException("Printing vendor not found");
+            }
+            plan.setPrintingVendor(printingVendor);
+        }
+        
+        if (stitchingVendorId != null && stitchingVendorId > 0) {
+            Vendor stitchingVendor = vendorService.getVendorById(stitchingVendorId);
+            if (stitchingVendor == null) {
+                throw new IllegalArgumentException("Stitching vendor not found");
+            }
+            plan.setStitchingVendor(stitchingVendor);
+        }
+
+        planRepository.save(plan);
+    }
 
     public Plan getPlanByNumber(String planNumber) {
         return planRepository.findByPlanNumber(planNumber);
@@ -269,13 +375,22 @@ public class PlanService {
         return planRepository.findAll();
     }
 
-    public Plan updateFinalQuantity(String planNumber, int finalQuantity) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
-        if (plan == null) {
-            throw new IllegalArgumentException("Plan not found with number: " + planNumber);
-        }
+    public int deleteCompletedPlansFromPreviousMonth() {
+        LocalDate now = LocalDate.now();
+        LocalDate startOfPreviousMonth = now.minusMonths(1).withDayOfMonth(1);
+        LocalDate endOfPreviousMonth = now.withDayOfMonth(1).minusDays(1);
         
-        plan.setFinalQuantity(finalQuantity);
-        return planRepository.save(plan);
+        List<Plan> completedPlans = planRepository.findAll().stream()
+            .filter(plan -> plan.getStatus() == PlanStatus.Completed)
+            .filter(plan -> {
+                LocalDate createDate = plan.getCreateDate();
+                return !createDate.isBefore(startOfPreviousMonth) && 
+                       !createDate.isAfter(endOfPreviousMonth);
+            })
+            .toList();
+        
+        int count = completedPlans.size();
+        planRepository.deleteAll(completedPlans);
+        return count;
     }
 }

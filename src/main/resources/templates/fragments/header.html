@@ -265,6 +265,8 @@
             <a th:href="@{/vendors/summary}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/vendors/summary') ? 'active' : ''}">💰 Payments</a>
             <a th:href="@{/articles}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/articles') ? 'active' : ''}">👟 Articles</a>
             <a th:href="@{/colors}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/colors') ? 'active' : ''}">🎨 Colors</a>
+            <a th:href="@{/rateheads}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/rateheads') ? 'active' : ''}">💵 Rate Heads</a>
+            <a th:href="@{/cleanup}" th:class="${#strings.startsWith(#httpServletRequest.requestURI, '/cleanup') ? 'active' : ''}">🗑️ Cleanup</a>
         </div>
     </nav>
     

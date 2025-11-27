@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Create New Plan - SKSE Inventory</title>
+    <title>Add Rate Head - SKSE Inventory</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -9,7 +9,7 @@
             background-color: #f5f5f5; 
         }
         .container { 
-            max-width: 1200px; 
+            max-width: 800px; 
             margin: 0 auto; 
             padding: 20px;
         }
@@ -80,7 +80,6 @@
         }
         .form-group {
             margin-bottom: 15px;
-            padding: 0 20px;
         }
         .form-group label {
             display: block;
@@ -88,7 +87,7 @@
             font-weight: bold;
             color: #2c3e50;
         }
-        .form-group input, .form-group select, .form-group textarea {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -96,15 +95,13 @@
             font-size: 14px;
             box-sizing: border-box;
         }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        .text-muted {
-            color: #6c757d;
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
             font-size: 14px;
-            margin-top: 5px;
+            box-sizing: border-box;
         }
         .btn { 
             padding: 10px 20px; 
@@ -132,15 +129,6 @@
         .btn-secondary:hover {
             background-color: #545b62;
         }
-        @media (max-width: 768px) {
-            .nav-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 </head>
 <body>
@@ -152,79 +140,72 @@
     <nav class="nav">
         <div class="nav-container">
             <a th:href="@{/}">🏠 Home</a>
-            <a th:href="@{/plans}" class="active">📋 Plans</a>
+            <a th:href="@{/plans}">📋 Plans</a>
             <a th:href="@{/stock}">📦 Stock</a>
             <a th:href="@{/vendors}">👥 Vendors</a>
             <a th:href="@{/vendors/summary}">💰 Payments</a>
             <a th:href="@{/articles}">👟 Articles</a>
             <a th:href="@{/colors}">🎨 Colors</a>
+            <a th:href="@{/rateheads}" class="active">💵 Rate Heads</a>
         </div>
     </nav>
     
     <div class="container">
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Create New Plan</h2>
+                <h2 class="card-title">Add New Rate Head</h2>
             </div>
             
-            <form th:action="@{/plans/add}" th:object="${plan}" method="post">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="planNumber">Plan Number *</label>
-                        <input type="text" id="planNumber" th:field="*{planNumber}" required>
-                        <small class="text-muted">Unique identifier for the plan (e.g., PLAN-2024-001)</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="articleName">Article *</label>
-                        <select id="articleName" th:field="*{articleName}" required>
-                            <option value="">Select Article</option>
-                            <option th:each="article : ${articles}" 
-                                    th:value="${article.name}" 
-                                    th:text="${article.name}"></option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="color">Color *</label>
-                        <select id="color" th:field="*{color}" required>
-                            <option value="">Select Color</option>
-                            <option th:each="color : ${colors}" 
-                                    th:value="${color.name}" 
-                                    th:text="${color.name}"></option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="total">Total Quantity *</label>
-                        <input type="number" id="total" th:field="*{total}" required min="1">
-                    </div>
+            <form th:action="@{/rateheads}" th:object="${rateHead}" method="post" style="padding: 20px;">
+                <div class="form-group">
+                    <label for="name">Rate Head Name *</label>
+                    <input type="text" id="name" th:field="*{name}" required 
+                           placeholder="e.g., Standard Cutting, Premium Printing" class="form-control">
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Enter a descriptive name for this rate head
+                    </p>
                 </div>
                 
                 <div class="form-group">
-                    <label for="sizeQuantityPairs">Size:Quantity Pairs *</label>
-                    <textarea id="sizeQuantityPairs" th:field="*{sizeQuantityPairs}" rows="3" required 
-                              placeholder="Format: 6:50, 7:30, 8:20"></textarea>
-                    <small class="text-muted">Enter size:quantity pairs separated by commas (e.g., 6:50, 7:30, 8:20)</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="printingRateHead">Printing Rate Head</label>
-                    <select id="printingRateHead" th:field="*{printingRateHead}">
-                        <option value="">Select Printing Rate Head</option>
-                        <option th:each="rateHead : ${printingRateHeads}" 
-                                th:value="${rateHead.id}" 
-                                th:text="${rateHead.name + ' - ₹' + rateHead.cost}"></option>
+                    <label for="operationType">Operation Type *</label>
+                    <select id="operationType" th:field="*{operationType}" required class="form-control">
+                        <option value="">-- Select Operation Type --</option>
+                        <option th:each="type : ${operationTypes}" 
+                                th:value="${type}" 
+                                th:text="${type}"></option>
                     </select>
-                    <small class="text-muted">Select the printing rate to be used for this plan</small>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Select the operation type for this rate head
+                    </p>
                 </div>
                 
                 <div class="form-group">
-                    <button type="submit" class="btn btn-success">Create Plan</button>
-                    <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
+                    <label for="cost">Cost (₹) *</label>
+                    <input type="number" id="cost" th:field="*{cost}" 
+                           step="0.01" min="0" required 
+                           placeholder="0.00" class="form-control">
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Enter the cost per unit for this operation
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="active">
+                        <input type="checkbox" id="active" th:field="*{active}" checked>
+                        Active
+                    </label>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Only active rate heads will be available for selection in articles
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success">Save Rate Head</button>
+                    <a th:href="@{/rateheads}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         </div>
     </div>
 </body>
 </html>
+

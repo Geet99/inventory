@@ -48,8 +48,11 @@ public class VendorViewController {
     }
 
     @PostMapping("/{id}/update")
-    public String updateVendor(@PathVariable Long id, @ModelAttribute Vendor vendor) {
-        vendorService.updateVendor(id, vendor);
+    public String updateVendor(@PathVariable Long id, 
+                               @RequestParam String name,
+                               @RequestParam VendorRole role,
+                               @RequestParam(required = false, defaultValue = "true") boolean active) {
+        vendorService.updateVendor(id, name, role, active);
         return "redirect:/vendors";
     }
 
@@ -61,25 +64,38 @@ public class VendorViewController {
 
     @GetMapping("/summary")
     public String vendorSummary(Model model) {
-        Map<String, Object> summary = vendorService.getVendorPaymentSummary();
-        model.addAttribute("summary", summary);
+        // Use new monthly payment summary
+        Map<String, Object> monthlySummary = vendorService.getMonthlyPaymentSummary();
+        Map<String, Object> legacySummary = vendorService.getVendorPaymentSummary();
+        
+        model.addAttribute("monthlySummary", monthlySummary);
+        model.addAttribute("summary", legacySummary); // For backward compatibility
         return "vendors/summary";
     }
 
     @GetMapping("/{id}/details")
     public String vendorDetails(@PathVariable Long id, Model model) {
-        Map<String, Object> details = vendorService.getVendorDetailedSummary(id);
-        if (details == null) {
+        // Use new monthly summary
+        Map<String, Object> monthlyDetails = vendorService.getVendorMonthlySummary(id);
+        Map<String, Object> legacyDetails = vendorService.getVendorDetailedSummary(id);
+        
+        if (monthlyDetails == null) {
             return "redirect:/vendors";
         }
-        model.addAttribute("details", details);
+        
+        model.addAttribute("monthlyDetails", monthlyDetails);
+        model.addAttribute("details", legacyDetails); // For backward compatibility
         return "vendors/details";
     }
 
     @GetMapping("/{id}/payment")
     public String vendorPaymentForm(@PathVariable Long id, Model model) {
         Vendor vendor = vendorService.getVendorById(id);
+        // Get previous month's payment details
+        Map<String, Object> monthlyDetails = vendorService.getVendorMonthlySummary(id);
+        
         model.addAttribute("vendor", vendor);
+        model.addAttribute("monthlyDetails", monthlyDetails);
         return "vendors/payment";
     }
 

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Delete Records - SKSE Inventory</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+            font-size: 28px;
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 16px; 
+            margin: 0;
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+            transform: translateY(-1px);
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 30px;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .warning-box h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .warning-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .warning-box li {
+            margin: 5px 0;
+            color: #856404;
+        }
+        .danger-box {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .danger-box h3 {
+            margin-top: 0;
+            color: #721c24;
+        }
+        .danger-box p {
+            color: #721c24;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .btn {
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            margin: 5px;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info-section {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-section h4 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        .info-section p {
+            margin: 5px 0;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
+    </div>
+    
+    <nav class="nav">
+        <div class="nav-container">
+            <a th:href="@{/}">🏠 Home</a>
+            <a th:href="@{/plans}">📋 Plans</a>
+            <a th:href="@{/stock}">📦 Stock</a>
+            <a th:href="@{/vendors}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}">💰 Payments</a>
+            <a th:href="@{/articles}">👟 Articles</a>
+            <a th:href="@{/colors}">🎨 Colors</a>
+            <a th:href="@{/rateheads}">💵 Rate Heads</a>
+            <a th:href="@{/cleanup}" class="active">🗑️ Cleanup</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+        
+        <div class="card">
+            <h2>🗑️ Delete Previous Month Records</h2>
+            
+            <div class="info-section">
+                <h4>ℹ️ What will be deleted?</h4>
+                <p>This operation will permanently delete:</p>
+                <ul>
+                    <li>✓ All completed plans from the previous month</li>
+                    <li>✓ All fully settled (PAID) vendor payment records from the previous month</li>
+                </ul>
+            </div>
+            
+            <div class="warning-box">
+                <h3>⚠️ Important Information</h3>
+                <ul>
+                    <li>This operation should only be performed after all payments for the previous month have been settled</li>
+                    <li>Only completed plans and fully paid payment records will be deleted</li>
+                    <li>Pending or partial payment records will be preserved</li>
+                    <li>This helps keep the database clean and improves performance</li>
+                </ul>
+            </div>
+            
+            <div class="danger-box">
+                <h3>🚨 Warning: This Action Cannot Be Undone!</h3>
+                <p>Once deleted, these records cannot be recovered. Please make sure:</p>
+                <ul>
+                    <li>All payments for the previous month have been recorded</li>
+                    <li>You have exported any reports you need</li>
+                    <li>You understand that this operation is permanent</li>
+                </ul>
+            </div>
+            
+            <form th:action="@{/cleanup/previous-month}" method="post" 
+                  onsubmit="return confirm('⚠️ WARNING: This will permanently delete all completed plans and settled payment records from the previous month. This action CANNOT be undone.\n\nAre you absolutely sure you want to proceed?');">
+                <button type="submit" class="btn btn-danger">
+                    🗑️ Delete Previous Month Records
+                </button>
+                <a th:href="@{/}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+

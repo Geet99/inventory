@@ -64,21 +64,10 @@ public class PlanController {
         return ResponseEntity.ok(plan);
     }
 
-    @Operation(summary = "Update final quantity", description = "Updates the final quantity produced for a plan.")
-    @PutMapping("/{planNumber}/final-quantity")
-    public ResponseEntity<Plan> updateFinalQuantity(
-            @PathVariable String planNumber,
-            @RequestParam int finalQuantity) {
-        Plan plan = planService.updateFinalQuantity(planNumber, finalQuantity);
-        return ResponseEntity.ok(plan);
-    }
-
     @Operation(summary = "Send plan to machine", description = "Sends a completed plan to machine processing.")
     @PostMapping("/{planNumber}/send-to-machine")
-    public ResponseEntity<Plan> sendToMachine(
-            @PathVariable String planNumber,
-            @RequestParam int finalQuantity) {
-        Plan plan = planService.sendToMachine(planNumber, finalQuantity);
+    public ResponseEntity<Plan> sendToMachine(@PathVariable String planNumber) {
+        Plan plan = planService.sendToMachine(planNumber);
         return ResponseEntity.ok(plan);
     }
 

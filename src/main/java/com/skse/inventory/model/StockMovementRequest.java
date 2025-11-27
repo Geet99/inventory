@@ -13,7 +13,7 @@ public class StockMovementRequest {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "plan_id", nullable = false)
+    @JoinColumn(name = "plan_id", nullable = true)
     private Plan plan;
 
     private String articleName;

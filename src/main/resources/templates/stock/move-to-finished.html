@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Move Stock to Finished - SKSE Inventory</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+            font-size: 28px;
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 16px; 
+            margin: 0;
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+            transform: translateY(-1px);
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 30px;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .btn {
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            margin: 5px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .info-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .info-box h4 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        .info-box p {
+            margin: 5px 0;
+            color: #0c5460;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
+    </div>
+    
+    <nav class="nav">
+        <div class="nav-container">
+            <a th:href="@{/}">🏠 Home</a>
+            <a th:href="@{/plans}">📋 Plans</a>
+            <a th:href="@{/stock}" class="active">📦 Stock</a>
+            <a th:href="@{/vendors}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}">💰 Payments</a>
+            <a th:href="@{/articles}">👟 Articles</a>
+            <a th:href="@{/colors}">🎨 Colors</a>
+            <a th:href="@{/rateheads}">💵 Rate Heads</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+        
+        <div class="card">
+            <h2>🏭 Move Upper Stock to Finished Stock</h2>
+            
+            <div class="info-box">
+                <h4>ℹ️ About This Feature</h4>
+                <p>Use this to manually move selected quantities of upper stock to finished stock after machine processing.</p>
+                <p><strong>Note:</strong> To process an entire plan at once, use the "Send to Machine" button in the Plans section.</p>
+            </div>
+            
+            <form th:action="@{/stock/move-to-finished}" method="post">
+                <div class="form-group">
+                    <label for="articleName">Article *</label>
+                    <select id="articleName" name="articleName" required>
+                        <option value="">Select Article</option>
+                        <option th:each="article : ${articles}" 
+                                th:value="${article.name}" 
+                                th:text="${article.name}"></option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="color">Color *</label>
+                    <select id="color" name="color" required>
+                        <option value="">Select Color</option>
+                        <option th:each="color : ${colors}" 
+                                th:value="${color.name}" 
+                                th:text="${color.name}"></option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sizeQuantityPairs">Size:Quantity Pairs *</label>
+                    <small class="text-muted" style="display: block; margin-bottom: 8px;">
+                        Enter size:quantity pairs separated by commas (e.g., 6:50, 7:30, 8:20)
+                    </small>
+                    <textarea id="sizeQuantityPairs" name="sizeQuantityPairs" rows="3" required 
+                              placeholder="Format: 6:50, 7:30, 8:20"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 15px 30px;">
+                        🏭 Move to Finished Stock
+                    </button>
+                    <a th:href="@{/stock}" class="btn btn-secondary" style="font-size: 16px; padding: 15px 30px;">Cancel</a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Current Upper Stock -->
+        <div class="card">
+            <h2>📦 Current Upper Stock</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th>Size</th>
+                        <th>Color</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="stock : ${upperStock}">
+                        <td th:text="${stock.article.name}"></td>
+                        <td th:text="${stock.size}"></td>
+                        <td th:text="${stock.color}"></td>
+                        <td th:text="${stock.quantity}"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div th:if="${upperStock == null || #lists.isEmpty(upperStock)}" 
+                 style="text-align: center; padding: 40px; color: #7f8c8d;">
+                <p>No upper stock available.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -176,63 +176,54 @@
             <a th:href="@{/vendors/summary}">💰 Payments</a>
             <a th:href="@{/articles}">👟 Articles</a>
             <a th:href="@{/colors}">🎨 Colors</a>
+            <a th:href="@{/rateheads}">💵 Rate Heads</a>
         </div>
     </nav>
     
     <div class="container">
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Send to Machine Processing</h2>
+                <h2 class="card-title">📦 Send Entire Plan to Machine</h2>
             </div>
         </div>
         
         <div class="plan-info">
-            <h3>Plan Details</h3>
+            <h3>📋 Plan Details</h3>
             <p><strong>Plan Number:</strong> <span th:text="${plan.planNumber}"></span></p>
             <p><strong>Article:</strong> <span th:text="${plan.articleName}"></span></p>
             <p><strong>Color:</strong> <span th:text="${plan.color}"></span></p>
             <p><strong>Status:</strong> <span th:text="${plan.status}"></span></p>
-            <p><strong>Planned Total:</strong> <span th:text="${plan.total}"></span></p>
-            <p><strong>Final Quantity:</strong> <span th:text="${plan.finalQuantity}"></span></p>
+            <p><strong>Total Quantity:</strong> <span th:text="${plan.total}"></span> units</p>
+            <p><strong>Size:Quantity:</strong> <span th:text="${plan.sizeQuantityPairs}"></span></p>
         </div>
         
         <div class="warning">
-            <h4>Important Notice</h4>
-            <p>This action will:</p>
+            <h4>⚠️ Important Notice</h4>
+            <p>This action will process <strong>THE ENTIRE PLAN</strong> and will:</p>
             <ul>
-                <li>Move stock from Upper Stock to Finished Stock</li>
+                <li>Move <strong>ALL</strong> upper stock for this plan to finished stock</li>
                 <li>Record the machine processing date</li>
-                <li>Update the final quantity for this plan</li>
+                <li>Process <strong>all <span th:text="${plan.total}"></span> units</strong> according to the plan's size breakdown</li>
             </ul>
-            <p><strong>This action cannot be undone!</strong></p>
+            <p style="color: #dc3545; font-weight: bold; font-size: 16px;">⚠️ This action cannot be undone!</p>
         </div>
         
-        <div class="stock-info">
-            <h4>Stock Movement Summary</h4>
-            <p><strong>Article:</strong> <span th:text="${plan.articleName}"></span></p>
-            <p><strong>Color:</strong> <span th:text="${plan.color}"></span></p>
-            <p><strong>Quantity to Process:</strong> <span th:text="${plan.finalQuantity}"></span></p>
-            <p><strong>Size:Quantity Breakdown:</strong> <span th:text="${plan.sizeQuantityPairs}"></span></p>
+        <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h4 style="margin-top: 0; color: #0c5460;">💡 Note</h4>
+            <p style="margin: 0; color: #0c5460;">
+                To move specific quantities of upper stock to finished stock manually, use the 
+                <a th:href="@{/stock/move-to-finished}" style="color: #0c5460; font-weight: bold;">Stock Movement</a> feature instead.
+            </p>
         </div>
         
         <div class="card">
             <form th:action="@{'/plans/' + ${plan.planNumber} + '/send-to-machine'}" method="post">
                 <div class="form-group">
-                    <label for="finalQuantity">Confirm Final Quantity *</label>
-                    <input type="number" id="finalQuantity" name="finalQuantity" 
-                           th:value="${plan.finalQuantity}"
-                           min="1" max="9999" required>
-                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                        Confirm the final quantity to be processed by the machine
-                    </p>
-                </div>
-                
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary" 
-                            onclick="return confirm('Are you sure you want to send this plan to machine processing?')">
-                        Send to Machine
+                    <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 15px 30px;"
+                            onclick="return confirm('⚠️ WARNING: This will send the ENTIRE PLAN (' + [[${plan.total}]] + ' units) to machine processing and move all upper stock to finished stock.\n\nThis action CANNOT be undone!\n\nAre you sure you want to proceed?')">
+                        🏭 Send Entire Plan to Machine
                     </button>
-                    <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
+                    <a th:href="@{/plans}" class="btn btn-secondary" style="font-size: 16px; padding: 15px 30px;">Cancel</a>
                 </div>
             </form>
         </div>

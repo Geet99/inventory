@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Plan Dashboard - SKSE Inventory</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { 
+            color: #2c3e50; 
+            margin-bottom: 10px; 
+            font-size: 28px;
+        }
+        .header p { 
+            color: #7f8c8d; 
+            font-size: 16px; 
+            margin: 0;
+        }
+        .nav {
+            background: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .nav a {
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .nav a:hover {
+            background-color: #ecf0f1;
+            transform: translateY(-1px);
+        }
+        .nav a.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .page-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .page-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        .btn { 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 5px; 
+            display: inline-block; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success { 
+            background-color: #28a745; 
+            color: white; 
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-number {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .stat-pending_cutting { color: #ffc107; }
+        .stat-cutting { color: #17a2b8; }
+        .stat-pending_printing { color: #fd7e14; }
+        .stat-printing { color: #6f42c1; }
+        .stat-pending_stitching { color: #e83e8c; }
+        .stat-stitching { color: #20c997; }
+        .stat-completed { color: #28a745; }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+            text-transform: capitalize;
+        }
+        .info-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .status-item {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .status-item .label {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            text-transform: capitalize;
+        }
+        .status-item .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: #7f8c8d;
+        }
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SKSE Inventory Management System</h1>
+        <p>Manage your slipper manufacturing business efficiently</p>
+    </div>
+    
+    <nav class="nav">
+        <div class="nav-container">
+            <a th:href="@{/}">🏠 Home</a>
+            <a th:href="@{/plans}" class="active">📋 Plans</a>
+            <a th:href="@{/stock}">📦 Stock</a>
+            <a th:href="@{/vendors}">👥 Vendors</a>
+            <a th:href="@{/vendors/summary}">💰 Payments</a>
+            <a th:href="@{/articles}">👟 Articles</a>
+            <a th:href="@{/colors}">🎨 Colors</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="page-header">
+            <h2>📊 Plan Dashboard</h2>
+            <div>
+                <a th:href="@{/plans}" class="btn btn-secondary">All Plans</a>
+                <a th:href="@{/plans/new}" class="btn btn-success">➕ Create New Plan</a>
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h3>Active Orders by Status</h3>
+            
+            <div th:if="${!activeOrders.isEmpty()}" class="stats-grid">
+                <div class="stat-card" th:each="entry : ${activeOrders}">
+                    <h3 th:text="${#strings.replace(entry.key, '_', ' ')}">Status</h3>
+                    <div class="stat-number" 
+                         th:class="${'stat-' + #strings.toLowerCase(entry.key)}"
+                         th:text="${entry.value}">0</div>
+                    <p class="stat-label">Active Orders</p>
+                </div>
+            </div>
+            
+            <div th:if="${activeOrders.isEmpty()}" class="empty-state">
+                <div class="icon">📋</div>
+                <h3>No Active Orders</h3>
+                <p>There are currently no active plans in the system.</p>
+                <a th:href="@{/plans/new}" class="btn btn-success">Create Your First Plan</a>
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h3>Manufacturing Pipeline Overview</h3>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="label">🔪 Cutting Stage</div>
+                    <div class="value" th:text="${(activeOrders['Pending_Cutting'] ?: 0) + (activeOrders['Cutting'] ?: 0)}">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="label">🖨️ Printing Stage</div>
+                    <div class="value" th:text="${(activeOrders['Pending_Printing'] ?: 0) + (activeOrders['Printing'] ?: 0)}">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="label">🧵 Stitching Stage</div>
+                    <div class="value" th:text="${(activeOrders['Pending_Stitching'] ?: 0) + (activeOrders['Stitching'] ?: 0)}">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="label">✅ Completed</div>
+                    <div class="value" th:text="${activeOrders['Completed'] ?: 0}">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h3>Quick Actions</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a th:href="@{/plans/new}" class="btn btn-success">➕ Create New Plan</a>
+                <a th:href="@{/plans}" class="btn btn-primary">📋 View All Plans</a>
+                <a th:href="@{/stock}" class="btn btn-primary">📦 Stock Dashboard</a>
+                <a th:href="@{/vendors}" class="btn btn-primary">👥 Manage Vendors</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

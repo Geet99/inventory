@@ -78,31 +78,39 @@ public class StockService {
     }
 
     public void moveFromUpperToFinished(Article article, String size, String color, int quantity) {
-        // Reduce upper stock
-        Optional<UpperStock> upperStock = upperStockRepository.findByArticleNameAndSizeAndColor(
+        // Check upper stock availability
+        Optional<UpperStock> upperStockOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
             article.getName(), size, color);
         
-        if (upperStock.isPresent() && upperStock.get().getQuantity() >= quantity) {
-            UpperStock stock = upperStock.get();
-            stock.setQuantity(stock.getQuantity() - quantity);
-            upperStockRepository.save(stock);
-            
-            // Add to finished stock
-            addToFinishedStock(article, size, color, quantity);
-            
-            // Record movement
-            StockMovementRequest movement = new StockMovementRequest();
-            movement.setArticleName(article.getName());
-            movement.setColor(color);
-            movement.setSize(size);
-            movement.setQuantity(quantity);
-            movement.setMovementDate(LocalDate.now());
-            movement.setMovementType("UPPER_TO_FINISHED");
-            stockMovementRepository.save(movement);
-        } else {
-            throw new IllegalStateException("Insufficient upper stock for article: " + article.getName() + 
-                ", size: " + size + ", color: " + color);
+        if (!upperStockOpt.isPresent()) {
+            throw new IllegalStateException(
+                String.format("No upper stock found for Article: %s, Size: %s, Color: %s", 
+                    article.getName(), size, color));
         }
+        
+        UpperStock upperStock = upperStockOpt.get();
+        if (upperStock.getQuantity() < quantity) {
+            throw new IllegalStateException(
+                String.format("Insufficient upper stock for Article: %s, Size: %s, Color: %s. Required: %d, Available: %d", 
+                    article.getName(), size, color, quantity, upperStock.getQuantity()));
+        }
+        
+        // Reduce upper stock
+        upperStock.setQuantity(upperStock.getQuantity() - quantity);
+        upperStockRepository.save(upperStock);
+        
+        // Add to finished stock
+        addToFinishedStock(article, size, color, quantity);
+        
+        // Record movement
+        StockMovementRequest movement = new StockMovementRequest();
+        movement.setArticleName(article.getName());
+        movement.setColor(color);
+        movement.setSize(size);
+        movement.setQuantity(quantity);
+        movement.setMovementDate(LocalDate.now());
+        movement.setMovementType("UPPER_TO_FINISHED");
+        stockMovementRepository.save(movement);
     }
 
     public List<StockMovementRequest> getStockMovements(LocalDate startDate, LocalDate endDate) {

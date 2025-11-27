@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Plans Management - SKSE Inventory</title>
+    <title>Rate Heads Management - SKSE Inventory</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -96,13 +96,6 @@
             cursor: pointer;
             font-size: 14px;
         }
-        .btn-primary { 
-            background-color: #007bff; 
-            color: white; 
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
         .btn-success { 
             background-color: #28a745; 
             color: white; 
@@ -117,13 +110,6 @@
         .btn-warning:hover {
             background-color: #e0a800;
         }
-        .btn-info { 
-            background-color: #17a2b8; 
-            color: white; 
-        }
-        .btn-info:hover {
-            background-color: #138496;
-        }
         .btn-danger { 
             background-color: #dc3545; 
             color: white; 
@@ -131,10 +117,12 @@
         .btn-danger:hover {
             background-color: #c82333;
         }
-        .btn.disabled, .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
+        .btn-info { 
+            background-color: #17a2b8; 
+            color: white; 
+        }
+        .btn-info:hover {
+            background-color: #138496;
         }
         .table {
             width: 100%;
@@ -154,13 +142,26 @@
         .table tr:hover {
             background-color: #f5f5f5;
         }
-        .status-pending_cutting { color: #ffc107; font-weight: bold; }
-        .status-cutting { color: #17a2b8; font-weight: bold; }
-        .status-pending_printing { color: #fd7e14; font-weight: bold; }
-        .status-printing { color: #6f42c1; font-weight: bold; }
-        .status-pending_stitching { color: #e83e8c; font-weight: bold; }
-        .status-stitching { color: #20c997; font-weight: bold; }
-        .status-completed { color: #28a745; font-weight: bold; }
+        .operation-cutting { 
+            color: #17a2b8; 
+            font-weight: bold; 
+        }
+        .operation-printing { 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .operation-stitching { 
+            color: #fd7e14; 
+            font-weight: bold; 
+        }
+        .status-active { 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .status-inactive { 
+            color: #dc3545; 
+            font-weight: bold; 
+        }
         .actions {
             display: flex;
             gap: 5px;
@@ -170,12 +171,16 @@
             padding: 5px 10px;
             font-size: 12px;
         }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
+        .info-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 10px;
             margin-bottom: 20px;
+            color: #0c5460;
+        }
+        .info-box h4 {
+            margin-top: 0;
         }
         @media (max-width: 768px) {
             .nav-container {
@@ -199,91 +204,73 @@
     <nav class="nav">
         <div class="nav-container">
             <a th:href="@{/}">🏠 Home</a>
-            <a th:href="@{/plans}" class="active">📋 Plans</a>
+            <a th:href="@{/plans}">📋 Plans</a>
             <a th:href="@{/stock}">📦 Stock</a>
             <a th:href="@{/vendors}">👥 Vendors</a>
             <a th:href="@{/vendors/summary}">💰 Payments</a>
             <a th:href="@{/articles}">👟 Articles</a>
             <a th:href="@{/colors}">🎨 Colors</a>
+            <a th:href="@{/rateheads}" class="active">💵 Rate Heads</a>
         </div>
     </nav>
 
     <div class="container">
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">Plans Management</h2>
-                <div>
-                    <a th:href="@{/plans/dashboard}" class="btn btn-primary">📊 Plan Dashboard</a>
-                    <a th:href="@{/stock}" class="btn btn-info">📦 Stock Dashboard</a>
-                    <a th:href="@{/plans/new}" class="btn btn-success">➕ Add New Plan</a>
-                </div>
+                <h2 class="card-title">Rate Heads Management</h2>
+                <a th:href="@{/rateheads/new}" class="btn btn-success">➕ Add New Rate Head</a>
             </div>
         </div>
         
-        <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
+        <div class="info-box">
+            <h4>ℹ️ About Rate Heads</h4>
+            <p>Rate Heads centralize operation costs (Cutting, Printing, Stitching). When you update a rate head cost, all future vendor payments for articles using that rate head will automatically use the updated cost.</p>
+        </div>
         
         <div class="card">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Plan Number</th>
-                        <th>Article</th>
-                        <th>Color</th>
-                        <th>Total Quantity</th>
+                        <th>Name</th>
+                        <th>Operation Type</th>
+                        <th>Cost (₹)</th>
                         <th>Status</th>
-                        <th>Cutting Vendor</th>
-                        <th>Printing Vendor</th>
-                        <th>Stitching Vendor</th>
-                        <th>Created Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="plan : ${plans}">
-                        <td th:text="${plan.planNumber}"></td>
-                        <td th:text="${plan.articleName}"></td>
-                        <td th:text="${plan.color}"></td>
-                        <td th:text="${plan.total}"></td>
+                    <tr th:each="rateHead : ${rateHeads}">
+                        <td th:text="${rateHead.name}"></td>
                         <td>
-                            <span th:class="${'status-' + plan.status.name().toLowerCase()}" 
-                                  th:text="${plan.status.name().replace('_', ' ')}"></span>
+                            <span th:class="${'operation-' + #strings.toLowerCase(rateHead.operationType)}" 
+                                  th:text="${rateHead.operationType}"></span>
                         </td>
-                        <td th:text="${plan.cuttingVendor?.name ?: '-'}"></td>
-                        <td th:text="${plan.printingVendor?.name ?: '-'}"></td>
-                        <td th:text="${plan.stitchingVendor?.name ?: '-'}"></td>
-                        <td th:text="${#temporals.format(plan.createDate, 'dd/MM/yyyy')}"></td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(rateHead.cost, 1, 2)}"></td>
+                        <td>
+                            <span th:class="${rateHead.active ? 'status-active' : 'status-inactive'}" 
+                                  th:text="${rateHead.active ? 'Active' : 'Inactive'}"></span>
+                        </td>
                         <td>
                             <div class="actions">
-                                <a th:href="@{/plans/{planNumber}/edit(planNumber=${plan.planNumber})}" class="btn btn-warning">Edit</a>
-                                <a th:href="@{/plans/{planNumber}/assign-vendor(planNumber=${plan.planNumber})}" class="btn btn-info">Assign Vendor</a>
-                                <form th:action="@{/plans/{planNumber}/move-to-next(planNumber=${plan.planNumber})}" method="post" style="display:inline">
-                                    <button type="submit" class="btn btn-primary" 
-                                            th:disabled="${plan.status == T(com.skse.inventory.model.PlanStatus).Completed}">
-                                        Next State
-                                    </button>
+                                <a th:href="@{/rateheads/edit/{id}(id=${rateHead.id})}" class="btn btn-warning">Edit</a>
+                                <form th:if="${rateHead.active}" th:action="@{/rateheads/deactivate/{id}(id=${rateHead.id})}" method="post" style="display:inline">
+                                    <button type="submit" class="btn btn-info">Deactivate</button>
                                 </form>
-                                <a th:href="@{/plans/{planNumber}/send-to-machine(planNumber=${plan.planNumber})}" 
-                                   class="btn btn-danger"
-                                   th:if="${plan.status == T(com.skse.inventory.model.PlanStatus).Completed && plan.machineProcessingDate == null}">
-                                    Send to Machine
-                                </a>
-                                <button class="btn btn-success disabled" 
-                                        th:if="${plan.machineProcessingDate != null}"
-                                        disabled
-                                        title="Already sent to machine">
-                                    ✓ Sent to Machine
-                                </button>
-                                <button class="btn btn-danger disabled" 
-                                        th:if="${plan.status != T(com.skse.inventory.model.PlanStatus).Completed && plan.machineProcessingDate == null}"
-                                        disabled>
-                                    Send to Machine
-                                </button>
+                                <form th:action="@{/rateheads/delete/{id}(id=${rateHead.id})}" method="post" style="display:inline">
+                                    <button type="submit" class="btn btn-danger" 
+                                            onclick="return confirm('Are you sure you want to delete this rate head?')">Delete</button>
+                                </form>
                             </div>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
+        
+        <div th:if="${#lists.isEmpty(rateHeads)}" style="text-align: center; margin-top: 50px; color: #666;">
+            <p>No rate heads found. <a th:href="@{/rateheads/new}">Add your first rate head</a></p>
+        </div>
     </div>
 </body>
 </html>
+

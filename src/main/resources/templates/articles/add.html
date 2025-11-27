@@ -152,6 +152,7 @@
             <a th:href="@{/vendors/summary}">💰 Payments</a>
             <a th:href="@{/articles}" class="active">👟 Articles</a>
             <a th:href="@{/colors}">🎨 Colors</a>
+            <a th:href="@{/rateheads}">💵 Rate Heads</a>
         </div>
     </nav>
     
@@ -172,27 +173,62 @@
                     <textarea id="description" th:field="*{description}" rows="3"></textarea>
                 </div>
                 
+                <div style="background-color: #e7f3ff; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; color: #0c5460;">💵 Operation Costs (Using Rate Heads)</h3>
+                    <p style="font-size: 14px; color: #0c5460; margin: 0;">
+                        Select rate heads for each operation. Costs will be automatically fetched from the selected rate heads.
+                        <a th:href="@{/rateheads/new}" target="_blank">Create new rate head</a>
+                    </p>
+                </div>
+                
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="cuttingCost">Cutting Cost (₹)</label>
-                        <input type="number" id="cuttingCost" th:field="*{cuttingCost}" placeholder="0.00" step="0.01" min="0" required>
+                        <label for="cuttingRateHeadId">Cutting Rate Head *</label>
+                        <select id="cuttingRateHeadId" name="cuttingRateHeadId" class="form-control" required>
+                            <option value="">-- Select Cutting Rate Head --</option>
+                            <option th:each="rateHead : ${cuttingRateHeads}" 
+                                    th:value="${rateHead.id}" 
+                                    th:text="${rateHead.name + ' (₹' + #numbers.formatDecimal(rateHead.cost, 1, 2) + ')'}"></option>
+                        </select>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Cost will update automatically when rate head is changed
+                        </p>
                     </div>
                     
                     <div class="form-group">
-                        <label for="printingCost">Printing Cost (₹)</label>
-                        <input type="number" id="printingCost" th:field="*{printingCost}" placeholder="0.00" step="0.01" min="0" required>
+                        <label for="printingRateHeadId">Printing Rate Head *</label>
+                        <select id="printingRateHeadId" name="printingRateHeadId" class="form-control" required>
+                            <option value="">-- Select Printing Rate Head --</option>
+                            <option th:each="rateHead : ${printingRateHeads}" 
+                                    th:value="${rateHead.id}" 
+                                    th:text="${rateHead.name + ' (₹' + #numbers.formatDecimal(rateHead.cost, 1, 2) + ')'}"></option>
+                        </select>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Cost will update automatically when rate head is changed
+                        </p>
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="stitchingCost">Stitching Cost (₹)</label>
-                        <input type="number" id="stitchingCost" th:field="*{stitchingCost}" placeholder="0.00" step="0.01" min="0" required>
+                        <label for="stitchingRateHeadId">Stitching Rate Head *</label>
+                        <select id="stitchingRateHeadId" name="stitchingRateHeadId" class="form-control" required>
+                            <option value="">-- Select Stitching Rate Head --</option>
+                            <option th:each="rateHead : ${stitchingRateHeads}" 
+                                    th:value="${rateHead.id}" 
+                                    th:text="${rateHead.name + ' (₹' + #numbers.formatDecimal(rateHead.cost, 1, 2) + ')'}"></option>
+                        </select>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Cost will update automatically when rate head is changed
+                        </p>
                     </div>
                     
                     <div class="form-group">
-                        <label for="slipperCost">Selling Price (₹)</label>
+                        <label for="slipperCost">Selling Price (₹) *</label>
                         <input type="number" id="slipperCost" th:field="*{slipperCost}" placeholder="0.00" step="0.01" min="0" required>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Enter the selling price per unit
+                        </p>
                     </div>
                 </div>
                 

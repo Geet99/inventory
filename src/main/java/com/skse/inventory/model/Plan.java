@@ -15,10 +15,9 @@ public class Plan {
     private String color;
     private String planSize;
     private int total;
-    private int finalQuantity; // Actual quantity produced
 
     @Column(length = 1000) // Increase column size to handle larger pairs
-    private String sizeQuantityPairs; // Example: "38:50, 39:30" //ToDo make it map
+    private String sizeQuantityPairs; // Example: "6:50, 7:30, 8:20" //ToDo make it map
 
     @ManyToOne
     @JoinColumn(name = "cutting_vendor_id")
@@ -30,7 +29,9 @@ public class Plan {
     @JoinColumn(name = "printing_vendor_id")
     private Vendor printingVendor;
     
-    private PrintingType printingType;
+    @ManyToOne
+    @JoinColumn(name = "printing_rate_head_id")
+    private RateHead printingRateHead;
     
     @ManyToOne
     @JoinColumn(name = "stitching_vendor_id")
@@ -124,12 +125,12 @@ public class Plan {
         this.printingVendor = printingVendor;
     }
 
-    public PrintingType getPrintingType() {
-        return printingType;
+    public RateHead getPrintingRateHead() {
+        return printingRateHead;
     }
 
-    public void setPrintingType(PrintingType printingType) {
-        this.printingType = printingType;
+    public void setPrintingRateHead(RateHead printingRateHead) {
+        this.printingRateHead = printingRateHead;
     }
 
     public Vendor getStitchingVendor() {
@@ -228,13 +229,6 @@ public class Plan {
         this.stitchingVendorPaymentDue = stitchingVendorPaymentDue;
     }
 
-    public int getFinalQuantity() {
-        return finalQuantity;
-    }
-
-    public void setFinalQuantity(int finalQuantity) {
-        this.finalQuantity = finalQuantity;
-    }
 
     public LocalDate getMachineProcessingDate() {
         return machineProcessingDate;

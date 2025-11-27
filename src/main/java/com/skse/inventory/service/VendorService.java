@@ -1,9 +1,8 @@
 package com.skse.inventory.service;
 
-import com.skse.inventory.model.Vendor;
-import com.skse.inventory.model.VendorRole;
-import com.skse.inventory.model.VendorOrderHistory;
+import com.skse.inventory.model.*;
 import com.skse.inventory.repository.PlanRepository;
+import com.skse.inventory.repository.VendorMonthlyPaymentRepository;
 import com.skse.inventory.repository.VendorOrderHistoryRepository;
 import com.skse.inventory.repository.VendorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,6 +27,9 @@ public class VendorService {
 
     @Autowired
     private PlanRepository planRepository;
+    
+    @Autowired
+    private VendorMonthlyPaymentRepository vendorMonthlyPaymentRepository;
 
     public List<Vendor> getAllVendors() {
         return vendorRepository.findAll();
@@ -40,11 +43,15 @@ public class VendorService {
         return vendorRepository.save(vendor);
     }
 
-    public Vendor updateVendor(Long id, Vendor vendor) {
+    public Vendor updateVendor(Long id, String name, VendorRole role, boolean active) {
         Vendor existingVendor = getVendorById(id);
         if (existingVendor != null) {
-            vendor.setId(id);
-            return vendorRepository.save(vendor);
+            // Update only the editable fields, preserve orderHistory and paymentDue
+            existingVendor.setName(name);
+            existingVendor.setRole(role);
+            existingVendor.setActive(active);
+            // Don't update orderHistory, paymentDue - these are managed by the system
+            return vendorRepository.save(existingVendor);
         }
         return null;
     }
@@ -191,5 +198,247 @@ public class VendorService {
                 return record;
             })
             .collect(Collectors.toList());
+    }
+    
+    // ========== MONTHLY PAYMENT TRACKING METHODS ==========
+    
+    /**
+     * Records vendor order payment to specific month based on completion date
+     * This is called when work is completed (e.g., cutting finished on 2nd Feb -> Feb month)
+     */
+    public void recordVendorOrderToMonth(Long vendorId, String planNumber, double amount, 
+                                         VendorRole role, LocalDate completionDate) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor != null) {
+            // Determine month-year based on completion date
+            String monthYear = VendorMonthlyPayment.getMonthYearString(completionDate);
+            
+            // Get or create monthly payment record
+            VendorMonthlyPayment monthlyPayment = vendorMonthlyPaymentRepository
+                .findByVendorAndMonthYearAndOperationType(vendor, monthYear, role)
+                .orElse(new VendorMonthlyPayment());
+            
+            if (monthlyPayment.getId() == null) {
+                // New monthly record
+                monthlyPayment.setVendor(vendor);
+                monthlyPayment.setMonthYear(monthYear);
+                monthlyPayment.setOperationType(role);
+                monthlyPayment.setTotalDue(0);
+                monthlyPayment.setPaidAmount(0);
+                monthlyPayment.setStatus(PaymentStatus.PENDING);
+                monthlyPayment.setCreatedDate(LocalDate.now());
+            }
+            
+            // Add amount to total due for this month
+            monthlyPayment.setTotalDue(monthlyPayment.getTotalDue() + amount);
+            monthlyPayment.setLastUpdatedDate(LocalDate.now());
+            
+            // Update status
+            if (monthlyPayment.getPaidAmount() >= monthlyPayment.getTotalDue()) {
+                monthlyPayment.setStatus(PaymentStatus.PAID);
+            } else if (monthlyPayment.getPaidAmount() > 0) {
+                monthlyPayment.setStatus(PaymentStatus.PARTIAL);
+            } else {
+                monthlyPayment.setStatus(PaymentStatus.PENDING);
+            }
+            
+            vendorMonthlyPaymentRepository.save(monthlyPayment);
+            
+            // Also update legacy total (for backward compatibility)
+            vendor.setPaymentDue(vendor.getPaymentDue() + amount);
+            vendorRepository.save(vendor);
+            
+            // Record order history
+            VendorOrderHistory orderRecord = new VendorOrderHistory();
+            orderRecord.setVendor(vendor);
+            orderRecord.setPlanNumber(planNumber);
+            orderRecord.setAmount(amount);
+            orderRecord.setOrderDate(completionDate);
+            orderRecord.setType("ORDER");
+            orderRecord.setRole(role);
+            vendorOrderHistoryRepository.save(orderRecord);
+        }
+    }
+    
+    /**
+     * Record payment for a specific month
+     */
+    public void recordMonthlyPayment(Long vendorId, String monthYear, VendorRole operationType, 
+                                     double amount, String planNumber) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor != null) {
+            VendorMonthlyPayment monthlyPayment = vendorMonthlyPaymentRepository
+                .findByVendorAndMonthYearAndOperationType(vendor, monthYear, operationType)
+                .orElse(null);
+            
+            if (monthlyPayment != null) {
+                // Add to paid amount
+                monthlyPayment.setPaidAmount(monthlyPayment.getPaidAmount() + amount);
+                monthlyPayment.setLastUpdatedDate(LocalDate.now());
+                
+                // Update status
+                if (monthlyPayment.getPaidAmount() >= monthlyPayment.getTotalDue()) {
+                    monthlyPayment.setStatus(PaymentStatus.PAID);
+                } else if (monthlyPayment.getPaidAmount() > 0) {
+                    monthlyPayment.setStatus(PaymentStatus.PARTIAL);
+                }
+                
+                vendorMonthlyPaymentRepository.save(monthlyPayment);
+                
+                // Update legacy total
+                vendor.setPaymentDue(vendor.getPaymentDue() - amount);
+                vendorRepository.save(vendor);
+                
+                // Record payment history
+                VendorOrderHistory paymentRecord = new VendorOrderHistory();
+                paymentRecord.setVendor(vendor);
+                paymentRecord.setPlanNumber(planNumber != null ? planNumber : "Monthly Settlement " + monthYear);
+                paymentRecord.setAmount(amount);
+                paymentRecord.setPaymentDate(LocalDate.now());
+                paymentRecord.setType("PAYMENT");
+                paymentRecord.setRole(operationType);
+                vendorOrderHistoryRepository.save(paymentRecord);
+            }
+        }
+    }
+    
+    /**
+     * Get current month's total due for a vendor
+     */
+    public double getCurrentMonthDue(Long vendorId) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor == null) return 0;
+        
+        String currentMonthYear = VendorMonthlyPayment.getCurrentMonthYear();
+        List<VendorMonthlyPayment> currentMonthPayments = vendorMonthlyPaymentRepository
+            .findByVendorAndMonthYearAndOperationType(vendor, currentMonthYear, vendor.getRole())
+            .stream().toList();
+        
+        // Sum all operation types for current month
+        return getAllVendorMonthlyPayments(vendorId, currentMonthYear).stream()
+            .mapToDouble(VendorMonthlyPayment::getBalance)
+            .sum();
+    }
+    
+    /**
+     * Get previous month's total due for a vendor
+     */
+    public double getPreviousMonthDue(Long vendorId) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor == null) return 0;
+        
+        String previousMonthYear = VendorMonthlyPayment.getPreviousMonthYear();
+        return getAllVendorMonthlyPayments(vendorId, previousMonthYear).stream()
+            .mapToDouble(VendorMonthlyPayment::getBalance)
+            .sum();
+    }
+    
+    /**
+     * Get all monthly payment records for a vendor for a specific month
+     */
+    public List<VendorMonthlyPayment> getAllVendorMonthlyPayments(Long vendorId, String monthYear) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor == null) return new ArrayList<>();
+        
+        List<VendorMonthlyPayment> payments = new ArrayList<>();
+        for (VendorRole role : VendorRole.values()) {
+            vendorMonthlyPaymentRepository
+                .findByVendorAndMonthYearAndOperationType(vendor, monthYear, role)
+                .ifPresent(payments::add);
+        }
+        return payments;
+    }
+    
+    /**
+     * Get all monthly payment history for a vendor
+     */
+    public List<VendorMonthlyPayment> getVendorMonthlyPaymentHistory(Long vendorId) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor == null) return new ArrayList<>();
+        
+        return vendorMonthlyPaymentRepository.findByVendorOrderByMonthYearDesc(vendor);
+    }
+    
+    /**
+     * Get monthly payment summary for all vendors (current month)
+     */
+    public Map<String, Object> getMonthlyPaymentSummary() {
+        Map<String, Object> summary = new HashMap<>();
+        String currentMonthYear = VendorMonthlyPayment.getCurrentMonthYear();
+        
+        List<VendorMonthlyPayment> currentMonthPayments = 
+            vendorMonthlyPaymentRepository.findByMonthYear(currentMonthYear);
+        
+        double totalDue = currentMonthPayments.stream()
+            .mapToDouble(VendorMonthlyPayment::getBalance)
+            .sum();
+        
+        Map<VendorRole, Double> dueByRole = new HashMap<>();
+        for (VendorRole role : VendorRole.values()) {
+            double roleDue = currentMonthPayments.stream()
+                .filter(p -> p.getOperationType() == role)
+                .mapToDouble(VendorMonthlyPayment::getBalance)
+                .sum();
+            dueByRole.put(role, roleDue);
+        }
+        
+        summary.put("currentMonth", currentMonthYear);
+        summary.put("totalDue", totalDue);
+        summary.put("dueByRole", dueByRole);
+        summary.put("payments", currentMonthPayments);
+        
+        return summary;
+    }
+    
+    /**
+     * Get vendor summary with monthly breakdown
+     */
+    public Map<String, Object> getVendorMonthlySummary(Long vendorId) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor == null) return null;
+        
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("vendor", vendor);
+        
+        // Current month dues
+        String currentMonthYear = VendorMonthlyPayment.getCurrentMonthYear();
+        List<VendorMonthlyPayment> currentMonthPayments = 
+            getAllVendorMonthlyPayments(vendorId, currentMonthYear);
+        summary.put("currentMonthPayments", currentMonthPayments);
+        summary.put("currentMonthTotal", currentMonthPayments.stream()
+            .mapToDouble(VendorMonthlyPayment::getBalance).sum());
+        
+        // Previous month dues
+        String previousMonthYear = VendorMonthlyPayment.getPreviousMonthYear();
+        List<VendorMonthlyPayment> previousMonthPayments = 
+            getAllVendorMonthlyPayments(vendorId, previousMonthYear);
+        summary.put("previousMonthPayments", previousMonthPayments);
+        summary.put("previousMonthTotal", previousMonthPayments.stream()
+            .mapToDouble(VendorMonthlyPayment::getBalance).sum());
+        
+        // All monthly history
+        List<VendorMonthlyPayment> allHistory = getVendorMonthlyPaymentHistory(vendorId);
+        summary.put("monthlyHistory", allHistory);
+        
+        // Recent transactions
+        List<VendorOrderHistory> recentHistory = getVendorOrderHistory(vendorId);
+        summary.put("recentHistory", recentHistory);
+        
+        return summary;
+    }
+    
+    public int deleteSettledPaymentsFromPreviousMonth() {
+        String previousMonthYear = VendorMonthlyPayment.getPreviousMonthYear();
+        
+        List<VendorMonthlyPayment> settledPayments = vendorMonthlyPaymentRepository.findAll().stream()
+            .filter(payment -> {
+                return previousMonthYear.equals(payment.getMonthYear()) && 
+                       PaymentStatus.PAID.equals(payment.getStatus());
+            })
+            .toList();
+        
+        int count = settledPayments.size();
+        vendorMonthlyPaymentRepository.deleteAll(settledPayments);
+        return count;
     }
 }

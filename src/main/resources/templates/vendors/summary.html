@@ -204,39 +204,62 @@
             <a th:href="@{/vendors/summary}" class="active">💰 Payments</a>
             <a th:href="@{/articles}">👟 Articles</a>
             <a th:href="@{/colors}">🎨 Colors</a>
+            <a th:href="@{/rateheads}">💵 Rate Heads</a>
         </div>
     </nav>
     
     <div class="container">
         <div class="page-header">
-            <h2>Vendor Payment Summary</h2>
+            <h2>💰 Vendor Payment Summary</h2>
             <div>
                 <a th:href="@{/vendors}" class="btn btn-info">All Vendors</a>
                 <a th:href="@{/vendors/report}" class="btn btn-primary">Payment Report</a>
             </div>
         </div>
         
+        <!-- Current Month Summary -->
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+            <h3 style="margin-top: 0; color: #856404;">
+                📅 Current Month: <span th:if="${monthlySummary != null}" th:text="${monthlySummary.currentMonth}">Current Month</span>
+            </h3>
+            <p style="margin: 0; font-size: 14px; color: #856404;">
+                This shows payments due for work completed in the current month.
+            </p>
+        </div>
+        
         <div class="stats-grid">
             <div class="stat-card">
-                <h3>Total Payment Due</h3>
-                <div class="stat-value total" th:text="${'₹' + #numbers.formatDecimal(summary.totalPaymentDue, 1, 2)}"></div>
-                <p>Total amount due to all vendors</p>
+                <h3>📊 Current Month Total</h3>
+                <div class="stat-value total" 
+                     th:text="${monthlySummary != null ? '₹' + #numbers.formatDecimal(monthlySummary.totalDue, 1, 2) : '₹0.00'}">₹0.00</div>
+                <p>This month's dues</p>
             </div>
             <div class="stat-card">
-                <h3>Cutting Vendors Due</h3>
-                <div class="stat-value cutting" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.get(T(com.skse.inventory.model.VendorRole).Cutting), 1, 2)}"></div>
-                <p>Amount due to cutting vendors</p>
+                <h3>🔪 Cutting</h3>
+                <div class="stat-value cutting" 
+                     th:text="${monthlySummary != null && monthlySummary.dueByRole != null ? '₹' + #numbers.formatDecimal(monthlySummary.dueByRole.get(T(com.skse.inventory.model.VendorRole).Cutting) ?: 0, 1, 2) : '₹0.00'}">₹0.00</div>
+                <p>Cutting vendors</p>
             </div>
             <div class="stat-card">
-                <h3>Printing Vendors Due</h3>
-                <div class="stat-value printing" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.get(T(com.skse.inventory.model.VendorRole).Printing), 1, 2)}"></div>
-                <p>Amount due to printing vendors</p>
+                <h3>🖨️ Printing</h3>
+                <div class="stat-value printing" 
+                     th:text="${monthlySummary != null && monthlySummary.dueByRole != null ? '₹' + #numbers.formatDecimal(monthlySummary.dueByRole.get(T(com.skse.inventory.model.VendorRole).Printing) ?: 0, 1, 2) : '₹0.00'}">₹0.00</div>
+                <p>Printing vendors</p>
             </div>
             <div class="stat-card">
-                <h3>Stitching Vendors Due</h3>
-                <div class="stat-value stitching" th:text="${'₹' + #numbers.formatDecimal(summary.paymentByRole.get(T(com.skse.inventory.model.VendorRole).Stitching), 1, 2)}"></div>
-                <p>Amount due to stitching vendors</p>
+                <h3>🧵 Stitching</h3>
+                <div class="stat-value stitching" 
+                     th:text="${monthlySummary != null && monthlySummary.dueByRole != null ? '₹' + #numbers.formatDecimal(monthlySummary.dueByRole.get(T(com.skse.inventory.model.VendorRole).Stitching) ?: 0, 1, 2) : '₹0.00'}">₹0.00</div>
+                <p>Stitching vendors</p>
             </div>
+        </div>
+        
+        <!-- Legacy Total Payment Summary -->
+        <div style="background-color: #e7f3ff; border: 1px solid #bee5eb; padding: 15px; border-radius: 10px; margin-bottom: 30px;">
+            <h4 style="margin-top: 0; color: #0c5460;">ℹ️ Total Cumulative Payment Due (All Months)</h4>
+            <p style="margin: 0; font-size: 24px; font-weight: bold; color: #dc3545;">
+                ₹<span th:text="${#numbers.formatDecimal(summary.totalPaymentDue, 1, 2)}">0.00</span>
+            </p>
         </div>
         
         <div class="summary-section">
@@ -246,7 +269,6 @@
                     <tr>
                         <th>Vendor Name</th>
                         <th>Role</th>
-                        <th>Contact Info</th>
                         <th>Payment Due</th>
                         <th>Actions</th>
                     </tr>
@@ -255,14 +277,13 @@
                     <tr th:each="vendor : ${summary.topVendors}">
                         <td th:text="${vendor.name}"></td>
                         <td th:text="${vendor.role}"></td>
-                        <td th:text="${vendor.contactInfo}"></td>
                         <td>
                             <span th:class="${vendor.paymentDue > 10000 ? 'payment-high' : (vendor.paymentDue > 5000 ? 'payment-medium' : 'payment-low')}"
                                   th:text="${'₹' + #numbers.formatDecimal(vendor.paymentDue, 1, 2)}"></span>
                         </td>
                         <td>
                             <a th:href="@{'/vendors/' + ${vendor.id} + '/details'}" class="btn btn-info">Details</a>
-                            <a th:href="@{'/vendors/' + ${vendor.id} + '/payment'}" class="btn btn-primary">Record Payment</a>
+                            <a th:href="@{'/vendors/' + ${vendor.id} + '/payment'}" class="btn btn-primary">Settle Payment</a>
                         </td>
                     </tr>
                 </tbody>

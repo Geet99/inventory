@@ -4,11 +4,18 @@ A comprehensive inventory management system for SKSE Footwear Manufacturing, bui
 
 ## Features
 
+### 💵 Rate Heads Management (NEW!)
+- **Centralized Cost Management**: Define rate heads for all operations (Cutting, Printing, Stitching)
+- **Dynamic Rate Updates**: Update costs in one place, affects all future vendor payments
+- **Multiple Rate Tiers**: Support different rate levels (Standard, Premium, etc.)
+- **Active/Inactive Status**: Control which rate heads are available for selection
+
 ### 🏭 Manufacturing Process Management
 - **Plans Management**: Create and track production plans with article, color, and size-quantity specifications
 - **Process Flow**: Track plans through cutting → printing → stitching → completion → machine processing
 - **Vendor Assignment**: Assign vendors for cutting, printing, and stitching tasks
 - **Final Quantity Tracking**: Record actual quantities produced vs planned quantities
+- **Flexible Printing**: Change printing type during plan editing (before vendor assignment)
 
 ### 📦 Stock Management
 - **Upper Stock**: Track stock after cutting and stitching (before machine processing)
@@ -76,15 +83,40 @@ A comprehensive inventory management system for SKSE Footwear Manufacturing, bui
 
 ## Database Configuration
 
-The system uses MySQL database. Configure your database connection in `application.properties`:
+The system supports two database profiles:
 
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/inventory_db
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-```
+### 🚀 Quick Start (Development with H2)
+The application is configured to use **H2 in-memory database by default** - no database setup required!
+
+### 🗄️ Production (MySQL)
+For production use, switch to MySQL profile.
+
+#### Available Profiles:
+- **dev** (default): H2 in-memory database - data is reset on each restart
+- **prod**: MySQL persistent database
 
 ## Running the Application
+
+### Option 1: Quick Start with H2 (Recommended for Development)
+
+1. **Prerequisites**:
+   - Java 17 or higher
+   - Maven
+
+2. **Run Application** (uses H2 by default):
+   ```bash
+   mvn spring-boot:run
+   ```
+
+3. **Access Application**:
+   - Main application: http://localhost:8080
+   - H2 Console: http://localhost:8080/h2-console
+     - JDBC URL: `jdbc:h2:mem:inventory_db`
+     - Username: `sa`
+     - Password: (leave empty)
+   - API Documentation: http://localhost:8080/swagger-ui.html
+
+### Option 2: Production Mode with MySQL
 
 1. **Prerequisites**:
    - Java 17 or higher
@@ -99,9 +131,14 @@ spring.datasource.password=your_password
    FLUSH PRIVILEGES;
    ```
 
-3. **Run Application**:
+3. **Run Application with MySQL**:
    ```bash
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.profiles=prod
+   ```
+   
+   Or set in `application.properties`:
+   ```properties
+   spring.profiles.active=prod
    ```
 
 4. **Access Application**:
@@ -117,12 +154,14 @@ spring.datasource.password=your_password
 - `/vendors` - Vendor management
 - `/vendors/summary` - Payment summary
 - `/articles` - Article management
+- `/rateheads` - Rate heads management (NEW!)
 
 ### API Endpoints
 - `/api/plans` - Plans API
 - `/api/stock` - Stock API
 - `/api/vendors` - Vendors API
 - `/api/articles` - Articles API
+- `/api/rateheads` - Rate heads API (NEW!)
 
 ## Business Logic Improvements
 

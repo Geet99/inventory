@@ -189,70 +189,66 @@
         <div class="card">
             <form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
                 <div class="vendor-section">
-                    <h4>Cutting Vendor</h4>
+                    <h4>🔪 Cutting Vendor</h4>
                     <div class="form-group">
-                        <label for="cuttingVendor">Select Cutting Vendor:</label>
-                        <select id="cuttingVendor" name="vendorId">
-                            <option value="">Select Vendor</option>
+                        <label for="cuttingVendorId">Select Cutting Vendor:</label>
+                        <select id="cuttingVendorId" name="cuttingVendorId">
+                            <option value="">-- No Change --</option>
                             <option th:each="vendor : ${vendors}" 
                                     th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Cutting}"
                                     th:value="${vendor.id}" 
-                                    th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
+                                    th:text="${vendor.name}"
+                                    th:selected="${plan.cuttingVendor != null && plan.cuttingVendor.id == vendor.id}"></option>
                         </select>
-                        <p th:if="${plan.cuttingVendor != null}">
+                        <p th:if="${plan.cuttingVendor != null}" style="font-size: 12px; color: #666; margin-top: 5px;">
                             <strong>Current:</strong> <span th:text="${plan.cuttingVendor.name}"></span>
                         </p>
-                        <input type="hidden" name="role" value="Cutting">
-                        <button type="submit" class="btn btn-primary">Assign Cutting Vendor</button>
                     </div>
                 </div>
-            </form>
-            
-            <form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
+                
                 <div class="vendor-section">
-                    <h4>Printing Vendor</h4>
+                    <h4>🖨️ Printing Vendor</h4>
                     <div class="form-group">
-                        <label for="printingVendor">Select Printing Vendor:</label>
-                        <select id="printingVendor" name="vendorId">
-                            <option value="">Select Vendor</option>
+                        <label for="printingVendorId">Select Printing Vendor:</label>
+                        <select id="printingVendorId" name="printingVendorId">
+                            <option value="">-- No Change --</option>
                             <option th:each="vendor : ${vendors}" 
                                     th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Printing}"
                                     th:value="${vendor.id}" 
-                                    th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
+                                    th:text="${vendor.name}"
+                                    th:selected="${plan.printingVendor != null && plan.printingVendor.id == vendor.id}"></option>
                         </select>
-                        <p th:if="${plan.printingVendor != null}">
+                        <p th:if="${plan.printingVendor != null}" style="font-size: 12px; color: #666; margin-top: 5px;">
                             <strong>Current:</strong> <span th:text="${plan.printingVendor.name}"></span>
                         </p>
-                        <input type="hidden" name="role" value="Printing">
-                        <button type="submit" class="btn btn-primary">Assign Printing Vendor</button>
                     </div>
                 </div>
-            </form>
-            
-            <form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
+                
                 <div class="vendor-section">
-                    <h4>Stitching Vendor</h4>
+                    <h4>🧵 Stitching Vendor</h4>
                     <div class="form-group">
-                        <label for="stitchingVendor">Select Stitching Vendor:</label>
-                        <select id="stitchingVendor" name="vendorId">
-                            <option value="">Select Vendor</option>
+                        <label for="stitchingVendorId">Select Stitching Vendor:</label>
+                        <select id="stitchingVendorId" name="stitchingVendorId">
+                            <option value="">-- No Change --</option>
                             <option th:each="vendor : ${vendors}" 
                                     th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Stitching}"
                                     th:value="${vendor.id}" 
-                                    th:text="${vendor.name + ' (' + vendor.contactInfo + ')'}"></option>
+                                    th:text="${vendor.name}"
+                                    th:selected="${plan.stitchingVendor != null && plan.stitchingVendor.id == vendor.id}"></option>
                         </select>
-                        <p th:if="${plan.stitchingVendor != null}">
+                        <p th:if="${plan.stitchingVendor != null}" style="font-size: 12px; color: #666; margin-top: 5px;">
                             <strong>Current:</strong> <span th:text="${plan.stitchingVendor.name}"></span>
                         </p>
-                        <input type="hidden" name="role" value="Stitching">
-                        <button type="submit" class="btn btn-primary">Assign Stitching Vendor</button>
                     </div>
                 </div>
+                
+                <div class="form-group" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ecf0f1;">
+                    <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 15px 30px;">
+                        👥 Assign Vendors
+                    </button>
+                    <a th:href="@{/plans}" class="btn btn-secondary" style="font-size: 16px; padding: 15px 30px;">Cancel</a>
+                </div>
             </form>
-            
-            <div class="form-group">
-                <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
-            </div>
         </div>
     </div>
 </body>
