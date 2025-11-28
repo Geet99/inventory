@@ -13,6 +13,10 @@ public class Plan {
     private String planNumber; // Unique plan identifier
     private String articleName;
     private String color;
+    
+    @Column(length = 500)
+    private String description; // Optional description for the plan
+    
     private String planSize;
     private int total;
 
@@ -75,6 +79,14 @@ public class Plan {
 
     public void setColor(String color) {
         this.color = color;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getPlanSize() {

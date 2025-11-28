@@ -63,23 +63,16 @@
             background-color: #3498db;
             color: white;
         }
-        .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        .page-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
         }
-        .card-header {
-            padding: 20px;
-            border-bottom: 1px solid #ecf0f1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .card-title {
+        .page-header h2 {
             margin: 0;
             color: #2c3e50;
-            font-size: 20px;
+            font-size: 24px;
         }
         .btn { 
             padding: 10px 20px; 
@@ -121,22 +114,26 @@
         .btn-danger:hover {
             background-color: #c82333;
         }
-        .table {
+        table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin-top: 10px; 
+            margin-top: 20px; 
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .table th, .table td { 
+        th, td { 
             padding: 12px; 
             text-align: left; 
             border-bottom: 1px solid #ddd; 
         }
-        .table th { 
+        th { 
             background-color: #f8f9fa; 
             font-weight: bold; 
             color: #2c3e50;
         }
-        .table tr:hover {
+        tr:hover {
             background-color: #f5f5f5;
         }
         .actions { 
@@ -153,7 +150,7 @@
                 flex-direction: column;
                 align-items: center;
             }
-            .card-header {
+            .page-header {
                 flex-direction: column;
                 gap: 15px;
                 align-items: flex-start;
@@ -168,19 +165,16 @@
     <div th:replace="~{fragments/navigation :: navbar}"></div>
     
     <div class="container">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Articles Management</h2>
-                <div>
-                    <a th:href="@{/articles/new}" class="btn btn-success">➕ Add New Article</a>
-                </div>
+        <div class="page-header">
+            <h2>Articles Management</h2>
+            <div>
+                <a th:href="@{/articles/new}" class="btn btn-success">➕ Add New Article</a>
             </div>
         </div>
         
         <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
         
-        <div class="card">
-            <table class="table">
+        <table>
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -213,7 +207,10 @@
                         </td>
                     </tr>
                 </tbody>
-            </table>
+        </table>
+        
+        <div th:if="${#lists.isEmpty(articles)}" style="text-align: center; margin-top: 50px; color: #666;">
+            <p>No articles found. <a th:href="@{/articles/new}">Add your first article</a></p>
         </div>
     </div>
 </body>

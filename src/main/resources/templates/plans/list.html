@@ -63,26 +63,16 @@
             background-color: #3498db;
             color: white;
         }
-        .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            overflow: hidden;
+        .page-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
         }
-        .card-header {
-            background: #3498db;
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .card-title {
+        .page-header h2 {
             margin: 0;
-            font-size: 20px;
+            color: #2c3e50;
+            font-size: 24px;
         }
         .btn { 
             padding: 10px 20px; 
@@ -136,10 +126,14 @@
             cursor: not-allowed;
             pointer-events: none;
         }
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .table th, .table td {
             padding: 12px;
@@ -182,7 +176,7 @@
                 flex-direction: column;
                 align-items: center;
             }
-            .card-header {
+            .page-header {
                 flex-direction: column;
                 gap: 15px;
                 align-items: flex-start;
@@ -197,26 +191,24 @@
     <div th:replace="~{fragments/navigation :: navbar}"></div>
 
     <div class="container">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Plans Management</h2>
-                <div>
-                    <a th:href="@{/plans/dashboard}" class="btn btn-primary">📊 Plan Dashboard</a>
-                    <a th:href="@{/stock}" class="btn btn-info">📦 Stock Dashboard</a>
-                    <a th:href="@{/plans/new}" class="btn btn-success">➕ Add New Plan</a>
-                </div>
+        <div class="page-header">
+            <h2>Plans Management</h2>
+            <div>
+                <a th:href="@{/plans/dashboard}" class="btn btn-primary">📊 Plan Dashboard</a>
+                <a th:href="@{/stock}" class="btn btn-info">📦 Stock Dashboard</a>
+                <a th:href="@{/plans/new}" class="btn btn-success">➕ Add New Plan</a>
             </div>
         </div>
         
         <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
         
-        <div class="card">
-            <table class="table">
+        <table>
                 <thead>
                     <tr>
                         <th>Plan Number</th>
                         <th>Article</th>
                         <th>Color</th>
+                        <th>Description</th>
                         <th>Total Quantity</th>
                         <th>Status</th>
                         <th>Cutting Vendor</th>
@@ -231,6 +223,7 @@
                         <td th:text="${plan.planNumber}"></td>
                         <td th:text="${plan.articleName}"></td>
                         <td th:text="${plan.color}"></td>
+                        <td th:text="${plan.description != null ? plan.description : '-'}"></td>
                         <td th:text="${plan.total}"></td>
                         <td>
                             <span th:if="${plan.status != null}"
@@ -273,7 +266,10 @@
                         </td>
                     </tr>
                 </tbody>
-            </table>
+        </table>
+        
+        <div th:if="${#lists.isEmpty(plans)}" style="text-align: center; margin-top: 50px; color: #666;">
+            <p>No plans found. <a th:href="@{/plans/new}">Create your first plan</a></p>
         </div>
     </div>
 </body>

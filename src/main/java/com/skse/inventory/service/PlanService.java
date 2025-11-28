@@ -51,6 +51,7 @@ public class PlanService {
         if (plan != null) {
             plan.setArticleName(updatedPlan.getArticleName());
             plan.setColor(updatedPlan.getColor());
+            plan.setDescription(updatedPlan.getDescription());
             plan.setTotal(updatedPlan.getTotal());
             plan.setSizeQuantityPairs(updatedPlan.getSizeQuantityPairs());
             plan.setPrintingRateHead(updatedPlan.getPrintingRateHead());

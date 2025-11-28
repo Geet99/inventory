@@ -436,7 +436,7 @@ public class VendorService {
             dueByRole.put(role, roleDue);
         }
         
-        summary.put("currentMonth", currentMonthYear);
+        summary.put("currentMonth", getFormattedCurrentMonthYear());
         summary.put("totalDue", totalDue);
         summary.put("dueByRole", dueByRole);
         summary.put("payments", currentMonthPayments);
@@ -773,6 +773,19 @@ public class VendorService {
      */
     public String getFormattedPreviousMonthYear() {
         String monthYear = VendorMonthlyPayment.getPreviousMonthYear();
+        if (monthYear != null && monthYear.length() == 6) {
+            String month = monthYear.substring(0, 2);
+            String year = monthYear.substring(2);
+            return getMonthName(month) + " " + year;
+        }
+        return monthYear;
+    }
+    
+    /**
+     * Get formatted current month year (e.g., "December 2024")
+     */
+    public String getFormattedCurrentMonthYear() {
+        String monthYear = VendorMonthlyPayment.getCurrentMonthYear();
         if (monthYear != null && monthYear.length() == 6) {
             String month = monthYear.substring(0, 2);
             String year = monthYear.substring(2);
