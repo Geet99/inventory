@@ -49,8 +49,11 @@ public class PlanService {
     public Plan updatePlan(String planNumber, Plan updatedPlan) {
         Plan plan = planRepository.findByPlanNumber(planNumber);
         if (plan != null) {
+            plan.setArticleName(updatedPlan.getArticleName());
+            plan.setColor(updatedPlan.getColor());
             plan.setTotal(updatedPlan.getTotal());
             plan.setSizeQuantityPairs(updatedPlan.getSizeQuantityPairs());
+            plan.setPrintingRateHead(updatedPlan.getPrintingRateHead());
             return planRepository.save(plan);
         } else {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
