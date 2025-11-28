@@ -102,9 +102,15 @@ public class VendorViewController {
     @PostMapping("/{id}/payment")
     public String recordPayment(@PathVariable Long id, 
                                @RequestParam double amount,
-                               @RequestParam String planNumber) {
+                               @RequestParam(required = false) String planNumber) {
+        // For monthly settlements, planNumber is not needed
+        if (planNumber == null || planNumber.isEmpty()) {
+            planNumber = "MONTHLY_SETTLEMENT";
+        }
         vendorService.recordVendorPayment(id, amount, planNumber);
-        return "redirect:/vendors/" + id + "/details";
+        
+        // Redirect to payment receipt for printing
+        return "redirect:/vendors/" + id + "/payment-receipt";
     }
 
     @GetMapping("/report")
@@ -128,5 +134,47 @@ public class VendorViewController {
         model.addAttribute("vendors", vendors);
         model.addAttribute("role", role);
         return "vendors/by-role";
+    }
+    
+    @GetMapping("/{id}/task-slip")
+    public String printTaskSlip(@PathVariable Long id, Model model) {
+        Vendor vendor = vendorService.getVendorById(id);
+        List<Map<String, Object>> tasks = vendorService.getVendorTasksForSlip(id);
+        
+        int totalQuantity = tasks.stream()
+            .mapToInt(task -> (Integer) task.get("quantity"))
+            .sum();
+        
+        double totalPaymentDue = tasks.stream()
+            .mapToDouble(task -> (Double) task.get("paymentDue"))
+            .sum();
+        
+        // Get formatted period (e.g., "November 2024")
+        String period = vendorService.getFormattedPreviousMonthYear();
+        
+        model.addAttribute("vendor", vendor);
+        model.addAttribute("tasks", tasks);
+        model.addAttribute("totalQuantity", totalQuantity);
+        model.addAttribute("totalPaymentDue", totalPaymentDue);
+        model.addAttribute("period", period);
+        
+        return "vendors/task-slip";
+    }
+    
+    @GetMapping("/{id}/payment-receipt")
+    public String printPaymentReceipt(@PathVariable Long id, Model model) {
+        Vendor vendor = vendorService.getVendorById(id);
+        Map<String, Object> receiptData = vendorService.getPaymentReceiptData(id);
+        
+        model.addAttribute("vendor", vendor);
+        model.addAttribute("settlementPeriod", receiptData.get("settlementPeriod"));
+        model.addAttribute("workDetails", receiptData.get("workDetails"));
+        model.addAttribute("totalQuantity", receiptData.get("totalQuantity"));
+        model.addAttribute("totalDue", receiptData.get("totalDue"));
+        model.addAttribute("previousPayment", receiptData.get("previousPayment"));
+        model.addAttribute("amountSettled", receiptData.get("amountSettled"));
+        model.addAttribute("amountInWords", receiptData.get("amountInWords"));
+        
+        return "vendors/payment-receipt";
     }
 }

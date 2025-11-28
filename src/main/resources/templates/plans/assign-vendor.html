@@ -151,24 +151,12 @@
             }
         }
     </style>
+    <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
 <body>
-    <div class="header">
-        <h1>SKSE Inventory Management System</h1>
-        <p>Manage your slipper manufacturing business efficiently</p>
-    </div>
-    
-    <nav class="nav">
-        <div class="nav-container">
-            <a th:href="@{/}">🏠 Home</a>
-            <a th:href="@{/plans}" class="active">📋 Plans</a>
-            <a th:href="@{/stock}">📦 Stock</a>
-            <a th:href="@{/vendors}">👥 Vendors</a>
-            <a th:href="@{/vendors/summary}">💰 Payments</a>
-            <a th:href="@{/articles}">👟 Articles</a>
-            <a th:href="@{/colors}">🎨 Colors</a>
-        </div>
-    </nav>
+    <!-- Include Page Header and Navigation -->
+    <div th:replace="~{fragments/navigation :: page-header}"></div>
+    <div th:replace="~{fragments/navigation :: navbar}"></div>
     
     <div class="container">
         <div class="card">
@@ -195,7 +183,7 @@
                         <select id="cuttingVendorId" name="cuttingVendorId">
                             <option value="">-- No Change --</option>
                             <option th:each="vendor : ${vendors}" 
-                                    th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Cutting}"
+                                    th:if="${vendor.role != null and vendor.role.name() == 'Cutting'}"
                                     th:value="${vendor.id}" 
                                     th:text="${vendor.name}"
                                     th:selected="${plan.cuttingVendor != null && plan.cuttingVendor.id == vendor.id}"></option>
@@ -213,7 +201,7 @@
                         <select id="printingVendorId" name="printingVendorId">
                             <option value="">-- No Change --</option>
                             <option th:each="vendor : ${vendors}" 
-                                    th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Printing}"
+                                    th:if="${vendor.role != null and vendor.role.name() == 'Printing'}"
                                     th:value="${vendor.id}" 
                                     th:text="${vendor.name}"
                                     th:selected="${plan.printingVendor != null && plan.printingVendor.id == vendor.id}"></option>
@@ -231,7 +219,7 @@
                         <select id="stitchingVendorId" name="stitchingVendorId">
                             <option value="">-- No Change --</option>
                             <option th:each="vendor : ${vendors}" 
-                                    th:if="${vendor.role == T(com.skse.inventory.model.VendorRole).Stitching}"
+                                    th:if="${vendor.role != null and vendor.role.name() == 'Stitching'}"
                                     th:value="${vendor.id}" 
                                     th:text="${vendor.name}"
                                     th:selected="${plan.stitchingVendor != null && plan.stitchingVendor.id == vendor.id}"></option>

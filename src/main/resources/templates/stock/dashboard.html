@@ -161,25 +161,61 @@
             color: #dc3545; 
             font-weight: bold; 
         }
+        .summary-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .summary-row:hover {
+            background-color: #f8f9fa;
+        }
+        .detail-row {
+            display: none;
+            background-color: #f8f9fa;
+        }
+        .detail-row.show {
+            display: table-row;
+        }
+        .detail-content {
+            padding: 15px;
+        }
+        .size-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            padding: 10px 0;
+        }
+        .size-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .size-label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+        }
+        .size-quantity {
+            font-size: 18px;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .expand-icon {
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.3s;
+        }
+        .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
     </style>
+    <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
 <body>
-    <div class="header">
-        <h1>SKSE Inventory Management System</h1>
-        <p>Manage your slipper manufacturing business efficiently</p>
-    </div>
-    
-    <nav class="nav">
-        <div class="nav-container">
-            <a th:href="@{/}">🏠 Home</a>
-            <a th:href="@{/plans}">📋 Plans</a>
-            <a th:href="@{/stock}" class="active">📦 Stock</a>
-            <a th:href="@{/vendors}">👥 Vendors</a>
-            <a th:href="@{/vendors/summary}">💰 Payments</a>
-            <a th:href="@{/articles}">👟 Articles</a>
-            <a th:href="@{/colors}">🎨 Colors</a>
-        </div>
-    </nav>
+    <!-- Include Page Header and Navigation -->
+    <div th:replace="~{fragments/navigation :: page-header}"></div>
+    <div th:replace="~{fragments/navigation :: navbar}"></div>
     
     <div class="container">
         <div class="page-header">
@@ -205,69 +241,201 @@
             </div>
             <div class="stat-card">
                 <h3>Upper Stock Items</h3>
-                <div class="stat-value upper" th:text="${upperStocks.size()}"></div>
-                <p>Different stock items</p>
+                <div class="stat-value upper" th:text="${upperStockSummary.size()}"></div>
+                <p>Different Article-Color combinations</p>
             </div>
             <div class="stat-card">
                 <h3>Finished Stock Items</h3>
-                <div class="stat-value finished" th:text="${finishedStocks.size()}"></div>
-                <p>Different finished items</p>
+                <div class="stat-value finished" th:text="${finishedStockSummary.size()}"></div>
+                <p>Different Article-Color combinations</p>
             </div>
         </div>
         
         <div class="stock-section">
             <h3>Upper Stock Summary</h3>
-            <table>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                    💡 Click on any row to view size breakdown
+                </p>
+                <input type="text" id="upperSearchInput" placeholder="🔍 Search by article name..." 
+                       style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; width: 300px;">
+            </div>
+            <table id="upperStockTable">
                 <thead>
                     <tr>
                         <th>Article</th>
                         <th>Color</th>
-                        <th>Size</th>
                         <th>Quantity</th>
                         <th>Value</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="stock : ${upperStocks}">
-                        <td th:text="${stock.article.name}"></td>
-                        <td th:text="${stock.color}"></td>
-                        <td th:text="${stock.size}"></td>
-                        <td>
-                            <span th:class="${stock.quantity > 50 ? 'quantity-high' : (stock.quantity > 20 ? 'quantity-medium' : 'quantity-low')}"
-                                  th:text="${stock.quantity}"></span>
-                        </td>
-                        <td th:text="${'₹' + #numbers.formatDecimal(stock.quantity * stock.article.slipperCost, 1, 2)}"></td>
-                    </tr>
+                    <th:block th:each="entry, iterStat : ${upperStockSummary}">
+                        <tr class="summary-row" th:attr="data-target='upper-detail-' + ${iterStat.index}" onclick="toggleDetail(this)">
+                            <td>
+                                <span class="expand-icon">▶</span>
+                                <span th:text="${entry.value.articleName}"></span>
+                            </td>
+                            <td th:text="${entry.value.color}"></td>
+                            <td>
+                                <span th:class="${entry.value.totalQuantity > 50 ? 'quantity-high' : (entry.value.totalQuantity > 20 ? 'quantity-medium' : 'quantity-low')}"
+                                      th:text="${entry.value.totalQuantity}"></span>
+                            </td>
+                            <td th:text="${'₹' + #numbers.formatDecimal(entry.value.totalValue, 1, 2)}"></td>
+                        </tr>
+                        <tr class="detail-row" th:id="'upper-detail-' + ${iterStat.index}">
+                            <td colspan="4">
+                                <div class="detail-content">
+                                    <strong>Size Breakdown:</strong>
+                                    <div class="size-breakdown">
+                                        <div class="size-item" th:each="sizeEntry : ${entry.value.sizeBreakdown}">
+                                            <div class="size-label" th:text="'Size ' + ${sizeEntry.key}"></div>
+                                            <div class="size-quantity" th:text="${sizeEntry.value}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </th:block>
                 </tbody>
             </table>
         </div>
         
         <div class="stock-section">
             <h3>Finished Stock Summary</h3>
-            <table>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                    💡 Click on any row to view size breakdown
+                </p>
+                <input type="text" id="finishedSearchInput" placeholder="🔍 Search by article name..." 
+                       style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; width: 300px;">
+            </div>
+            <table id="finishedStockTable">
                 <thead>
                     <tr>
                         <th>Article</th>
                         <th>Color</th>
-                        <th>Size</th>
                         <th>Quantity</th>
                         <th>Value</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="stock : ${finishedStocks}">
-                        <td th:text="${stock.article.name}"></td>
-                        <td th:text="${stock.color}"></td>
-                        <td th:text="${stock.size}"></td>
-                        <td>
-                            <span th:class="${stock.quantity > 50 ? 'quantity-high' : (stock.quantity > 20 ? 'quantity-medium' : 'quantity-low')}"
-                                  th:text="${stock.quantity}"></span>
-                        </td>
-                        <td th:text="${'₹' + #numbers.formatDecimal(stock.quantity * stock.article.slipperCost, 1, 2)}"></td>
-                    </tr>
+                    <th:block th:each="entry, iterStat : ${finishedStockSummary}">
+                        <tr class="summary-row" th:attr="data-target='finished-detail-' + ${iterStat.index}" onclick="toggleDetail(this)">
+                            <td>
+                                <span class="expand-icon">▶</span>
+                                <span th:text="${entry.value.articleName}"></span>
+                            </td>
+                            <td th:text="${entry.value.color}"></td>
+                            <td>
+                                <span th:class="${entry.value.totalQuantity > 50 ? 'quantity-high' : (entry.value.totalQuantity > 20 ? 'quantity-medium' : 'quantity-low')}"
+                                      th:text="${entry.value.totalQuantity}"></span>
+                            </td>
+                            <td th:text="${'₹' + #numbers.formatDecimal(entry.value.totalValue, 1, 2)}"></td>
+                        </tr>
+                        <tr class="detail-row" th:id="'finished-detail-' + ${iterStat.index}">
+                            <td colspan="4">
+                                <div class="detail-content">
+                                    <strong>Size Breakdown:</strong>
+                                    <div class="size-breakdown">
+                                        <div class="size-item" th:each="sizeEntry : ${entry.value.sizeBreakdown}">
+                                            <div class="size-label" th:text="'Size ' + ${sizeEntry.key}"></div>
+                                            <div class="size-quantity" th:text="${sizeEntry.value}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </th:block>
                 </tbody>
             </table>
         </div>
     </div>
+    
+    <script>
+        function toggleDetail(row) {
+            const targetId = row.getAttribute('data-target');
+            const detailRow = document.getElementById(targetId);
+            const expandIcon = row.querySelector('.expand-icon');
+            
+            if (detailRow.classList.contains('show')) {
+                detailRow.classList.remove('show');
+                expandIcon.classList.remove('expanded');
+            } else {
+                detailRow.classList.add('show');
+                expandIcon.classList.add('expanded');
+            }
+        }
+        
+        // Search functionality for Upper Stock
+        document.addEventListener('DOMContentLoaded', function() {
+            const upperSearchInput = document.getElementById('upperSearchInput');
+            const finishedSearchInput = document.getElementById('finishedSearchInput');
+            
+            if (upperSearchInput) {
+                upperSearchInput.addEventListener('input', function(e) {
+                    filterTable('upperStockTable', e.target.value);
+                });
+            }
+            
+            if (finishedSearchInput) {
+                finishedSearchInput.addEventListener('input', function(e) {
+                    filterTable('finishedStockTable', e.target.value);
+                });
+            }
+        });
+        
+        function filterTable(tableId, searchTerm) {
+            const table = document.getElementById(tableId);
+            const tbody = table.querySelector('tbody');
+            const rows = tbody.querySelectorAll('tr');
+            const searchLower = searchTerm.toLowerCase();
+            
+            // Track which rows to show/hide
+            const rowPairs = new Map();
+            
+            // Group rows by pairs (summary + detail)
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.classList.contains('summary-row')) {
+                    const detailRow = rows[i + 1];
+                    rowPairs.set(row, detailRow);
+                }
+            }
+            
+            // Filter rows
+            let visibleCount = 0;
+            rowPairs.forEach((detailRow, summaryRow) => {
+                const articleCell = summaryRow.querySelector('td:first-child span:last-child');
+                const articleName = articleCell ? articleCell.textContent.toLowerCase() : '';
+                
+                if (articleName.includes(searchLower)) {
+                    summaryRow.style.display = '';
+                    // Keep detail row hidden unless it was expanded
+                    if (!detailRow.classList.contains('show')) {
+                        detailRow.style.display = 'none';
+                    }
+                    visibleCount++;
+                } else {
+                    summaryRow.style.display = 'none';
+                    detailRow.style.display = 'none';
+                }
+            });
+            
+            // Show/hide "no results" message
+            let noResultsRow = tbody.querySelector('.no-results');
+            if (visibleCount === 0 && searchTerm) {
+                if (!noResultsRow) {
+                    noResultsRow = document.createElement('tr');
+                    noResultsRow.className = 'no-results';
+                    noResultsRow.innerHTML = '<td colspan="4" style="text-align: center; padding: 40px; color: #7f8c8d;">No articles found matching "' + searchTerm + '"</td>';
+                    tbody.appendChild(noResultsRow);
+                }
+                noResultsRow.style.display = '';
+            } else if (noResultsRow) {
+                noResultsRow.style.display = 'none';
+            }
+        }
+    </script>
 </body>
-</html> 
+</html>

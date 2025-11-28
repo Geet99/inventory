@@ -39,12 +39,69 @@ public class StockController {
         double totalUpperValue = stockService.getTotalUpperStockValue();
         double totalFinishedValue = stockService.getTotalFinishedStockValue();
         
+        // Group stocks by Article-Color for summary view
+        Map<String, Map<String, Object>> upperStockSummary = groupStockByArticleColor(upperStocks);
+        Map<String, Map<String, Object>> finishedStockSummary = groupStockByArticleColor(finishedStocks);
+        
         model.addAttribute("upperStocks", upperStocks);
         model.addAttribute("finishedStocks", finishedStocks);
+        model.addAttribute("upperStockSummary", upperStockSummary);
+        model.addAttribute("finishedStockSummary", finishedStockSummary);
         model.addAttribute("totalUpperValue", totalUpperValue);
         model.addAttribute("totalFinishedValue", totalFinishedValue);
         
         return "stock/dashboard";
+    }
+    
+    private Map<String, Map<String, Object>> groupStockByArticleColor(List<? extends Object> stocks) {
+        Map<String, Map<String, Object>> grouped = new HashMap<>();
+        
+        for (Object stockObj : stocks) {
+            String articleName = "";
+            String color = "";
+            int quantity = 0;
+            double unitCost = 0;
+            String size = "";
+            
+            if (stockObj instanceof UpperStock) {
+                UpperStock stock = (UpperStock) stockObj;
+                articleName = stock.getArticle().getName();
+                color = stock.getColor();
+                quantity = stock.getQuantity();
+                unitCost = stock.getArticle().getSlipperCost();
+                size = stock.getSize();
+            } else if (stockObj instanceof FinishedStock) {
+                FinishedStock stock = (FinishedStock) stockObj;
+                articleName = stock.getArticle().getName();
+                color = stock.getColor();
+                quantity = stock.getQuantity();
+                unitCost = stock.getArticle().getSlipperCost();
+                size = stock.getSize();
+            }
+            
+            String key = articleName + "|" + color;
+            
+            if (!grouped.containsKey(key)) {
+                Map<String, Object> summary = new HashMap<>();
+                summary.put("articleName", articleName);
+                summary.put("color", color);
+                summary.put("totalQuantity", 0);
+                summary.put("totalValue", 0.0);
+                summary.put("unitCost", unitCost);
+                summary.put("sizeBreakdown", new HashMap<String, Integer>());
+                grouped.put(key, summary);
+            }
+            
+            Map<String, Object> summary = grouped.get(key);
+            summary.put("totalQuantity", (int)summary.get("totalQuantity") + quantity);
+            summary.put("totalValue", (double)summary.get("totalValue") + (quantity * unitCost));
+            
+            @SuppressWarnings("unchecked")
+            Map<String, Integer> sizeBreakdown = (Map<String, Integer>) summary.get("sizeBreakdown");
+            sizeBreakdown.put(size, sizeBreakdown.getOrDefault(size, 0) + quantity);
+        }
+        
+        return grouped;
     }
 
     @GetMapping("/upper")

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Payment Receipt - <span th:text="${vendor.name}"></span></title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; }
+        }
+        
+        body { 
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            font-size: 11pt;
+        }
+        
+        .receipt-header {
+            text-align: center;
+            border: 3px double #000;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+        }
+        
+        .receipt-header h1 {
+            margin: 0;
+            font-size: 24pt;
+            font-weight: bold;
+        }
+        
+        .receipt-header h2 {
+            margin: 10px 0 0 0;
+            font-size: 18pt;
+            color: #28a745;
+        }
+        
+        .receipt-number {
+            text-align: right;
+            font-size: 12pt;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .vendor-info {
+            background: #e7f3ff;
+            border: 2px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 8px;
+            font-size: 12pt;
+        }
+        
+        .info-label {
+            font-weight: bold;
+        }
+        
+        .payment-details {
+            margin: 30px 0;
+        }
+        
+        .section-title {
+            font-size: 14pt;
+            font-weight: bold;
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            margin: 20px 0 10px 0;
+        }
+        
+        .work-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10pt;
+        }
+        
+        .work-table th {
+            background: #6c757d;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-size: 11pt;
+        }
+        
+        .work-table td {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .work-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .work-table tr.subtotal td {
+            background: #ffc107;
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        
+        .total-box {
+            margin: 30px 0;
+            padding: 20px;
+            border: 3px solid #28a745;
+            background: #d4edda;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 13pt;
+        }
+        
+        .total-row.grand-total {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #28a745;
+            border-top: 3px double #28a745;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        
+        .payment-info {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .payment-info h3 {
+            margin: 0 0 10px 0;
+            color: #856404;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #000;
+        }
+        
+        .signature-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            margin-top: 40px;
+        }
+        
+        .signature-box {
+            text-align: center;
+        }
+        
+        .signature-line {
+            margin-top: 50px;
+            border-top: 2px solid #000;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: 2px solid #000;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        
+        .btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .stamp-box {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px dashed #6c757d;
+            text-align: center;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button class="btn" onclick="window.print()">🖨️ Print Receipt</button>
+        <button class="btn" onclick="window.close()">✖ Close</button>
+    </div>
+    
+    <div class="receipt-header">
+        <h1>SKSE INVENTORY MANAGEMENT</h1>
+        <h2>✅ PAYMENT RECEIPT</h2>
+    </div>
+    
+    <div class="receipt-number">
+        Receipt No: <span th:text="'RCPT-' + ${vendor.id} + '-' + ${#temporals.format(#temporals.createNow(), 'yyyyMMdd')}">RCPT-001-20240101</span>
+    </div>
+    
+    <div class="vendor-info">
+        <div class="info-grid">
+            <div class="info-label">Vendor Name:</div>
+            <div th:text="${vendor.name}">Vendor Name</div>
+            
+            <div class="info-label">Vendor Role:</div>
+            <div th:text="${vendor.role}">Role</div>
+            
+            <div class="info-label">Receipt Date:</div>
+            <div th:text="${#temporals.format(#temporals.createNow(), 'dd-MMM-yyyy HH:mm')}">Date</div>
+            
+            <div class="info-label">Settlement Period:</div>
+            <div th:text="${settlementPeriod}">Month-Year</div>
+        </div>
+    </div>
+    
+    <div class="payment-details">
+        <div class="section-title">📋 WORK DETAILS</div>
+        
+        <div th:if="${workDetails.isEmpty()}" style="text-align: center; padding: 30px; background: #f8d7da; border: 2px solid #dc3545; color: #721c24;">
+            <strong>No work details available for this settlement period.</strong>
+        </div>
+        
+        <div th:if="${!workDetails.isEmpty()}">
+            <table class="work-table">
+                <thead>
+                    <tr>
+                        <th>Plan No.</th>
+                        <th>Article</th>
+                        <th>Color</th>
+                        <th>Quantity</th>
+                        <th>Rate per Unit</th>
+                        <th>Completion Date</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="work : ${workDetails}">
+                        <td th:text="${work.planNumber}">PLAN-001</td>
+                        <td th:text="${work.articleName}">Nike Classic</td>
+                        <td th:text="${work.color}">Red</td>
+                        <td th:text="${work.quantity} + ' pairs'">100 pairs</td>
+                        <td th:text="'₹' + ${#numbers.formatDecimal(work.ratePerUnit, 1, 2)}">₹15.00</td>
+                        <td th:text="${work.completionDate != null ? #temporals.format(work.completionDate, 'dd-MMM-yyyy') : '-'}">-</td>
+                        <td th:text="'₹' + ${#numbers.formatDecimal(work.amount, 1, 2)}">₹1,500.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="total-box">
+        <div class="total-row">
+            <span>Total Work Completed:</span>
+            <span th:text="${totalQuantity} + ' pairs'">0 pairs</span>
+        </div>
+        <div class="total-row">
+            <span>Number of Plans:</span>
+            <span th:text="${workDetails.size()}">0</span>
+        </div>
+        <div class="total-row">
+            <span>Total Amount Due:</span>
+            <span th:text="'₹' + ${#numbers.formatDecimal(totalDue, 1, 2)}">₹0.00</span>
+        </div>
+        <div class="total-row" th:if="${previousPayment > 0}">
+            <span>Previous Payment:</span>
+            <span th:text="'₹' + ${#numbers.formatDecimal(previousPayment, 1, 2)}" style="color: #dc3545;">₹0.00</span>
+        </div>
+        <div class="total-row grand-total">
+            <span>💰 AMOUNT SETTLED:</span>
+            <span th:text="'₹' + ${#numbers.formatDecimal(amountSettled, 1, 2)}">₹0.00</span>
+        </div>
+    </div>
+    
+    <div class="payment-info">
+        <h3>✅ PAYMENT STATUS</h3>
+        <p style="margin: 5px 0; font-size: 14pt;"><strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">PAID IN FULL</span></p>
+        <p style="margin: 5px 0;"><strong>Settlement Date:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd-MMM-yyyy')}">Date</span></p>
+        <p style="margin: 5px 0;"><strong>Payment Method:</strong> Monthly Settlement</p>
+    </div>
+    
+    <div class="footer">
+        <p style="font-size: 12pt;"><strong>Amount in Words:</strong></p>
+        <p style="font-size: 13pt; font-style: italic; margin: 5px 0 20px 0;" th:text="${amountInWords}">Amount in words</p>
+        
+        <div class="signature-section">
+            <div class="signature-box">
+                <div><strong>Vendor Signature</strong></div>
+                <div class="signature-line">_______________________</div>
+                <div style="margin-top: 5px;" th:text="${vendor.name}">Vendor Name</div>
+            </div>
+            <div class="signature-box">
+                <div><strong>Authorized Signature</strong></div>
+                <div class="signature-line">_______________________</div>
+                <div style="margin-top: 5px;">SKSE Inventory</div>
+            </div>
+        </div>
+        
+        <div class="stamp-box">
+            <div style="font-size: 14pt; font-weight: bold;">COMPANY SEAL / STAMP</div>
+            <div style="margin-top: 10px; font-size: 10pt;">(Affix company seal here)</div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; font-size: 10pt; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
+        <p><strong>Thank you for your service!</strong></p>
+        <p>This is a computer-generated receipt and is valid without signature.</p>
+        <p>For queries, please contact SKSE Inventory Management.</p>
+    </div>
+</body>
+</html>
+

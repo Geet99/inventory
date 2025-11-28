@@ -219,24 +219,14 @@
             color: #ffc107;
         }
     </style>
+    <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
 <body>
-    <div class="header">
-        <h1>Inventory Management System</h1>
-        <p>Comprehensive slipper manufacturing inventory management</p>
-    </div>
+    <!-- Include Page Header and Navigation -->
+    <div th:replace="~{fragments/navigation :: page-header}"></div>
+    <div th:replace="~{fragments/navigation :: navbar}"></div>
     
-    <div class="nav">
-        <div class="nav-container">
-            <a href="/">🏠 Home</a>
-            <a href="/plans">📋 Plans</a>
-            <a href="/vendors" class="active">👥 Vendors</a>
-            <a href="/articles">📦 Articles</a>
-            <a href="/colors">🎨 Colors</a>
-            <a href="/stock">📊 Stock</a>
-        </div>
-    </div>
-
+    
     <div class="container">
         <div class="card">
             <div class="card-header">

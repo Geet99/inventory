@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="'Payment Slip - ' + ${vendor.name}">Payment Slip</title>
+    <style>
+        @page {
+            margin: 0.5in;
+            size: auto;
+        }
+        
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; }
+            .page-break { page-break-before: always; }
+        }
+        
+        body { 
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            font-size: 11pt;
+        }
+        
+        .slip-header {
+            text-align: center;
+            border: 3px solid #000;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: #f0f0f0;
+        }
+        
+        .slip-header h1 {
+            margin: 0;
+            font-size: 22pt;
+            font-weight: bold;
+        }
+        
+        .slip-header h2 {
+            margin: 10px 0 0 0;
+            font-size: 16pt;
+            color: #333;
+        }
+        
+        .vendor-info {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 13pt;
+        }
+        
+        .vendor-info strong {
+            font-size: 15pt;
+        }
+        
+        .tasks-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+        
+        .tasks-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-size: 11pt;
+        }
+        
+        .tasks-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .tasks-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .task-status {
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+        
+        .status-pending {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .status-in-progress {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .status-completed {
+            background: #28a745;
+            color: white;
+        }
+        
+        .summary-box {
+            margin: 30px 0;
+            padding: 15px;
+            border: 2px solid #000;
+            background: #e7f3ff;
+        }
+        
+        .summary-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 14pt;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 12pt;
+        }
+        
+        .summary-row.total {
+            font-size: 16pt;
+            font-weight: bold;
+            border-top: 2px solid #000;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #000;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            font-size: 11pt;
+        }
+        
+        .signature-box {
+            text-align: center;
+        }
+        
+        .signature-line {
+            margin-top: 50px;
+            border-top: 2px solid #000;
+            padding-top: 5px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: 2px solid #000;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        
+        .btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .no-tasks {
+            text-align: center;
+            padding: 40px;
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            margin: 20px 0;
+            font-size: 14pt;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button class="btn" onclick="window.print()">🖨️ Print Task Slip</button>
+        <button class="btn" onclick="window.close()">✖ Close</button>
+    </div>
+    
+    <div class="slip-header">
+        <h1 th:text="'PAYMENT SLIP - ' + ${period}">PAYMENT SLIP - November 2024</h1>
+    </div>
+    
+    <div class="vendor-info">
+        <div><strong>Vendor Name:</strong> <span th:text="${vendor.name}">Vendor Name</span></div>
+        <div><strong>Role:</strong> <span th:text="${vendor.role}">Role</span></div>
+        <div><strong>Period:</strong> <span th:text="${period}">November 2024</span></div>
+        <div><strong>Date Issued:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd-MMM-yyyy')}">Date</span></div>
+    </div>
+    
+    <div th:if="${tasks.isEmpty()}" class="no-tasks">
+        <strong>⚠️ NO TASKS FROM PREVIOUS MONTH</strong>
+        <p>This vendor has no completed or in-progress tasks from the previous month.</p>
+    </div>
+    
+    <div th:if="${!tasks.isEmpty()}">
+        <h3 style="font-size: 14pt; border-bottom: 2px solid #000; padding-bottom: 5px;">TASKS FROM PREVIOUS MONTH</h3>
+        
+        <table class="tasks-table">
+            <thead>
+                <tr>
+                    <th>Plan No.</th>
+                    <th>Article</th>
+                    <th>Color</th>
+                    <th>Sizes</th>
+                    <th>Quantity</th>
+                    <th>Operation</th>
+                    <th>Status</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Payment Due</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="task : ${tasks}">
+                    <td th:text="${task.planNumber}">PLAN-001</td>
+                    <td th:text="${task.articleName}">Nike Classic</td>
+                    <td th:text="${task.color}">Red</td>
+                    <td th:text="${task.sizeQuantityPairs}">6:50, 7:30</td>
+                    <td th:text="${task.quantity} + ' pairs'">100 pairs</td>
+                    <td>
+                        <span th:if="${task.rateHeadName != null and !task.rateHeadName.isEmpty()}" 
+                              th:text="${task.operationType} + ' (' + ${task.rateHeadName} + ' - ₹' + ${#numbers.formatDecimal(task.rateHeadCost, 1, 2)} + ')'">Printing (Premium Printing - ₹18.00)</span>
+                        <span th:if="${task.rateHeadName == null or task.rateHeadName.isEmpty()}" 
+                              th:text="${task.operationType}">Cutting</span>
+                    </td>
+                    <td>
+                        <span class="task-status" 
+                              th:classappend="${task.status == 'Completed' ? 'status-completed' : (task.status == 'In Progress' ? 'status-in-progress' : 'status-pending')}"
+                              th:text="${task.status}">Pending</span>
+                    </td>
+                    <td th:text="${task.startDate != null ? #temporals.format(task.startDate, 'dd-MMM-yyyy') : '-'}">-</td>
+                    <td th:text="${task.endDate != null ? #temporals.format(task.endDate, 'dd-MMM-yyyy') : '-'}">-</td>
+                    <td th:text="'₹' + ${#numbers.formatDecimal(task.paymentDue, 1, 2)}">₹0.00</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="summary-box">
+            <h3>📊 SUMMARY</h3>
+            <div class="summary-row">
+                <span>Total Tasks:</span>
+                <span th:text="${tasks.size()}">0</span>
+            </div>
+            <div class="summary-row">
+                <span>Total Quantity:</span>
+                <span th:text="${totalQuantity} + ' pairs'">0 pairs</span>
+            </div>
+            <div class="summary-row total">
+                <span>Total Payment Due:</span>
+                <span th:text="'₹' + ${#numbers.formatDecimal(totalPaymentDue, 1, 2)}">₹0.00</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div class="signature-box">
+            <div><strong>Vendor Signature</strong></div>
+            <div class="signature-line">_______________________</div>
+            <div style="margin-top: 5px;">Date: ______________</div>
+        </div>
+        <div class="signature-box">
+            <div><strong>Authorized By</strong></div>
+            <div class="signature-line">_______________________</div>
+            <div style="margin-top: 5px;">Date: ______________</div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px; font-size: 10pt; color: #666;">
+        <p>This is a computer-generated task slip.</p>
+        <p>Please verify all details before starting work.</p>
+    </div>
+</body>
+</html>
+

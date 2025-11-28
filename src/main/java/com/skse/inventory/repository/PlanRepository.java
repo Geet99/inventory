@@ -11,6 +11,9 @@ import java.util.List;
 @Repository
 public interface PlanRepository extends JpaRepository<Plan, Long> {
     Plan findByPlanNumber(String planNumber);
+    
+    // Find all plans ordered by creation date (newest first)
+    List<Plan> findAllByOrderByCreateDateDesc();
 
     @Query("SELECT p.status, COUNT(p) " +
             "FROM Plan p " +

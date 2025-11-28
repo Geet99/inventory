@@ -168,26 +168,86 @@
         tr:hover {
             background-color: #f8f9fa;
         }
+        .summary-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .summary-row:hover {
+            background-color: #f8f9fa;
+        }
+        .detail-row {
+            display: none;
+            background-color: #f8f9fa;
+        }
+        .detail-row.show {
+            display: table-row;
+        }
+        .detail-content {
+            padding: 15px;
+        }
+        .size-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            padding: 10px 0;
+        }
+        .size-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .size-label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+        }
+        .size-quantity {
+            font-size: 18px;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .expand-icon {
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.3s;
+        }
+        .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
+        .stock-section { 
+            margin-bottom: 30px; 
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stock-section h3 { 
+            border-bottom: 2px solid #007bff; 
+            padding-bottom: 10px; 
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .quantity-high { 
+            color: #28a745; 
+            font-weight: bold; 
+        }
+        .quantity-medium { 
+            color: #ffc107; 
+            font-weight: bold; 
+        }
+        .quantity-low { 
+            color: #dc3545; 
+            font-weight: bold; 
+        }
     </style>
+    <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
 <body>
-    <div class="header">
-        <h1>SKSE Inventory Management System</h1>
-        <p>Manage your slipper manufacturing business efficiently</p>
-    </div>
-    
-    <nav class="nav">
-        <div class="nav-container">
-            <a th:href="@{/}">🏠 Home</a>
-            <a th:href="@{/plans}">📋 Plans</a>
-            <a th:href="@{/stock}" class="active">📦 Stock</a>
-            <a th:href="@{/vendors}">👥 Vendors</a>
-            <a th:href="@{/vendors/summary}">💰 Payments</a>
-            <a th:href="@{/articles}">👟 Articles</a>
-            <a th:href="@{/colors}">🎨 Colors</a>
-            <a th:href="@{/rateheads}">💵 Rate Heads</a>
-        </div>
-    </nav>
+    <!-- Include Page Header and Navigation -->
+    <div th:replace="~{fragments/navigation :: page-header}"></div>
+    <div th:replace="~{fragments/navigation :: navbar}"></div>
     
     <div class="container">
         <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
@@ -242,32 +302,208 @@
         </div>
         
         <!-- Current Upper Stock -->
-        <div class="card">
-            <h2>📦 Current Upper Stock</h2>
-            <table>
+        <div class="stock-section">
+            <h3>📦 Current Upper Stock</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <p style="color: #6c757d; font-size: 14px; margin: 0;">
+                    💡 Click on any row to view size breakdown
+                </p>
+                <input type="text" id="upperSearchInput" placeholder="🔍 Search by article name..." 
+                       style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; width: 300px;">
+            </div>
+            <table id="upperStockTable">
                 <thead>
                     <tr>
                         <th>Article</th>
-                        <th>Size</th>
                         <th>Color</th>
                         <th>Quantity</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="stock : ${upperStock}">
-                        <td th:text="${stock.article.name}"></td>
-                        <td th:text="${stock.size}"></td>
-                        <td th:text="${stock.color}"></td>
-                        <td th:text="${stock.quantity}"></td>
-                    </tr>
+                    <!-- Will be populated by JavaScript -->
                 </tbody>
             </table>
             <div th:if="${upperStock == null || #lists.isEmpty(upperStock)}" 
                  style="text-align: center; padding: 40px; color: #7f8c8d;">
                 <p>No upper stock available.</p>
             </div>
+            
+            <!-- Hidden data for JavaScript -->
+            <script th:inline="javascript">
+                /*<![CDATA[*/
+                const upperStockData = /*[[${upperStock}]]*/ [];
+                /*]]>*/
+            </script>
         </div>
     </div>
+    
+    <script>
+        // Group upper stock by article and color
+        function groupUpperStock(stockData) {
+            const grouped = {};
+            
+            stockData.forEach(stock => {
+                const key = stock.article.name + '|' + stock.color;
+                
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        articleName: stock.article.name,
+                        color: stock.color,
+                        totalQuantity: 0,
+                        sizeBreakdown: {}
+                    };
+                }
+                
+                grouped[key].totalQuantity += stock.quantity;
+                grouped[key].sizeBreakdown[stock.size] = stock.quantity;
+            });
+            
+            return grouped;
+        }
+        
+        // Toggle detail row
+        function toggleDetail(row) {
+            const targetId = row.getAttribute('data-target');
+            const detailRow = document.getElementById(targetId);
+            const expandIcon = row.querySelector('.expand-icon');
+            
+            if (detailRow.classList.contains('show')) {
+                detailRow.classList.remove('show');
+                expandIcon.classList.remove('expanded');
+            } else {
+                detailRow.classList.add('show');
+                expandIcon.classList.add('expanded');
+            }
+        }
+        
+        // Populate the table
+        function populateTable() {
+            const grouped = groupUpperStock(upperStockData);
+            const tbody = document.querySelector('#upperStockTable tbody');
+            tbody.innerHTML = '';
+            
+            let index = 0;
+            for (const [key, data] of Object.entries(grouped)) {
+                // Summary row
+                const summaryRow = document.createElement('tr');
+                summaryRow.className = 'summary-row';
+                summaryRow.setAttribute('data-target', 'upper-detail-' + index);
+                summaryRow.setAttribute('onclick', 'toggleDetail(this)');
+                
+                // Determine quantity class
+                let quantityClass = 'quantity-low';
+                if (data.totalQuantity > 50) {
+                    quantityClass = 'quantity-high';
+                } else if (data.totalQuantity > 20) {
+                    quantityClass = 'quantity-medium';
+                }
+                
+                summaryRow.innerHTML = `
+                    <td>
+                        <span class="expand-icon">▶</span>
+                        <span>${data.articleName}</span>
+                    </td>
+                    <td>${data.color}</td>
+                    <td>
+                        <span class="${quantityClass}">${data.totalQuantity}</span>
+                    </td>
+                `;
+                tbody.appendChild(summaryRow);
+                
+                // Detail row
+                const detailRow = document.createElement('tr');
+                detailRow.className = 'detail-row';
+                detailRow.id = 'upper-detail-' + index;
+                
+                let sizeHtml = '<div class="size-breakdown">';
+                for (const [size, qty] of Object.entries(data.sizeBreakdown)) {
+                    sizeHtml += `
+                        <div class="size-item">
+                            <div class="size-label">Size ${size}</div>
+                            <div class="size-quantity">${qty}</div>
+                        </div>
+                    `;
+                }
+                sizeHtml += '</div>';
+                
+                detailRow.innerHTML = `
+                    <td colspan="3">
+                        <div class="detail-content">
+                            <strong>Size Breakdown:</strong>
+                            ${sizeHtml}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(detailRow);
+                
+                index++;
+            }
+        }
+        
+        // Initialize on page load
+        if (upperStockData && upperStockData.length > 0) {
+            document.addEventListener('DOMContentLoaded', function() {
+                populateTable();
+                
+                // Add search functionality
+                const searchInput = document.getElementById('upperSearchInput');
+                if (searchInput) {
+                    searchInput.addEventListener('input', function(e) {
+                        filterStockTable(e.target.value);
+                    });
+                }
+            });
+        }
+        
+        // Filter table rows based on search term
+        function filterStockTable(searchTerm) {
+            const tbody = document.querySelector('#upperStockTable tbody');
+            const rows = tbody.querySelectorAll('tr');
+            const searchLower = searchTerm.toLowerCase();
+            
+            let visibleCount = 0;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                
+                if (row.classList.contains('summary-row')) {
+                    const articleCell = row.querySelector('td:first-child span:last-child');
+                    const articleName = articleCell ? articleCell.textContent.toLowerCase() : '';
+                    
+                    // Find the corresponding detail row (next row)
+                    const detailRow = rows[i + 1];
+                    
+                    if (articleName.includes(searchLower)) {
+                        row.style.display = '';
+                        // Only show detail row if it was expanded
+                        if (detailRow && !detailRow.classList.contains('show')) {
+                            detailRow.style.display = 'none';
+                        }
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                        if (detailRow && detailRow.classList.contains('detail-row')) {
+                            detailRow.style.display = 'none';
+                        }
+                    }
+                }
+            }
+            
+            // Show/hide "no results" message
+            let noResultsRow = tbody.querySelector('.no-results');
+            if (visibleCount === 0 && searchTerm) {
+                if (!noResultsRow) {
+                    noResultsRow = document.createElement('tr');
+                    noResultsRow.className = 'no-results';
+                    noResultsRow.innerHTML = '<td colspan="3" style="text-align: center; padding: 40px; color: #7f8c8d;">No articles found matching "' + searchTerm + '"</td>';
+                    tbody.appendChild(noResultsRow);
+                }
+                noResultsRow.style.display = '';
+            } else if (noResultsRow) {
+                noResultsRow.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
 

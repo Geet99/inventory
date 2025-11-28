@@ -168,26 +168,12 @@
             color: #0c5460;
         }
     </style>
+    <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
 <body>
-    <div class="header">
-        <h1>SKSE Inventory Management System</h1>
-        <p>Manage your slipper manufacturing business efficiently</p>
-    </div>
-    
-    <nav class="nav">
-        <div class="nav-container">
-            <a th:href="@{/}">🏠 Home</a>
-            <a th:href="@{/plans}">📋 Plans</a>
-            <a th:href="@{/stock}">📦 Stock</a>
-            <a th:href="@{/vendors}">👥 Vendors</a>
-            <a th:href="@{/vendors/summary}">💰 Payments</a>
-            <a th:href="@{/articles}">👟 Articles</a>
-            <a th:href="@{/colors}">🎨 Colors</a>
-            <a th:href="@{/rateheads}">💵 Rate Heads</a>
-            <a th:href="@{/cleanup}" class="active">🗑️ Cleanup</a>
-        </div>
-    </nav>
+    <!-- Include Page Header and Navigation -->
+    <div th:replace="~{fragments/navigation :: page-header}"></div>
+    <div th:replace="~{fragments/navigation :: navbar}"></div>
     
     <div class="container">
         <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
@@ -225,13 +211,38 @@
                 </ul>
             </div>
             
-            <form th:action="@{/cleanup/previous-month}" method="post" 
-                  onsubmit="return confirm('⚠️ WARNING: This will permanently delete all completed plans and settled payment records from the previous month. This action CANNOT be undone.\n\nAre you absolutely sure you want to proceed?');">
-                <button type="submit" class="btn btn-danger">
-                    🗑️ Delete Previous Month Records
-                </button>
-                <a th:href="@{/}" class="btn btn-secondary">Cancel</a>
-            </form>
+            <!-- Show eligibility status -->
+            <div th:if="${eligibility != null}" class="info-section" style="margin-bottom: 20px;">
+                <h4>📊 Cleanup Eligibility Status</h4>
+                <p><strong>Previous Month:</strong> <span th:text="${eligibility.previousMonth}"></span></p>
+                <p><strong>Total Payment Records:</strong> <span th:text="${eligibility.totalPayments}"></span></p>
+                <p><strong>Unsettled Payments:</strong> <span th:text="${eligibility.unsettledCount}" th:style="${eligibility.unsettledCount > 0 ? 'color: #dc3545; font-weight: bold;' : 'color: #28a745; font-weight: bold;'}"></span></p>
+                <p th:if="${eligibility.isEligible}" style="color: #28a745; font-weight: bold; font-size: 18px;">✅ All payments settled - Cleanup is ALLOWED</p>
+                <p th:if="${!eligibility.isEligible}" style="color: #dc3545; font-weight: bold; font-size: 18px;">❌ Cleanup is BLOCKED - Please settle all pending payments first</p>
+            </div>
+            
+            <!-- Only show button if eligible -->
+            <div th:if="${eligibility != null && eligibility.isEligible}">
+                <form th:action="@{/cleanup/previous-month}" method="post" 
+                      onsubmit="return confirm('⚠️ WARNING: This will permanently delete all completed plans and settled payment records from the previous month. This action CANNOT be undone.\n\nAre you absolutely sure you want to proceed?');">
+                    <button type="submit" class="btn btn-danger">
+                        🗑️ Delete Previous Month Records
+                    </button>
+                    <a th:href="@{/}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+            
+            <!-- Show message if not eligible -->
+            <div th:if="${eligibility != null && !eligibility.isEligible}" style="background-color: #f8d7da; border: 2px solid #dc3545; border-radius: 10px; padding: 20px; text-align: center;">
+                <h3 style="color: #721c24; margin-top: 0;">🚫 Cleanup Not Available</h3>
+                <p style="color: #721c24; font-size: 16px;">
+                    You must settle all <strong th:text="${eligibility.unsettledCount}"></strong> pending payment(s) from the previous month before cleanup can be performed.
+                </p>
+                <a th:href="@{/vendors/summary}" class="btn btn-primary" style="margin-top: 10px; background-color: #007bff;">
+                    Go to Payments
+                </a>
+                <a th:href="@{/}" class="btn btn-secondary">Back to Home</a>
+            </div>
         </div>
     </div>
 </body>

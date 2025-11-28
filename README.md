@@ -4,11 +4,24 @@ A comprehensive inventory management system for SKSE Footwear Manufacturing, bui
 
 ## Features
 
-### 💵 Rate Heads Management (NEW!)
+### 🖨️ Print Functionality (NEW!)
+- **Plan Details Print**: Professional print view of complete plan details
+- **Vendor Task Slips**: Print task assignments for vendors with all plan details
+- **Payment Receipts**: Detailed payment receipts with work breakdown and totals
+- **Amount in Words**: Automatic conversion of amounts to Indian number words
+- **Print-Optimized**: Clean, professional formatting for physical documents
+
+### 💵 Rate Heads Management
 - **Centralized Cost Management**: Define rate heads for all operations (Cutting, Printing, Stitching)
 - **Dynamic Rate Updates**: Update costs in one place, affects all future vendor payments
 - **Multiple Rate Tiers**: Support different rate levels (Standard, Premium, etc.)
 - **Active/Inactive Status**: Control which rate heads are available for selection
+
+### 💰 Monthly Payment Settlement
+- **Monthly Tracking**: Vendor payments tracked by month and operation type
+- **Smart Settlement**: Settle all previous month dues with one click
+- **Payment History**: Complete audit trail of all settlements
+- **Cleanup Functionality**: Remove settled records after verification
 
 ### 🏭 Manufacturing Process Management
 - **Plans Management**: Create and track production plans with article, color, and size-quantity specifications
@@ -133,7 +146,11 @@ For production use, switch to MySQL profile.
 
 3. **Run Application with MySQL**:
    ```bash
+   # Standard run (schema created automatically on first run)
    mvn spring-boot:run -Dspring-boot.run.profiles=prod
+   
+   # Using Maven Wrapper (if available)
+   ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
    ```
    
    Or set in `application.properties`:
@@ -141,20 +158,51 @@ For production use, switch to MySQL profile.
    spring.profiles.active=prod
    ```
 
-4. **Access Application**:
+4. **Schema Management Commands**:
+   ```bash
+   # Drop and recreate schema (WARNING: Deletes all data!)
+   # Stop the application, then run:
+   mysql -u inventory_user -p
+   # Enter password: admin
+   DROP DATABASE inventory_db;
+   CREATE DATABASE inventory_db;
+   exit
+   
+   # Restart application - schema will be recreated
+   mvn spring-boot:run -Dspring-boot.run.profiles=prod
+   ```
+   
+   **Alternative: Using JPA drop-create (NOT RECOMMENDED for production)**
+   ```properties
+   # In application-prod.properties, temporarily change:
+   spring.jpa.hibernate.ddl-auto=create-drop
+   # Run once, then change back to 'update'
+   ```
+
+5. **Access Application**:
    - Main application: http://localhost:8080
    - API Documentation: http://localhost:8080/swagger-ui.html
+
+6. **Important Notes**:
+   - ⚠️ **Test data is NOT loaded in production mode** - only in dev (H2) mode
+   - Schema is automatically created on first run with `ddl-auto=update`
+   - For fresh start, use the schema drop/recreate commands above
+   - Backup your database before making schema changes!
 
 ## Key Endpoints
 
 ### Web Interface
 - `/` - Home dashboard
 - `/plans` - Plans management
+- `/plans/{planNumber}/print` - Print plan details (NEW!)
 - `/stock` - Stock dashboard
 - `/vendors` - Vendor management
+- `/vendors/{id}/task-slip` - Print vendor task slip (NEW!)
+- `/vendors/{id}/payment-receipt` - Print payment receipt (NEW!)
 - `/vendors/summary` - Payment summary
 - `/articles` - Article management
-- `/rateheads` - Rate heads management (NEW!)
+- `/rateheads` - Rate heads management
+- `/cleanup` - Cleanup previous month records
 
 ### API Endpoints
 - `/api/plans` - Plans API

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="'Print Plan - ' + ${plan.planNumber}">Print Plan</title>
+    <style>
+        @page {
+            margin: 0.5in;
+            size: auto;
+        }
+        
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; }
+        }
+        
+        body { 
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            font-size: 12pt;
+        }
+        
+        .print-header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .print-header h1 {
+            margin: 0;
+            font-size: 24pt;
+            font-weight: bold;
+        }
+        
+        .print-header p {
+            margin: 5px 0 0 0;
+            font-size: 10pt;
+        }
+        
+        .plan-info {
+            margin: 20px 0;
+        }
+        
+        .info-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            margin: 8px 0;
+            font-size: 12pt;
+        }
+        
+        .info-label {
+            font-weight: bold;
+        }
+        
+        .info-value {
+            border-bottom: 1px dotted #333;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            font-size: 14pt;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+        }
+        
+        .size-breakdown {
+            margin: 10px 0 10px 20px;
+            font-size: 11pt;
+        }
+        
+        .vendor-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 3px dashed #000;
+            background: #f9f9f9;
+            page-break-inside: avoid;
+        }
+        
+        .vendor-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 14pt;
+            text-align: center;
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            margin: -20px -20px 15px -20px;
+        }
+        
+        .task-details {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .task-details h4 {
+            margin: 0 0 10px 0;
+            font-size: 12pt;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #000;
+            text-align: center;
+            font-size: 10pt;
+        }
+        
+        .signature-line {
+            margin-top: 50px;
+            text-align: right;
+            font-size: 11pt;
+        }
+        
+        .signature-line div {
+            margin: 5px 0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: 2px solid #000;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        
+        .btn:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button class="btn" onclick="window.print()">🖨️ Print</button>
+        <button class="btn" onclick="window.close()">✖ Close</button>
+    </div>
+    
+    <div class="print-header">
+        <h1>SKSE INVENTORY MANAGEMENT</h1>
+        <p>Production Plan Details</p>
+    </div>
+    
+    <div class="plan-info">
+        <div class="info-row">
+            <div class="info-label">Plan Number:</div>
+            <div class="info-value" th:text="${plan.planNumber}">PLAN-001</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Article Name:</div>
+            <div class="info-value" th:text="${plan.articleName}">Nike Classic</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Color:</div>
+            <div class="info-value" th:text="${plan.color}">Red</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Total Quantity:</div>
+            <div class="info-value" th:text="${plan.total} + ' pairs'">100 pairs</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Created Date:</div>
+            <div class="info-value" th:text="${#temporals.format(plan.createDate, 'dd-MMM-yyyy')}">01-Jan-2024</div>
+        </div>
+        
+        <div class="info-row">
+            <div class="info-label">Status:</div>
+            <div class="info-value" th:text="${plan.status}">Pending</div>
+        </div>
+    </div>
+    
+    <div class="section-title">SIZE BREAKDOWN</div>
+    <div class="size-breakdown" th:text="${plan.sizeQuantityPairs}">6:50, 7:30, 8:20</div>
+    
+    <div class="section-title">📋 INDIVIDUAL VENDOR TASK SLIPS</div>
+    <p style="text-align: center; font-size: 11pt; color: #666; margin: 10px 0 30px 0;">
+        ✂️ Cut along the dashed lines and hand each section to the respective vendor
+    </p>
+    
+    <!-- CUTTING VENDOR TASK SLIP -->
+    <div class="vendor-section" th:if="${plan.cuttingVendor != null}">
+        <h3>🔪 CUTTING VENDOR - TASK SLIP</h3>
+        
+        <div class="task-details">
+            <h4>📋 Task Information</h4>
+            <div class="info-row">
+                <div class="info-label">Plan Number:</div>
+                <div class="info-value" th:text="${plan.planNumber}">PLAN-001</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Article Name:</div>
+                <div class="info-value" th:text="${plan.articleName}">Nike Classic</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Color:</div>
+                <div class="info-value" th:text="${plan.color}">Red</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Total Quantity:</div>
+                <div class="info-value" th:text="${plan.total} + ' pairs'">100 pairs</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Size Breakdown:</div>
+                <div class="info-value" th:text="${plan.sizeQuantityPairs}">6:50, 7:30, 8:20</div>
+            </div>
+        </div>
+        
+        <div class="task-details">
+            <h4>👤 Vendor Details</h4>
+            <div class="info-row">
+                <div class="info-label">Vendor Name:</div>
+                <div class="info-value" th:text="${plan.cuttingVendor.name}">Cutting Master</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Operation:</div>
+                <div class="info-value">
+                    <span th:if="${article != null and article.cuttingRateHead != null}" 
+                          th:text="'Cutting (' + ${article.cuttingRateHead.name} + ')'">Cutting (Standard Cutting)</span>
+                    <span th:if="${article == null or article.cuttingRateHead == null}">Cutting</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Start Date:</div>
+                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">End Date:</div>
+                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Payment Due:</div>
+                <div class="info-value" th:text="'₹' + ${#numbers.formatDecimal(plan.cuttingVendorPaymentDue, 1, 2)}">₹0.00</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <div style="display: inline-block; margin: 0 30px;">
+                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Vendor Signature</div>
+            </div>
+            <div style="display: inline-block; margin: 0 30px;">
+                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Date</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PRINTING VENDOR TASK SLIP -->
+    <div class="vendor-section" th:if="${plan.printingVendor != null}">
+        <h3>🖨️ PRINTING VENDOR - TASK SLIP</h3>
+        
+        <div class="task-details">
+            <h4>📋 Task Information</h4>
+            <div class="info-row">
+                <div class="info-label">Plan Number:</div>
+                <div class="info-value" th:text="${plan.planNumber}">PLAN-001</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Article Name:</div>
+                <div class="info-value" th:text="${plan.articleName}">Nike Classic</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Color:</div>
+                <div class="info-value" th:text="${plan.color}">Red</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Total Quantity:</div>
+                <div class="info-value" th:text="${plan.total} + ' pairs'">100 pairs</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Size Breakdown:</div>
+                <div class="info-value" th:text="${plan.sizeQuantityPairs}">6:50, 7:30, 8:20</div>
+            </div>
+            <div class="info-row" th:if="${plan.printingRateHead != null}">
+                <div class="info-label">Printing Type:</div>
+                <div class="info-value" th:text="${plan.printingRateHead.name}">Basic Printing</div>
+            </div>
+        </div>
+        
+        <div class="task-details">
+            <h4>👤 Vendor Details</h4>
+            <div class="info-row">
+                <div class="info-label">Vendor Name:</div>
+                <div class="info-value" th:text="${plan.printingVendor.name}">Print Pro</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Operation:</div>
+                <div class="info-value">
+                    <span th:if="${plan.printingRateHead != null}" 
+                          th:text="'Printing (' + ${plan.printingRateHead.name} + ')'">Printing (Premium Printing)</span>
+                    <span th:if="${plan.printingRateHead == null}">Printing</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Start Date:</div>
+                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">End Date:</div>
+                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Payment Due:</div>
+                <div class="info-value" th:text="'₹' + ${#numbers.formatDecimal(plan.printingVendorPaymentDue, 1, 2)}">₹0.00</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <div style="display: inline-block; margin: 0 30px;">
+                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Vendor Signature</div>
+            </div>
+            <div style="display: inline-block; margin: 0 30px;">
+                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Date</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- STITCHING VENDOR TASK SLIP -->
+    <div class="vendor-section" th:if="${plan.stitchingVendor != null}">
+        <h3>🧵 STITCHING VENDOR - TASK SLIP</h3>
+        
+        <div class="task-details">
+            <h4>📋 Task Information</h4>
+            <div class="info-row">
+                <div class="info-label">Plan Number:</div>
+                <div class="info-value" th:text="${plan.planNumber}">PLAN-001</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Article Name:</div>
+                <div class="info-value" th:text="${plan.articleName}">Nike Classic</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Color:</div>
+                <div class="info-value" th:text="${plan.color}">Red</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Total Quantity:</div>
+                <div class="info-value" th:text="${plan.total} + ' pairs'">100 pairs</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Size Breakdown:</div>
+                <div class="info-value" th:text="${plan.sizeQuantityPairs}">6:50, 7:30, 8:20</div>
+            </div>
+        </div>
+        
+        <div class="task-details">
+            <h4>👤 Vendor Details</h4>
+            <div class="info-row">
+                <div class="info-label">Vendor Name:</div>
+                <div class="info-value" th:text="${plan.stitchingVendor.name}">Stitch Expert</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Operation:</div>
+                <div class="info-value">
+                    <span th:if="${article != null and article.stitchingRateHead != null}" 
+                          th:text="'Stitching (' + ${article.stitchingRateHead.name} + ')'">Stitching (Standard Stitching)</span>
+                    <span th:if="${article == null or article.stitchingRateHead == null}">Stitching</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Start Date:</div>
+                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">End Date:</div>
+                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Payment Due:</div>
+                <div class="info-value" th:text="'₹' + ${#numbers.formatDecimal(plan.stitchingVendorPaymentDue, 1, 2)}">₹0.00</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <div style="display: inline-block; margin: 0 30px;">
+                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Vendor Signature</div>
+            </div>
+            <div style="display: inline-block; margin: 0 30px;">
+                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Date</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="signature-line">
+        <div>_________________________</div>
+        <div>Authorized Signature</div>
+        <div th:text="${#temporals.format(#temporals.createNow(), 'dd-MMM-yyyy HH:mm')}">Date & Time</div>
+    </div>
+    
+    <div class="footer">
+        <p>This is a computer-generated document. No signature is required.</p>
+        <p>SKSE Inventory Management System</p>
+    </div>
+</body>
+</html>
+

@@ -132,4 +132,13 @@ public class PlanViewController {
         model.addAttribute("activeOrders", activeOrders);
         return "plans/dashboard";
     }
+    
+    @GetMapping("/{planNumber}/print")
+    public String printPlan(@PathVariable String planNumber, Model model) {
+        Plan plan = planService.getPlanByNumber(planNumber);
+        Article article = articleService.getArticleByName(plan.getArticleName());
+        model.addAttribute("plan", plan);
+        model.addAttribute("article", article);
+        return "plans/print";
+    }
 }

@@ -372,7 +372,7 @@ public class PlanService {
     }
 
     public List<Plan> getAllPlans() {
-        return planRepository.findAll();
+        return planRepository.findAllByOrderByCreateDateDesc();
     }
 
     public int deleteCompletedPlansFromPreviousMonth() {

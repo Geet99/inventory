@@ -20,6 +20,8 @@ public class CleanupViewController {
     
     @GetMapping
     public String showCleanupPage(Model model) {
+        Map<String, Object> eligibility = cleanupService.checkCleanupEligibility();
+        model.addAttribute("eligibility", eligibility);
         return "cleanup/index";
     }
     

@@ -1,6 +1,7 @@
 package com.skse.inventory.service;
 
 import com.skse.inventory.model.*;
+import com.skse.inventory.repository.ArticleRepository;
 import com.skse.inventory.repository.PlanRepository;
 import com.skse.inventory.repository.VendorMonthlyPaymentRepository;
 import com.skse.inventory.repository.VendorOrderHistoryRepository;
@@ -27,6 +28,9 @@ public class VendorService {
 
     @Autowired
     private PlanRepository planRepository;
+    
+    @Autowired
+    private ArticleRepository articleRepository;
     
     @Autowired
     private VendorMonthlyPaymentRepository vendorMonthlyPaymentRepository;
@@ -79,19 +83,69 @@ public class VendorService {
     public void recordVendorPayment(Long vendorId, double amount, String planNumber) {
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
-            // Reduce payment due
-            vendor.setPaymentDue(vendor.getPaymentDue() - amount);
-            vendorRepository.save(vendor);
+            // Check if this is a monthly settlement
+            if ("MONTHLY_SETTLEMENT".equals(planNumber)) {
+                // Settle all previous month's payments
+                settlePreviousMonthPayments(vendorId);
+            } else {
+                // Old-style payment recording (for backward compatibility)
+                // Reduce payment due
+                vendor.setPaymentDue(vendor.getPaymentDue() - amount);
+                vendorRepository.save(vendor);
+                
+                // Record payment history
+                VendorOrderHistory paymentRecord = new VendorOrderHistory();
+                paymentRecord.setVendor(vendor);
+                paymentRecord.setPlanNumber(planNumber);
+                paymentRecord.setAmount(amount);
+                paymentRecord.setPaymentDate(LocalDate.now());
+                paymentRecord.setType("PAYMENT");
+                vendorOrderHistoryRepository.save(paymentRecord);
+            }
+        }
+    }
+    
+    /**
+     * Settle all previous month's payments for a vendor
+     */
+    private void settlePreviousMonthPayments(Long vendorId) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor == null) return;
+        
+        String previousMonthYear = VendorMonthlyPayment.getPreviousMonthYear();
+        List<VendorMonthlyPayment> previousMonthPayments = 
+            vendorMonthlyPaymentRepository.findByMonthYear(previousMonthYear).stream()
+                .filter(p -> p.getVendor().getId().equals(vendorId))
+                .filter(p -> p.getStatus() != PaymentStatus.PAID)
+                .collect(Collectors.toList());
+        
+        double totalSettled = 0.0;
+        
+        for (VendorMonthlyPayment payment : previousMonthPayments) {
+            double amountToSettle = payment.getTotalDue() - payment.getPaidAmount();
             
-            // Record payment history
+            // Mark as fully paid
+            payment.setPaidAmount(payment.getTotalDue());
+            payment.setStatus(PaymentStatus.PAID);
+            payment.setLastUpdatedDate(LocalDate.now());
+            vendorMonthlyPaymentRepository.save(payment);
+            
+            // Record payment history for this settlement
             VendorOrderHistory paymentRecord = new VendorOrderHistory();
             paymentRecord.setVendor(vendor);
-            paymentRecord.setPlanNumber(planNumber);
-            paymentRecord.setAmount(amount);
+            paymentRecord.setPlanNumber("Settlement " + payment.getFormattedMonthYear() + " - " + payment.getOperationType());
+            paymentRecord.setAmount(amountToSettle);
             paymentRecord.setPaymentDate(LocalDate.now());
             paymentRecord.setType("PAYMENT");
+            paymentRecord.setRole(payment.getOperationType());
             vendorOrderHistoryRepository.save(paymentRecord);
+            
+            totalSettled += amountToSettle;
         }
+        
+        // Update legacy payment due (reduce by the amount settled)
+        vendor.setPaymentDue(Math.max(0, vendor.getPaymentDue() - totalSettled));
+        vendorRepository.save(vendor);
     }
 
     public void recordVendorOrder(Long vendorId, String planNumber, double amount, VendorRole role) {
@@ -440,5 +494,308 @@ public class VendorService {
         int count = settledPayments.size();
         vendorMonthlyPaymentRepository.deleteAll(settledPayments);
         return count;
+    }
+    
+    // ========== PRINT/RECEIPT METHODS ==========
+    
+    /**
+     * Get vendor tasks for printing task slip (Previous Month Only)
+     */
+    public List<Map<String, Object>> getVendorTasksForSlip(Long vendorId) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor == null) {
+            return List.of();
+        }
+        
+        String previousMonthYear = VendorMonthlyPayment.getPreviousMonthYear();
+        
+        // Get all plans assigned to this vendor
+        List<Plan> allPlans = planRepository.findAll();
+        List<Map<String, Object>> tasks = new java.util.ArrayList<>();
+        
+        for (Plan plan : allPlans) {
+            boolean isAssigned = false;
+            String status = "Not Started";
+            LocalDate startDate = null;
+            LocalDate endDate = null;
+            double paymentDue = 0.0;
+            boolean isFromPreviousMonth = false;
+            String operationType = "";
+            String rateHeadName = "";
+            double rateHeadCost = 0.0;
+            
+            // Check if vendor is assigned to cutting
+            if (plan.getCuttingVendor() != null && plan.getCuttingVendor().getId().equals(vendorId)) {
+                isAssigned = true;
+                operationType = "Cutting";
+                // Get cutting rate head name from article
+                Article article = articleRepository.findByName(plan.getArticleName()).orElse(null);
+                if (article != null && article.getCuttingRateHead() != null) {
+                    rateHeadName = article.getCuttingRateHead().getName();
+                    rateHeadCost = article.getCuttingRateHead().getCost();
+                }
+                startDate = plan.getCuttingStartDate();
+                endDate = plan.getCuttingEndDate();
+                paymentDue = plan.getCuttingVendorPaymentDue();
+                
+                // Check if this task is from previous month
+                if (endDate != null) {
+                    status = "Completed";
+                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(endDate));
+                } else if (startDate != null) {
+                    status = "In Progress";
+                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(startDate));
+                }
+            }
+            // Check if vendor is assigned to printing
+            else if (plan.getPrintingVendor() != null && plan.getPrintingVendor().getId().equals(vendorId)) {
+                isAssigned = true;
+                operationType = "Printing";
+                // Get printing rate head name from plan
+                if (plan.getPrintingRateHead() != null) {
+                    rateHeadName = plan.getPrintingRateHead().getName();
+                    rateHeadCost = plan.getPrintingRateHead().getCost();
+                }
+                startDate = plan.getPrintingStartDate();
+                endDate = plan.getPrintingEndDate();
+                paymentDue = plan.getPrintingVendorPaymentDue();
+                
+                // Check if this task is from previous month
+                if (endDate != null) {
+                    status = "Completed";
+                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(endDate));
+                } else if (startDate != null) {
+                    status = "In Progress";
+                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(startDate));
+                }
+            }
+            // Check if vendor is assigned to stitching
+            else if (plan.getStitchingVendor() != null && plan.getStitchingVendor().getId().equals(vendorId)) {
+                isAssigned = true;
+                operationType = "Stitching";
+                // Get stitching rate head name from article
+                Article article = articleRepository.findByName(plan.getArticleName()).orElse(null);
+                if (article != null && article.getStitchingRateHead() != null) {
+                    rateHeadName = article.getStitchingRateHead().getName();
+                    rateHeadCost = article.getStitchingRateHead().getCost();
+                }
+                startDate = plan.getStitchingStartDate();
+                endDate = plan.getStitchingEndDate();
+                paymentDue = plan.getStitchingVendorPaymentDue();
+                
+                // Check if this task is from previous month
+                if (endDate != null) {
+                    status = "Completed";
+                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(endDate));
+                } else if (startDate != null) {
+                    status = "In Progress";
+                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(startDate));
+                }
+            }
+            
+            // Only include tasks from previous month
+            if (isAssigned && isFromPreviousMonth) {
+                Map<String, Object> task = new HashMap<>();
+                task.put("planNumber", plan.getPlanNumber());
+                task.put("articleName", plan.getArticleName());
+                task.put("color", plan.getColor());
+                task.put("sizeQuantityPairs", plan.getSizeQuantityPairs());
+                task.put("quantity", plan.getTotal());
+                task.put("status", status);
+                task.put("operationType", operationType);
+                task.put("rateHeadName", rateHeadName);
+                task.put("rateHeadCost", rateHeadCost);
+                task.put("startDate", startDate);
+                task.put("endDate", endDate);
+                task.put("paymentDue", paymentDue);
+                tasks.add(task);
+            }
+        }
+        
+        return tasks;
+    }
+    
+    /**
+     * Get payment receipt data for printing
+     */
+    public Map<String, Object> getPaymentReceiptData(Long vendorId) {
+        Vendor vendor = getVendorById(vendorId);
+        Map<String, Object> data = new HashMap<>();
+        
+        if (vendor == null) {
+            return data;
+        }
+        
+        String previousMonthYear = VendorMonthlyPayment.getPreviousMonthYear();
+        List<VendorMonthlyPayment> previousMonthPayments = 
+            vendorMonthlyPaymentRepository.findByMonthYear(previousMonthYear).stream()
+                .filter(p -> p.getVendor().getId().equals(vendorId))
+                .collect(Collectors.toList());
+        
+        // Get work details - find all plans completed in previous month for this vendor
+        List<Map<String, Object>> workDetails = new java.util.ArrayList<>();
+        List<Plan> allPlans = planRepository.findAll();
+        
+        int totalQuantity = 0;
+        double totalDue = 0.0;
+        double previousPayment = 0.0;
+        
+        for (Plan plan : allPlans) {
+            // Check cutting
+            if (plan.getCuttingVendor() != null && 
+                plan.getCuttingVendor().getId().equals(vendorId) &&
+                plan.getCuttingEndDate() != null) {
+                
+                String completionMonthYear = VendorMonthlyPayment.getMonthYearString(plan.getCuttingEndDate());
+                if (previousMonthYear.equals(completionMonthYear)) {
+                    Map<String, Object> work = new HashMap<>();
+                    work.put("planNumber", plan.getPlanNumber());
+                    work.put("articleName", plan.getArticleName());
+                    work.put("color", plan.getColor());
+                    work.put("quantity", plan.getTotal());
+                    work.put("ratePerUnit", plan.getCuttingVendorPaymentDue() / plan.getTotal());
+                    work.put("completionDate", plan.getCuttingEndDate());
+                    work.put("amount", plan.getCuttingVendorPaymentDue());
+                    workDetails.add(work);
+                    
+                    totalQuantity += plan.getTotal();
+                    totalDue += plan.getCuttingVendorPaymentDue();
+                }
+            }
+            
+            // Check printing
+            if (plan.getPrintingVendor() != null && 
+                plan.getPrintingVendor().getId().equals(vendorId) &&
+                plan.getPrintingEndDate() != null) {
+                
+                String completionMonthYear = VendorMonthlyPayment.getMonthYearString(plan.getPrintingEndDate());
+                if (previousMonthYear.equals(completionMonthYear)) {
+                    Map<String, Object> work = new HashMap<>();
+                    work.put("planNumber", plan.getPlanNumber());
+                    work.put("articleName", plan.getArticleName());
+                    work.put("color", plan.getColor());
+                    work.put("quantity", plan.getTotal());
+                    work.put("ratePerUnit", plan.getPrintingVendorPaymentDue() / plan.getTotal());
+                    work.put("completionDate", plan.getPrintingEndDate());
+                    work.put("amount", plan.getPrintingVendorPaymentDue());
+                    workDetails.add(work);
+                    
+                    totalQuantity += plan.getTotal();
+                    totalDue += plan.getPrintingVendorPaymentDue();
+                }
+            }
+            
+            // Check stitching
+            if (plan.getStitchingVendor() != null && 
+                plan.getStitchingVendor().getId().equals(vendorId) &&
+                plan.getStitchingEndDate() != null) {
+                
+                String completionMonthYear = VendorMonthlyPayment.getMonthYearString(plan.getStitchingEndDate());
+                if (previousMonthYear.equals(completionMonthYear)) {
+                    Map<String, Object> work = new HashMap<>();
+                    work.put("planNumber", plan.getPlanNumber());
+                    work.put("articleName", plan.getArticleName());
+                    work.put("color", plan.getColor());
+                    work.put("quantity", plan.getTotal());
+                    work.put("ratePerUnit", plan.getStitchingVendorPaymentDue() / plan.getTotal());
+                    work.put("completionDate", plan.getStitchingEndDate());
+                    work.put("amount", plan.getStitchingVendorPaymentDue());
+                    workDetails.add(work);
+                    
+                    totalQuantity += plan.getTotal();
+                    totalDue += plan.getStitchingVendorPaymentDue();
+                }
+            }
+        }
+        
+        // Calculate previous payments
+        for (VendorMonthlyPayment payment : previousMonthPayments) {
+            previousPayment += payment.getPaidAmount();
+        }
+        
+        double amountSettled = totalDue - previousPayment;
+        
+        // Format settlement period
+        String formattedMonth = previousMonthPayments.isEmpty() ? 
+            VendorMonthlyPayment.getPreviousMonthYear() : 
+            previousMonthPayments.get(0).getFormattedMonthYear();
+        
+        data.put("settlementPeriod", formattedMonth);
+        data.put("workDetails", workDetails);
+        data.put("totalQuantity", totalQuantity);
+        data.put("totalDue", totalDue);
+        data.put("previousPayment", previousPayment);
+        data.put("amountSettled", amountSettled);
+        data.put("amountInWords", convertAmountToWords(amountSettled));
+        
+        return data;
+    }
+    
+    /**
+     * Convert amount to words (Indian Rupees)
+     */
+    private String convertAmountToWords(double amount) {
+        if (amount == 0) {
+            return "Zero Rupees Only";
+        }
+        
+        int rupees = (int) amount;
+        int paise = (int) Math.round((amount - rupees) * 100);
+        
+        String result = convertNumberToWords(rupees) + " Rupees";
+        if (paise > 0) {
+            result += " and " + convertNumberToWords(paise) + " Paise";
+        }
+        result += " Only";
+        
+        return result;
+    }
+    
+    private String convertNumberToWords(int number) {
+        if (number == 0) return "Zero";
+        
+        String[] units = {"", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"};
+        String[] teens = {"Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"};
+        String[] tens = {"", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"};
+        
+        if (number < 10) return units[number];
+        if (number < 20) return teens[number - 10];
+        if (number < 100) return tens[number / 10] + (number % 10 != 0 ? " " + units[number % 10] : "");
+        if (number < 1000) return units[number / 100] + " Hundred" + (number % 100 != 0 ? " " + convertNumberToWords(number % 100) : "");
+        if (number < 100000) return convertNumberToWords(number / 1000) + " Thousand" + (number % 1000 != 0 ? " " + convertNumberToWords(number % 1000) : "");
+        if (number < 10000000) return convertNumberToWords(number / 100000) + " Lakh" + (number % 100000 != 0 ? " " + convertNumberToWords(number % 100000) : "");
+        
+        return convertNumberToWords(number / 10000000) + " Crore" + (number % 10000000 != 0 ? " " + convertNumberToWords(number % 10000000) : "");
+    }
+    
+    /**
+     * Get formatted previous month year (e.g., "November 2024")
+     */
+    public String getFormattedPreviousMonthYear() {
+        String monthYear = VendorMonthlyPayment.getPreviousMonthYear();
+        if (monthYear != null && monthYear.length() == 6) {
+            String month = monthYear.substring(0, 2);
+            String year = monthYear.substring(2);
+            return getMonthName(month) + " " + year;
+        }
+        return monthYear;
+    }
+    
+    private String getMonthName(String month) {
+        return switch (month) {
+            case "01" -> "January";
+            case "02" -> "February";
+            case "03" -> "March";
+            case "04" -> "April";
+            case "05" -> "May";
+            case "06" -> "June";
+            case "07" -> "July";
+            case "08" -> "August";
+            case "09" -> "September";
+            case "10" -> "October";
+            case "11" -> "November";
+            case "12" -> "December";
+            default -> month;
+        };
     }
 }

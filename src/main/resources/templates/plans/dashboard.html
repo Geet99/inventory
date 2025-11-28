@@ -214,24 +214,12 @@
             }
         }
     </style>
+    <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
 <body>
-    <div class="header">
-        <h1>SKSE Inventory Management System</h1>
-        <p>Manage your slipper manufacturing business efficiently</p>
-    </div>
-    
-    <nav class="nav">
-        <div class="nav-container">
-            <a th:href="@{/}">🏠 Home</a>
-            <a th:href="@{/plans}" class="active">📋 Plans</a>
-            <a th:href="@{/stock}">📦 Stock</a>
-            <a th:href="@{/vendors}">👥 Vendors</a>
-            <a th:href="@{/vendors/summary}">💰 Payments</a>
-            <a th:href="@{/articles}">👟 Articles</a>
-            <a th:href="@{/colors}">🎨 Colors</a>
-        </div>
-    </nav>
+    <!-- Include Page Header and Navigation -->
+    <div th:replace="~{fragments/navigation :: page-header}"></div>
+    <div th:replace="~{fragments/navigation :: navbar}"></div>
     
     <div class="container">
         <div class="page-header">
