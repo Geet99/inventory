@@ -18,10 +18,20 @@ public class RateHeadViewController {
     private RateHeadService rateHeadService;
     
     @GetMapping
-    public String listRateHeads(Model model) {
+    public String listRateHeads(@RequestParam(required = false) VendorRole operationType, Model model) {
         model.addAttribute("title", "Rate Heads");
-        model.addAttribute("rateHeads", rateHeadService.getAllRateHeads());
+        model.addAttribute("operationTypes", VendorRole.values());
+        model.addAttribute("currentFilter", operationType);
+        List<RateHead> rateHeads = operationType == null
+                ? rateHeadService.getAllRateHeads()
+                : rateHeadService.getRateHeadsByOperationType(operationType);
+        model.addAttribute("rateHeads", rateHeads);
         return "rateheads/list";
+    }
+
+    @GetMapping("/operation/{operationType}")
+    public String listRateHeadsByOperationRedirect(@PathVariable VendorRole operationType) {
+        return "redirect:/rateheads?operationType=" + operationType.name();
     }
     
     @GetMapping("/new")
@@ -66,15 +76,6 @@ public class RateHeadViewController {
     public String deactivateRateHead(@PathVariable Long id) {
         rateHeadService.deactivateRateHead(id);
         return "redirect:/rateheads";
-    }
-    
-    @GetMapping("/operation/{operationType}")
-    public String listRateHeadsByOperation(@PathVariable VendorRole operationType, Model model) {
-        List<RateHead> rateHeads = rateHeadService.getRateHeadsByOperationType(operationType);
-        model.addAttribute("rateHeads", rateHeads);
-        model.addAttribute("operationType", operationType);
-        model.addAttribute("title", operationType + " Rate Heads");
-        return "rateheads/by-operation";
     }
 }
 

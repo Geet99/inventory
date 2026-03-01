@@ -1,0 +1,19 @@
+# Render Blueprint: deploy from GitHub. Set env vars in Dashboard for database.
+# Uses Dockerfile for reliable Java 17 build.
+services:
+  - type: web
+    name: inventory
+    runtime: docker
+    plan: free
+
+    dockerfilePath: ./Dockerfile
+
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false

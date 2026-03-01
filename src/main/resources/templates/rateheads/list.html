@@ -176,6 +176,39 @@
         .info-box h4 {
             margin-top: 0;
         }
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .filter-bar span {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+        .filter-bar a {
+            padding: 8px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            background: white;
+            color: #2c3e50;
+            border: 1px solid #ddd;
+            transition: all 0.2s;
+        }
+        .filter-bar a:hover {
+            background: #ecf0f1;
+            border-color: #3498db;
+            color: #3498db;
+        }
+        .filter-bar a.filter-active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
         @media (max-width: 768px) {
             .nav-container {
                 flex-direction: column;
@@ -199,6 +232,15 @@
         <div class="page-header">
             <h2>Rate Heads Management</h2>
             <a th:href="@{/rateheads/new}" class="btn btn-success">➕ Add New Rate Head</a>
+        </div>
+
+        <div class="filter-bar">
+            <span>Show:</span>
+            <a th:href="@{/rateheads}" th:classappend="${currentFilter == null} ? 'filter-active' : ''">All</a>
+            <a th:each="op : ${operationTypes}"
+               th:href="@{/rateheads(operationType=${op})}"
+               th:text="${op}"
+               th:classappend="${currentFilter == op} ? 'filter-active' : ''"></a>
         </div>
         
         <div class="info-box">
