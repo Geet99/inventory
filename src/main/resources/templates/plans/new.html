@@ -150,6 +150,9 @@
     <div th:replace="~{fragments/navigation :: navbar}"></div>
     
     <div class="container">
+        <div th:if="${error}" style="background-color: #f8d7da; color: #721c24; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;">
+            <span th:text="${error}"></span>
+        </div>
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">Create New Plan</h2>
@@ -186,6 +189,7 @@
                     <div class="form-group">
                         <label for="total">Total Quantity *</label>
                         <input type="number" id="total" th:field="*{total}" required min="1">
+                        <small class="text-muted">This must equal the sum of all quantities in the Size:Quantity pairs below.</small>
                     </div>
                 </div>
                 

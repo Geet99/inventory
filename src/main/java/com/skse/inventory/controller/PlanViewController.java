@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Controller
 @RequestMapping("/plans")
 public class PlanViewController {
@@ -54,9 +57,21 @@ public class PlanViewController {
     }
 
     @PostMapping("/add")
-    public String addPlan(@ModelAttribute Plan plan) {
-        planService.createPlan(plan);
-        return "redirect:/plans";
+    public String addPlan(@ModelAttribute Plan plan, Model model) {
+        try {
+            planService.createPlan(plan);
+            return "redirect:/plans";
+        } catch (IllegalArgumentException ex) {
+            model.addAttribute("title", "Create New Plan");
+            model.addAttribute("plan", plan);
+            model.addAttribute("roles", VendorRole.values());
+            model.addAttribute("articles", articleService.getAllArticles());
+            model.addAttribute("colors", colorService.getAllColors());
+            model.addAttribute("cuttingTypes", CuttingType.values());
+            model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
+            model.addAttribute("error", ex.getMessage());
+            return "plans/new";
+        }
     }
 
     @GetMapping("/{planNumber}/edit")
@@ -72,9 +87,21 @@ public class PlanViewController {
     }
 
     @PostMapping("/{planNumber}/update")
-    public String updatePlan(@PathVariable String planNumber, @ModelAttribute Plan updatedPlan) {
-        planService.updatePlan(planNumber, updatedPlan);
-        return "redirect:/plans";
+    public String updatePlan(@PathVariable String planNumber, @ModelAttribute Plan updatedPlan, Model model) {
+        try {
+            planService.updatePlan(planNumber, updatedPlan);
+            return "redirect:/plans";
+        } catch (IllegalArgumentException ex) {
+            Plan plan = updatedPlan;
+            model.addAttribute("title", "Edit Plan");
+            model.addAttribute("plan", plan);
+            model.addAttribute("articles", articleService.getAllArticles());
+            model.addAttribute("colors", colorService.getAllColors());
+            model.addAttribute("cuttingTypes", CuttingType.values());
+            model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
+            model.addAttribute("error", ex.getMessage());
+            return "plans/edit";
+        }
     }
 
     @PostMapping("/{planNumber}/delete")
@@ -104,6 +131,33 @@ public class PlanViewController {
 
     @PostMapping("/{planNumber}/move-to-next")
     public String moveToNextState(@PathVariable String planNumber) {
+        Plan plan = planService.getPlanByNumber(planNumber);
+        if (plan == null) {
+            String message = "Plan not found: " + planNumber;
+            return "redirect:/plans?error=" + URLEncoder.encode(message, StandardCharsets.UTF_8);
+        }
+
+        PlanStatus status = plan.getStatus();
+        String missingVendorMessage = null;
+
+        if (status == PlanStatus.Pending_Cutting || status == PlanStatus.Cutting) {
+            if (plan.getCuttingVendor() == null) {
+                missingVendorMessage = "Cutting vendor is not assigned for plan " + planNumber + ". Please use 'Assign Vendor' for this plan before moving to the next state.";
+            }
+        } else if (status == PlanStatus.Pending_Printing || status == PlanStatus.Printing) {
+            if (plan.getPrintingVendor() == null) {
+                missingVendorMessage = "Printing vendor is not assigned for plan " + planNumber + ". Please use 'Assign Vendor' for this plan before moving to the next state.";
+            }
+        } else if (status == PlanStatus.Pending_Stitching || status == PlanStatus.Stitching) {
+            if (plan.getStitchingVendor() == null) {
+                missingVendorMessage = "Stitching vendor is not assigned for plan " + planNumber + ". Please use 'Assign Vendor' for this plan before moving to the next state.";
+            }
+        }
+
+        if (missingVendorMessage != null) {
+            return "redirect:/plans?error=" + URLEncoder.encode(missingVendorMessage, StandardCharsets.UTF_8);
+        }
+
         planService.moveToNextState(planNumber);
         return "redirect:/plans";
     }

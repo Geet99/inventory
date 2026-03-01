@@ -1,7 +1,5 @@
 package com.skse.inventory.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skse.inventory.model.*;
 import com.skse.inventory.repository.ArticleRepository;
 import com.skse.inventory.repository.PlanRepository;
@@ -12,16 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
 public class PlanService {
     @Autowired
     private PlanRepository planRepository;
-
-    @Autowired
-    private ArticleService articleService;
 
     @Autowired
     private ArticleRepository articleRepository;
@@ -38,9 +32,8 @@ public class PlanService {
     @Autowired
     private VendorService vendorService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     public Plan createPlan(Plan plan) {
+        validateTotalAndSizePairs(plan);
         plan.setCreateDate(LocalDate.now());
         plan.setStatus(PlanStatus.Pending_Cutting); // Initial status
         return planRepository.save(plan);
@@ -49,15 +42,76 @@ public class PlanService {
     public Plan updatePlan(String planNumber, Plan updatedPlan) {
         Plan plan = planRepository.findByPlanNumber(planNumber);
         if (plan != null) {
+            // Only allow changing total & size:quantity pairs until cutting is finalized.
+            // After we move to Pending_Printing (and upper stock is updated), changing
+            // these fields would desync plan vs stock, so we keep the original values.
+            PlanStatus status = plan.getStatus();
+            boolean allowQuantityEdit = (status == null
+                    || status == PlanStatus.Pending_Cutting
+                    || status == PlanStatus.Cutting);
+
+            if (allowQuantityEdit) {
+                validateTotalAndSizePairs(updatedPlan);
+                plan.setTotal(updatedPlan.getTotal());
+                plan.setSizeQuantityPairs(updatedPlan.getSizeQuantityPairs());
+            } else {
+                // If user tried to change quantities after cutting is finalized, surface an error
+                if (updatedPlan.getTotal() != plan.getTotal()
+                        || (updatedPlan.getSizeQuantityPairs() != null
+                            && !updatedPlan.getSizeQuantityPairs().equals(plan.getSizeQuantityPairs()))) {
+                    throw new IllegalArgumentException(
+                        "Total quantity and Size:Quantity pairs cannot be changed after cutting is completed. " +
+                        "If the actual quantity is different, please adjust it during the Cutting stage."
+                    );
+                }
+            }
+
             plan.setArticleName(updatedPlan.getArticleName());
             plan.setColor(updatedPlan.getColor());
             plan.setDescription(updatedPlan.getDescription());
-            plan.setTotal(updatedPlan.getTotal());
-            plan.setSizeQuantityPairs(updatedPlan.getSizeQuantityPairs());
             plan.setPrintingRateHead(updatedPlan.getPrintingRateHead());
             return planRepository.save(plan);
         } else {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
+        }
+    }
+
+    private void validateTotalAndSizePairs(Plan plan) {
+        if (plan.getTotal() <= 0) {
+            throw new IllegalArgumentException("Total quantity must be greater than zero.");
+        }
+
+        String pairs = plan.getSizeQuantityPairs();
+        if (pairs == null || pairs.trim().isEmpty()) {
+            throw new IllegalArgumentException("Size:Quantity pairs are required.");
+        }
+
+        int sum = 0;
+        try {
+            String[] sizeQuantityPairs = pairs.split(",");
+            for (String pair : sizeQuantityPairs) {
+                if (pair.trim().isEmpty()) {
+                    continue;
+                }
+                String[] sizeQuantity = pair.trim().split(":");
+                if (sizeQuantity.length != 2) {
+                    throw new IllegalArgumentException("Invalid size:quantity format. Use format like 6:50, 7:30, 8:20.");
+                }
+                int quantity = Integer.parseInt(sizeQuantity[1].trim());
+                if (quantity <= 0) {
+                    throw new IllegalArgumentException("All size quantities must be greater than zero.");
+                }
+                sum += quantity;
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Size:quantity pairs must use whole numbers for quantities.");
+        }
+
+        if (sum != plan.getTotal()) {
+            throw new IllegalArgumentException(String.format(
+                "Total quantity (%d) does not match the sum (%d) of size:quantity pairs.",
+                plan.getTotal(), sum
+            ));
         }
     }
 
@@ -83,6 +137,9 @@ public class PlanService {
 
         // Transition logic (timestamps and stock update)
         switch (nextStatus) {
+            case Pending_Cutting:
+                // Initial state already validated when creating the plan
+                break;
             case Cutting:
                 plan.setCuttingStartDate(LocalDate.now());
                 break;
