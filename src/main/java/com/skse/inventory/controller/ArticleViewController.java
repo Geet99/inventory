@@ -20,9 +20,10 @@ public class ArticleViewController {
     private RateHeadService rateHeadService;
 
     @GetMapping
-    public String listArticles(Model model) {
+    public String listArticles(@RequestParam(required = false) String q, Model model) {
         model.addAttribute("title", "Articles");
-        model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("articles", articleService.searchArticles(q));
+        model.addAttribute("searchQuery", q != null ? q : "");
         return "articles/list";
     }
 

@@ -11,11 +11,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/plans")
@@ -37,17 +39,25 @@ public class PlanViewController {
     private RateHeadService rateHeadService;
 
     @GetMapping
-    public String listPlans(Model model) {
+    public String listPlans(@RequestParam(required = false) String planNumber,
+                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createDateFrom,
+                           @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createDateTo,
+                           Model model) {
         model.addAttribute("title", "Plans");
-        List<Plan> plans = planService.getAllPlans();
+        List<Plan> plans = planService.getPlansFiltered(planNumber, createDateFrom, createDateTo);
         model.addAttribute("plans", plans);
+        model.addAttribute("filterPlanNumber", planNumber != null ? planNumber : "");
+        model.addAttribute("filterCreateDateFrom", createDateFrom);
+        model.addAttribute("filterCreateDateTo", createDateTo);
         return "plans/list";
     }
 
     @GetMapping("/new")
     public String newPlanForm(Model model) {
+        Plan plan = new Plan();
+        plan.setCreateDate(LocalDate.now());
         model.addAttribute("title", "Create New Plan");
-        model.addAttribute("plan", new Plan());
+        model.addAttribute("plan", plan);
         model.addAttribute("roles", VendorRole.values());
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
@@ -129,36 +139,32 @@ public class PlanViewController {
         return "redirect:/plans";
     }
 
+    @GetMapping("/{planNumber}/confirm-next-state")
+    public String confirmNextState(@PathVariable String planNumber, Model model) {
+        Plan plan = planService.getPlanByNumber(planNumber);
+        if (plan == null) {
+            return "redirect:/plans?error=" + URLEncoder.encode("Plan not found: " + planNumber, StandardCharsets.UTF_8);
+        }
+        PlanStatus next = planService.getNextStatus(plan.getStatus());
+        if (next == null) {
+            return "redirect:/plans?error=" + URLEncoder.encode("Plan is already completed.", StandardCharsets.UTF_8);
+        }
+        model.addAttribute("plan", plan);
+        model.addAttribute("nextStatus", next);
+        model.addAttribute("title", "Confirm transition");
+        return "plans/confirm-next-state";
+    }
+
     @PostMapping("/{planNumber}/move-to-next")
-    public String moveToNextState(@PathVariable String planNumber) {
+    public String moveToNextState(@PathVariable String planNumber,
+                                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate transitionDate) {
         Plan plan = planService.getPlanByNumber(planNumber);
         if (plan == null) {
             String message = "Plan not found: " + planNumber;
             return "redirect:/plans?error=" + URLEncoder.encode(message, StandardCharsets.UTF_8);
         }
-
-        PlanStatus status = plan.getStatus();
-        String missingVendorMessage = null;
-
-        if (status == PlanStatus.Pending_Cutting || status == PlanStatus.Cutting) {
-            if (plan.getCuttingVendor() == null) {
-                missingVendorMessage = "Cutting vendor is not assigned for plan " + planNumber + ". Please use 'Assign Vendor' for this plan before moving to the next state.";
-            }
-        } else if (status == PlanStatus.Pending_Printing || status == PlanStatus.Printing) {
-            if (plan.getPrintingVendor() == null) {
-                missingVendorMessage = "Printing vendor is not assigned for plan " + planNumber + ". Please use 'Assign Vendor' for this plan before moving to the next state.";
-            }
-        } else if (status == PlanStatus.Pending_Stitching || status == PlanStatus.Stitching) {
-            if (plan.getStitchingVendor() == null) {
-                missingVendorMessage = "Stitching vendor is not assigned for plan " + planNumber + ". Please use 'Assign Vendor' for this plan before moving to the next state.";
-            }
-        }
-
-        if (missingVendorMessage != null) {
-            return "redirect:/plans?error=" + URLEncoder.encode(missingVendorMessage, StandardCharsets.UTF_8);
-        }
-
-        planService.moveToNextState(planNumber);
+        LocalDate date = transitionDate != null ? transitionDate : LocalDate.now();
+        planService.moveToNextState(planNumber, date);
         return "redirect:/plans";
     }
     

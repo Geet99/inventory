@@ -120,6 +120,13 @@ For production use, switch to MySQL profile.
    ```bash
    mvn spring-boot:run
    ```
+   If you see **"URL must start with 'jdbc'"**, a database URL from your environment may be overriding the dev config. Run with the dev profile explicitly and (if needed) unset env vars:
+   ```bash
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
+   # or unset then run:
+   unset SPRING_DATASOURCE_URL SPRING_DATASOURCE_USERNAME SPRING_DATASOURCE_PASSWORD
+   mvn spring-boot:run
+   ```
 
 3. **Access Application**:
    - Main application: http://localhost:8080

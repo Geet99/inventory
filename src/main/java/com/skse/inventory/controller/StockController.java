@@ -4,7 +4,6 @@ import com.skse.inventory.model.*;
 import com.skse.inventory.service.StockService;
 import com.skse.inventory.service.ArticleService;
 import com.skse.inventory.service.ColorService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -223,6 +222,61 @@ public class StockController {
         return ResponseEntity.ok(summary);
     }
     
+    @GetMapping("/add-existing")
+    public String showAddExistingStockForm(Model model) {
+        model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("colors", colorService.getAllColors());
+        return "stock/add-existing";
+    }
+
+    @PostMapping("/add-existing/upper")
+    public String addExistingUpperStock(@RequestParam String articleName,
+                                        @RequestParam String size,
+                                        @RequestParam String color,
+                                        @RequestParam int quantity,
+                                        Model model) {
+        try {
+            Article article = articleService.getArticleByName(articleName);
+            if (article == null) {
+                model.addAttribute("error", "Article not found");
+                model.addAttribute("articles", articleService.getAllArticles());
+                model.addAttribute("colors", colorService.getAllColors());
+                return "stock/add-existing";
+            }
+            stockService.addToUpperStock(article, size.trim(), color, quantity);
+            return "redirect:/stock?added=upper";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to add: " + e.getMessage());
+            model.addAttribute("articles", articleService.getAllArticles());
+            model.addAttribute("colors", colorService.getAllColors());
+            return "stock/add-existing";
+        }
+    }
+
+    @PostMapping("/add-existing/finished")
+    public String addExistingFinishedStock(@RequestParam String articleName,
+                                           @RequestParam String size,
+                                           @RequestParam String color,
+                                           @RequestParam int quantity,
+                                           Model model) {
+        try {
+            Article article = articleService.getArticleByName(articleName);
+            if (article == null) {
+                model.addAttribute("error", "Article not found");
+                model.addAttribute("articles", articleService.getAllArticles());
+                model.addAttribute("colors", colorService.getAllColors());
+                return "stock/add-existing";
+            }
+            stockService.addToFinishedStock(article, size.trim(), color, quantity);
+            return "redirect:/stock?added=finished";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to add: " + e.getMessage());
+            model.addAttribute("articles", articleService.getAllArticles());
+            model.addAttribute("colors", colorService.getAllColors());
+            return "stock/add-existing";
+        }
+    }
+
     @GetMapping("/move-to-finished")
     public String showMoveToFinishedForm(Model model) {
         model.addAttribute("upperStock", stockService.getAllUpperStock());

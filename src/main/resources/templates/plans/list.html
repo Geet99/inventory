@@ -171,6 +171,35 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+        .filters {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .filters .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        .filters label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 13px;
+        }
+        .filters input {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .filters .filter-group { min-width: 140px; }
+        .filters .filter-actions { display: flex; gap: 8px; align-items: center; }
         @media (max-width: 768px) {
             .nav-container {
                 flex-direction: column;
@@ -201,6 +230,28 @@
         </div>
         
         <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
+
+        <div class="filters">
+            <form th:action="@{/plans}" method="get" class="filter-row">
+                <div class="filter-group">
+                    <label for="planNumber">Plan number</label>
+                    <input type="text" id="planNumber" name="planNumber" th:value="${filterPlanNumber}" placeholder="Search by plan number...">
+                </div>
+                <div class="filter-group">
+                    <label for="createDateFrom">Create date from</label>
+                    <input type="date" id="createDateFrom" name="createDateFrom" th:value="${filterCreateDateFrom != null ? #temporals.format(filterCreateDateFrom, 'yyyy-MM-dd') : ''}">
+                </div>
+                <div class="filter-group">
+                    <label for="createDateTo">Create date to</label>
+                    <input type="date" id="createDateTo" name="createDateTo" th:value="${filterCreateDateTo != null ? #temporals.format(filterCreateDateTo, 'yyyy-MM-dd') : ''}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <a th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or filterCreateDateFrom != null or filterCreateDateTo != null}"
+                       th:href="@{/plans}" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
         
         <table>
                 <thead>
@@ -240,12 +291,11 @@
                                 <a th:href="@{/plans/{planNumber}/edit(planNumber=${plan.planNumber})}" class="btn btn-warning">Edit</a>
                                 <a th:href="@{/plans/{planNumber}/print(planNumber=${plan.planNumber})}" class="btn btn-secondary" target="_blank">🖨️ Print</a>
                                 <a th:href="@{/plans/{planNumber}/assign-vendor(planNumber=${plan.planNumber})}" class="btn btn-info">Assign Vendor</a>
-                                <form th:action="@{/plans/{planNumber}/move-to-next(planNumber=${plan.planNumber})}" method="post" style="display:inline">
-                                    <button type="submit" class="btn btn-primary" 
-                                            th:disabled="${plan.status != null and plan.status.name() == 'Completed'}">
-                                        Next State
-                                    </button>
-                                </form>
+                                <a th:href="@{/plans/{planNumber}/confirm-next-state(planNumber=${plan.planNumber})}" 
+                                   class="btn btn-primary"
+                                   th:if="${plan.status == null or plan.status.name() != 'Completed'}">
+                                    Next State
+                                </a>
                                 <a th:href="@{/plans/{planNumber}/send-to-machine(planNumber=${plan.planNumber})}" 
                                    class="btn btn-danger"
                                    th:if="${plan.status != null and plan.status.name() == 'Completed' and plan.machineProcessingDate == null}">
@@ -269,7 +319,12 @@
         </table>
         
         <div th:if="${#lists.isEmpty(plans)}" style="text-align: center; margin-top: 50px; color: #666;">
-            <p>No plans found. <a th:href="@{/plans/new}">Create your first plan</a></p>
+            <p th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or filterCreateDateFrom != null or filterCreateDateTo != null}">
+                No plans match your filters. <a th:href="@{/plans}">Clear filters</a> or <a th:href="@{/plans/new}">add a new plan</a>.
+            </p>
+            <p th:if="${filterPlanNumber == null or #strings.isEmpty(filterPlanNumber)} and ${filterCreateDateFrom == null and filterCreateDateTo == null}">
+                No plans found. <a th:href="@{/plans/new}">Create your first plan</a>
+            </p>
         </div>
     </div>
 </body>

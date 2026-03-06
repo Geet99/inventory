@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Confirm transition - SKSE Inventory</title>
+    <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
+    <style>
+        .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 24px; max-width: 480px; margin: 0 auto; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #2c3e50; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .btn { padding: 10px 20px; border-radius: 6px; font-weight: bold; text-decoration: none; display: inline-block; border: none; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-secondary { background: #6c757d; color: white; margin-left: 8px; }
+        .btn-secondary:hover { background: #545b62; }
+        .text-muted { color: #6c757d; font-size: 13px; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/navigation :: page-header}"></div>
+    <div th:replace="~{fragments/navigation :: navbar}"></div>
+    <div class="container" style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div class="card">
+            <h2 style="margin-top: 0;">Confirm plan transition</h2>
+            <p>Plan <strong th:text="${plan.planNumber}"></strong> will move from <strong th:text="${plan.status != null ? plan.status.name().replace('_', ' ') : 'N/A'}"></strong> to <strong th:text="${nextStatus.name().replace('_', ' ')}"></strong>.</p>
+            <p class="text-muted">Vendor is optional: if not assigned, this step will not be billed.</p>
+            <form th:action="@{'/plans/' + ${plan.planNumber} + '/move-to-next'}" method="post">
+                <div class="form-group">
+                    <label for="transitionDate">Transition date</label>
+                    <input type="date" id="transitionDate" name="transitionDate" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+                    <small class="text-muted">Actual date when this step was completed (default: today)</small>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">Confirm transition</button>
+                    <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

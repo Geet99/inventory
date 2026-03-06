@@ -32,10 +32,16 @@ public class PlanService {
     @Autowired
     private VendorService vendorService;
 
+    /**
+     * Creates plan. createDate is honored for reporting and cleanup (e.g. deleteCompletedPlansFromPreviousMonth).
+     * Defaults to today only when null.
+     */
     public Plan createPlan(Plan plan) {
         validateTotalAndSizePairs(plan);
-        plan.setCreateDate(LocalDate.now());
-        plan.setStatus(PlanStatus.Pending_Cutting); // Initial status
+        if (plan.getCreateDate() == null) {
+            plan.setCreateDate(LocalDate.now());
+        }
+        plan.setStatus(PlanStatus.Pending_Cutting);
         return planRepository.save(plan);
     }
 
@@ -70,6 +76,9 @@ public class PlanService {
             plan.setColor(updatedPlan.getColor());
             plan.setDescription(updatedPlan.getDescription());
             plan.setPrintingRateHead(updatedPlan.getPrintingRateHead());
+            if (updatedPlan.getCreateDate() != null) {
+                plan.setCreateDate(updatedPlan.getCreateDate());
+            }
             return planRepository.save(plan);
         } else {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
@@ -125,6 +134,10 @@ public class PlanService {
     }
 
     public Plan moveToNextState(String planNumber) {
+        return moveToNextState(planNumber, LocalDate.now());
+    }
+
+    public Plan moveToNextState(String planNumber, LocalDate transitionDate) {
         Plan plan = planRepository.findByPlanNumber(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
@@ -135,67 +148,50 @@ public class PlanService {
             throw new IllegalStateException("Invalid status transition");
         }
 
-        // Transition logic (timestamps and stock update)
+        // Use transition date everywhere: plan timestamps and vendor payment month (financial)
+        LocalDate date = transitionDate != null ? transitionDate : LocalDate.now();
+
         switch (nextStatus) {
             case Pending_Cutting:
-                // Initial state already validated when creating the plan
                 break;
             case Cutting:
-                plan.setCuttingStartDate(LocalDate.now());
+                plan.setCuttingStartDate(date);
                 break;
             case Pending_Printing:
-                plan.setCuttingEndDate(LocalDate.now());
-                // Record vendor order for cutting - using COMPLETION DATE
+                plan.setCuttingEndDate(date);
                 if (plan.getCuttingVendor() != null) {
                     double cuttingPayment = calculatePayment(plan, VendorRole.Cutting);
                     plan.setCuttingVendorPaymentDue(cuttingPayment);
-                    // Use the cutting END date for monthly accounting
                     vendorService.recordVendorOrderToMonth(
-                        plan.getCuttingVendor().getId(), 
-                        planNumber, 
-                        cuttingPayment, 
-                        VendorRole.Cutting,
-                        plan.getCuttingEndDate() // Completion date
-                    );
+                        plan.getCuttingVendor().getId(), planNumber, cuttingPayment,
+                        VendorRole.Cutting, date);
                 }
                 updateUpperStockFromPlan(plan);
                 break;
             case Printing:
-                plan.setPrintingStartDate(LocalDate.now());
+                plan.setPrintingStartDate(date);
                 break;
             case Pending_Stitching:
-                plan.setPrintingEndDate(LocalDate.now());
-                // Record vendor order for printing - using COMPLETION DATE
+                plan.setPrintingEndDate(date);
                 if (plan.getPrintingVendor() != null) {
                     double printingPayment = calculatePayment(plan, VendorRole.Printing);
                     plan.setPrintingVendorPaymentDue(printingPayment);
-                    // Use the printing END date for monthly accounting
                     vendorService.recordVendorOrderToMonth(
-                        plan.getPrintingVendor().getId(), 
-                        planNumber, 
-                        printingPayment, 
-                        VendorRole.Printing,
-                        plan.getPrintingEndDate() // Completion date
-                    );
+                        plan.getPrintingVendor().getId(), planNumber, printingPayment,
+                        VendorRole.Printing, date);
                 }
                 break;
             case Stitching:
-                plan.setStitchingStartDate(LocalDate.now());
+                plan.setStitchingStartDate(date);
                 break;
             case Completed:
-                plan.setStitchingEndDate(LocalDate.now());
-                // Record vendor order for stitching - using COMPLETION DATE
+                plan.setStitchingEndDate(date);
                 if (plan.getStitchingVendor() != null) {
                     double stitchingPayment = calculatePayment(plan, VendorRole.Stitching);
                     plan.setStitchingVendorPaymentDue(stitchingPayment);
-                    // Use the stitching END date for monthly accounting
                     vendorService.recordVendorOrderToMonth(
-                        plan.getStitchingVendor().getId(), 
-                        planNumber, 
-                        stitchingPayment, 
-                        VendorRole.Stitching,
-                        plan.getStitchingEndDate() // Completion date
-                    );
+                        plan.getStitchingVendor().getId(), planNumber, stitchingPayment,
+                        VendorRole.Stitching, date);
                 }
                 break;
         }
@@ -302,7 +298,7 @@ public class PlanService {
         }
     }
 
-    private PlanStatus getNextStatus(PlanStatus currentStatus) {
+    public PlanStatus getNextStatus(PlanStatus currentStatus) {
         return switch (currentStatus) {
             case Pending_Cutting -> PlanStatus.Cutting;
             case Cutting -> PlanStatus.Pending_Printing;
@@ -436,6 +432,22 @@ public class PlanService {
         return planRepository.findAllByOrderByCreateDateDesc();
     }
 
+    /**
+     * Get plans filtered by plan number (contains, case-insensitive) and/or create date range.
+     * Null or blank planNumber and null dates mean no filter on that criterion.
+     */
+    public List<Plan> getPlansFiltered(String planNumber, LocalDate createDateFrom, LocalDate createDateTo) {
+        String q = (planNumber != null && !planNumber.isBlank()) ? planNumber.trim() : null;
+        if (q == null && createDateFrom == null && createDateTo == null) {
+            return planRepository.findAllByOrderByCreateDateDesc();
+        }
+        return planRepository.findFiltered(q, createDateFrom, createDateTo);
+    }
+
+    /**
+     * Deletes completed plans whose createDate falls in the previous calendar month.
+     * Uses plan createDate (not transition dates) for consistency with "plan added" period.
+     */
     public int deleteCompletedPlansFromPreviousMonth() {
         LocalDate now = LocalDate.now();
         LocalDate startOfPreviousMonth = now.minusMonths(1).withDayOfMonth(1);
@@ -445,8 +457,9 @@ public class PlanService {
             .filter(plan -> plan.getStatus() == PlanStatus.Completed)
             .filter(plan -> {
                 LocalDate createDate = plan.getCreateDate();
-                return !createDate.isBefore(startOfPreviousMonth) && 
-                       !createDate.isAfter(endOfPreviousMonth);
+                return createDate != null
+                    && !createDate.isBefore(startOfPreviousMonth)
+                    && !createDate.isAfter(endOfPreviousMonth);
             })
             .toList();
         

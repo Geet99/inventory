@@ -171,10 +171,15 @@
                 <a th:href="@{/articles/new}" class="btn btn-success">➕ Add New Article</a>
             </div>
         </div>
+
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="articleSearchInput" th:value="${searchQuery}" placeholder="🔍 Search by article name or description..."
+                   style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; width: 300px; font-size: 14px; box-sizing: border-box;">
+        </div>
         
         <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
         
-        <table>
+        <table id="articlesTable">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -188,7 +193,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="article : ${articles}">
+                    <tr th:each="article : ${articles}" th:attr="data-search=${article.name + ' ' + (article.description != null ? article.description : '')}">
                         <td th:text="${article.id}"></td>
                         <td th:text="${article.name}"></td>
                         <td th:text="${article.description}"></td>
@@ -213,5 +218,42 @@
             <p>No articles found. <a th:href="@{/articles/new}">Add your first article</a></p>
         </div>
     </div>
+    <script>
+        (function() {
+            var input = document.getElementById('articleSearchInput');
+            var table = document.getElementById('articlesTable');
+            if (!input || !table) return;
+            var tbody = table.querySelector('tbody');
+            var dataRows = tbody ? tbody.querySelectorAll('tr[data-search]') : [];
+
+            function applyFilter() {
+                var q = (input.value || '').trim().toLowerCase();
+                var visibleCount = 0;
+                for (var i = 0; i < dataRows.length; i++) {
+                    var row = dataRows[i];
+                    var searchText = (row.getAttribute('data-search') || '').toLowerCase();
+                    var show = !q || searchText.indexOf(q) !== -1;
+                    row.style.display = show ? '' : 'none';
+                    if (show) visibleCount++;
+                }
+                var existingNoResults = tbody.querySelector('tr.article-no-results');
+                if (existingNoResults) existingNoResults.remove();
+                if (visibleCount === 0 && q) {
+                    var tr = document.createElement('tr');
+                    tr.className = 'article-no-results';
+                    var td = document.createElement('td');
+                    td.colSpan = 8;
+                    td.style.textAlign = 'center';
+                    td.style.padding = '40px';
+                    td.style.color = '#7f8c8d';
+                    td.textContent = 'No articles found matching "' + q + '"';
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+                }
+            }
+            input.addEventListener('input', applyFilter);
+            if (input.value) applyFilter();
+        })();
+    </script>
 </body>
 </html>

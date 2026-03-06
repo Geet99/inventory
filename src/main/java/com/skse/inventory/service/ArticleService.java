@@ -35,6 +35,15 @@ public class ArticleService {
         return articleRepository.findAll();
     }
 
+    // Search articles by name or description (case-insensitive)
+    public List<Article> searchArticles(String q) {
+        if (q == null || q.trim().isEmpty()) {
+            return articleRepository.findAll();
+        }
+        String term = q.trim();
+        return articleRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByName(term, term);
+    }
+
     // Get article by ID
     public Article getArticleById(Long id) {
         Optional<Article> article = articleRepository.findById(id);

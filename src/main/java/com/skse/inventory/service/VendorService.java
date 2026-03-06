@@ -257,14 +257,14 @@ public class VendorService {
     // ========== MONTHLY PAYMENT TRACKING METHODS ==========
     
     /**
-     * Records vendor order payment to specific month based on completion date
-     * This is called when work is completed (e.g., cutting finished on 2nd Feb -> Feb month)
+     * Records vendor order to the month derived from completionDate (plan transition date).
+     * completionDate drives: (1) which month-year the due is added to, (2) order history orderDate.
+     * Do not replace with LocalDate.now() - finances must use the actual completion/transition date.
      */
     public void recordVendorOrderToMonth(Long vendorId, String planNumber, double amount, 
                                          VendorRole role, LocalDate completionDate) {
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
-            // Determine month-year based on completion date
             String monthYear = VendorMonthlyPayment.getMonthYearString(completionDate);
             
             // Get or create monthly payment record

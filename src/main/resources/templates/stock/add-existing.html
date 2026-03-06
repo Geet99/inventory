@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Add existing stock - SKSE Inventory</title>
+    <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
+    <style>
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 24px; padding: 24px; }
+        .card h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #2c3e50; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .btn { padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; text-decoration: none; display: inline-block; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-secondary { background: #6c757d; color: white; margin-left: 8px; }
+        .text-muted { color: #6c757d; font-size: 13px; margin-top: 4px; }
+        .alert-error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 5px; margin-bottom: 20px; }
+        @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/navigation :: page-header}"></div>
+    <div th:replace="~{fragments/navigation :: navbar}"></div>
+    <div class="container">
+        <h2 style="margin-bottom: 20px;">Add existing stock</h2>
+        <p class="text-muted">Use this to record stock that already exists (e.g. before you started using the app).</p>
+        <div th:if="${error}" class="alert-error" th:text="${error}"></div>
+
+        <div class="card">
+            <h2>Add to upper stock</h2>
+            <p class="text-muted">Stock that has been cut and is ready for printing.</p>
+            <form th:action="@{/stock/add-existing/upper}" method="post">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="upper-article">Article *</label>
+                        <select id="upper-article" name="articleName" required>
+                            <option value="">Select article</option>
+                            <option th:each="a : ${articles}" th:value="${a.name}" th:text="${a.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="upper-color">Color *</label>
+                        <select id="upper-color" name="color" required>
+                            <option value="">Select color</option>
+                            <option th:each="c : ${colors}" th:value="${c.name}" th:text="${c.name}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="upper-size">Size *</label>
+                        <input type="text" id="upper-size" name="size" placeholder="e.g. 6, 7, 8" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="upper-quantity">Quantity *</label>
+                        <input type="number" id="upper-quantity" name="quantity" min="1" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add to upper stock</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Add to finished stock</h2>
+            <p class="text-muted">Stock that is ready to sell (already stitched / sent to machine).</p>
+            <form th:action="@{/stock/add-existing/finished}" method="post">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fin-article">Article *</label>
+                        <select id="fin-article" name="articleName" required>
+                            <option value="">Select article</option>
+                            <option th:each="a : ${articles}" th:value="${a.name}" th:text="${a.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fin-color">Color *</label>
+                        <select id="fin-color" name="color" required>
+                            <option value="">Select color</option>
+                            <option th:each="c : ${colors}" th:value="${c.name}" th:text="${c.name}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fin-size">Size *</label>
+                        <input type="text" id="fin-size" name="size" placeholder="e.g. 6, 7, 8" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fin-quantity">Quantity *</label>
+                        <input type="number" id="fin-quantity" name="quantity" min="1" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">Add to finished stock</button>
+            </form>
+        </div>
+
+        <a th:href="@{/stock}" class="btn btn-secondary">Back to Stock Dashboard</a>
+    </div>
+</body>
+</html>

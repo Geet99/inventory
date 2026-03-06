@@ -164,6 +164,11 @@
                 
                 <div class="form-row">
                     <div class="form-group">
+                        <label for="createDate">Plan Date</label>
+                        <input type="date" id="createDate" name="createDate" th:value="${plan.createDate != null ? #temporals.format(plan.createDate, 'yyyy-MM-dd') : #temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                        <small class="text-muted">Date when the plan was created</small>
+                    </div>
+                    <div class="form-group">
                         <label for="color">Color</label>
                         <select id="color" th:field="*{color}" required>
                             <option value="">Select Color</option>
@@ -172,6 +177,8 @@
                                     th:text="${color.name}"></option>
                         </select>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label for="total">Total Quantity</label>
                         <input type="number" id="total" th:field="*{total}" required min="1">
