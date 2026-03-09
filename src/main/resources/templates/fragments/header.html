@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
+    <th:block th:replace="~{fragments/navigation :: favicon}"></th:block>
     <title th:text="${title} ? ${title} + ' - SKSE Inventory' : 'SKSE Inventory Management System'">SKSE Inventory</title>
     <style>
         body { 

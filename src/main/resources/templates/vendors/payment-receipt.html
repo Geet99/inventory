@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Payment Receipt - <span th:text="${vendor.name}"></span></title>
+    <th:block th:replace="~{fragments/navigation :: favicon}"></th:block>
+    <title th:text="'Payment Receipt - ' + ${vendor.name} + ' - SKSE Inventory'">Payment Receipt - SKSE Inventory</title>
     <style>
         @media print {
             .no-print { display: none; }

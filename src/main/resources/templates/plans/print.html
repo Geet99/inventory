@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title th:text="'Print Plan - ' + ${plan.planNumber}">Print Plan</title>
+    <th:block th:replace="~{fragments/navigation :: favicon}"></th:block>
+    <title th:text="'Print Plan - ' + ${plan.planNumber} + ' - SKSE Inventory'">Print Plan - SKSE Inventory</title>
     <style>
         @page {
             margin: 0.5in;

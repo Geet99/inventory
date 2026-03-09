@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title th:text="'Payment Slip - ' + ${vendor.name}">Payment Slip</title>
+    <th:block th:replace="~{fragments/navigation :: favicon}"></th:block>
+    <title th:text="'Payment Slip - ' + ${vendor.name} + ' - SKSE Inventory'">Payment Slip - SKSE Inventory</title>
     <style>
         @page {
             margin: 0.5in;

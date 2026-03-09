@@ -2,7 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head></head>
 <body>
-    <!-- Header Fragment -->
+    <!-- Favicon: NF logo for browser tab -->
+    <th:block th:fragment="favicon">
+        <link rel="icon" type="image/png" th:href="@{/favicon.png}">
+        <link rel="apple-touch-icon" th:href="@{/favicon.png}">
+    </th:block>
+    <!-- Header Fragment: logo inline with title -->
     <div th:fragment="page-header" class="header">
         <h1>SKSE Inventory Management System</h1>
     </div>
@@ -38,7 +43,10 @@
                 padding: 20px;
             }
             .header { 
-                text-align: center; 
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 14px;
                 margin-bottom: 30px; 
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 padding: 30px 20px;
