@@ -313,6 +313,14 @@
                                         disabled>
                                     Send to Machine
                                 </button>
+                                <form th:if="${plan.status != null and plan.status.name() == 'Pending_Cutting'}"
+                                      th:action="@{/plans/{planNumber}/delete(planNumber=${plan.planNumber})}"
+                                      method="post" style="display:inline">
+                                    <button type="submit" class="btn btn-danger"
+                                            onclick="return confirm('Delete this plan? This cannot be undone.');">
+                                        Delete
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

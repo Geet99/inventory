@@ -124,13 +124,23 @@ public class PlanService {
         }
     }
 
+    /**
+     * Deletes a plan only while it is still in Pending_Cutting (not yet started in the workshop).
+     */
     public void deletePlan(String planNumber) {
         Plan plan = planRepository.findByPlanNumber(planNumber);
-        if (plan != null) {
-            planRepository.delete(plan);
-        } else {
+        if (plan == null) {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
         }
+        if (plan.getStatus() != PlanStatus.Pending_Cutting) {
+            throw new IllegalArgumentException(
+                    "Only plans in Pending Cutting state can be deleted. This plan has already progressed.");
+        }
+        for (StockMovementRequest sm : stockMovementRepository.findByPlanNumber(planNumber)) {
+            sm.setPlan(null);
+            stockMovementRepository.save(sm);
+        }
+        planRepository.delete(plan);
     }
 
     public Plan moveToNextState(String planNumber) {

@@ -74,8 +74,12 @@ public class PlanController {
     @Operation(summary = "Delete a Plan", description = "Deletes the Plan and removes its associated data.")
     @DeleteMapping("/{planNumber}/delete")
     public ResponseEntity<String> deletePlan(@PathVariable String planNumber) {
-        planService.deletePlan(planNumber);
-        return ResponseEntity.ok("Plan deleted successfully");
+        try {
+            planService.deletePlan(planNumber);
+            return ResponseEntity.ok("Plan deleted successfully");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
     @Operation(summary = "Move Plan to next state", description = "Moves the Plan to the next status, updating timestamps and stock accordingly.")

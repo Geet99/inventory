@@ -116,7 +116,11 @@ public class PlanViewController {
 
     @PostMapping("/{planNumber}/delete")
     public String deletePlan(@PathVariable String planNumber) {
-        planService.deletePlan(planNumber);
+        try {
+            planService.deletePlan(planNumber);
+        } catch (IllegalArgumentException ex) {
+            return "redirect:/plans?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+        }
         return "redirect:/plans";
     }
 

@@ -18,6 +18,7 @@
             font-family: 'Courier New', monospace;
             margin: 20px;
             font-size: 12pt;
+            font-weight: bold;
         }
         
         .print-header {
@@ -47,6 +48,7 @@
             grid-template-columns: 200px 1fr;
             margin: 8px 0;
             font-size: 12pt;
+            font-weight: bold;
         }
         
         .info-label {
@@ -237,10 +239,6 @@
                 <div class="info-label">End Date:</div>
                 <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
             </div>
-            <div class="info-row">
-                <div class="info-label">Payment Due:</div>
-                <div class="info-value" th:text="'₹' + ${#numbers.formatDecimal(plan.cuttingVendorPaymentDue, 1, 2)}">₹0.00</div>
-            </div>
         </div>
         
         <div style="margin-top: 20px; text-align: center;">
@@ -307,10 +305,6 @@
                 <div class="info-label">End Date:</div>
                 <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
             </div>
-            <div class="info-row">
-                <div class="info-label">Payment Due:</div>
-                <div class="info-value" th:text="'₹' + ${#numbers.formatDecimal(plan.printingVendorPaymentDue, 1, 2)}">₹0.00</div>
-            </div>
         </div>
         
         <div style="margin-top: 20px; text-align: center;">
@@ -372,10 +366,6 @@
             <div class="info-row">
                 <div class="info-label">End Date:</div>
                 <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Payment Due:</div>
-                <div class="info-value" th:text="'₹' + ${#numbers.formatDecimal(plan.stitchingVendorPaymentDue, 1, 2)}">₹0.00</div>
             </div>
         </div>
         
