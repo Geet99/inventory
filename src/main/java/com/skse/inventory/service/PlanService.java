@@ -8,6 +8,7 @@ import com.skse.inventory.repository.FinishedStockRepository;
 import com.skse.inventory.repository.StockMovementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -147,6 +148,7 @@ public class PlanService {
         return moveToNextState(planNumber, LocalDate.now());
     }
 
+    @Transactional
     public Plan moveToNextState(String planNumber, LocalDate transitionDate) {
         Plan plan = planRepository.findByPlanNumber(planNumber);
         if (plan == null) {
@@ -321,18 +323,25 @@ public class PlanService {
     }
 
     private double calculatePayment(Plan plan, VendorRole roleType) {
-        Article article = articleRepository.findByName(plan.getArticleName()).get();
+        Article article = articleRepository.findByName(plan.getArticleName())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No article named \"" + plan.getArticleName()
+                                + "\". Fix the plan's article so it matches an existing article name exactly."));
         int totalQuantity = plan.getTotal();
-        double cost = switch (roleType) {
+        Double costPerUnit = switch (roleType) {
             case Cutting -> article.getCuttingCost();
-            case Printing -> (plan.getPrintingRateHead() != null) 
-                ? plan.getPrintingRateHead().getCost() 
-                : article.getPrintingCost();
+            case Printing -> (plan.getPrintingRateHead() != null)
+                    ? plan.getPrintingRateHead().getCost()
+                    : article.getPrintingCost();
             case Stitching -> article.getStitchingCost();
             default -> 0.0;
         };
-
-        return cost * totalQuantity;
+        if (costPerUnit == null) {
+            throw new IllegalStateException(
+                    "Missing " + roleType + " cost for article \"" + article.getName()
+                            + "\". Set cutting/printing/stitching rate heads (or legacy costs) on the article before completing this stage.");
+        }
+        return costPerUnit * totalQuantity;
     }
 
     public Map<String, Integer> getActiveOrdersByState() {
@@ -366,7 +375,10 @@ public class PlanService {
                 stock.setQuantity(stock.getQuantity() + quantity);
             } else {
                 stock = new UpperStock();
-                Article article = articleRepository.findByName(plan.getArticleName()).get();
+                Article article = articleRepository.findByName(plan.getArticleName())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "No article named \"" + plan.getArticleName()
+                                        + "\". Fix the plan's article so it matches an existing article name exactly."));
                 stock.setArticle(article);
                 stock.setSize(size);
                 stock.setColor(plan.getColor());

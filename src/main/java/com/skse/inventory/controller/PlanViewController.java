@@ -183,7 +183,11 @@ public class PlanViewController {
             return "redirect:/plans?error=" + URLEncoder.encode(message, StandardCharsets.UTF_8);
         }
         LocalDate date = transitionDate != null ? transitionDate : LocalDate.now();
-        planService.moveToNextState(planNumber, date);
+        try {
+            planService.moveToNextState(planNumber, date);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            return "redirect:/plans?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+        }
         return "redirect:/plans";
     }
     
