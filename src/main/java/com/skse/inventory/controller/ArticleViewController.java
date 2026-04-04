@@ -8,6 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Controller
 @RequestMapping("/articles")
@@ -91,7 +95,14 @@ public class ArticleViewController {
 
     @PostMapping("/delete/{id}")
     public String deleteArticle(@PathVariable Long id) {
-        articleService.deleteArticle(id);
+        try {
+            articleService.deleteArticle(id);
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            return "redirect:/articles?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+        } catch (DataIntegrityViolationException ex) {
+            return "redirect:/articles?error=" + URLEncoder.encode(
+                    "Cannot delete this article: it is still referenced by other records.", StandardCharsets.UTF_8);
+        }
         return "redirect:/articles";
     }
 }

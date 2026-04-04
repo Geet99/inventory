@@ -149,8 +149,7 @@ public class VendorViewController {
             .mapToDouble(task -> (Double) task.get("paymentDue"))
             .sum();
         
-        // Get formatted period (e.g., "November 2024")
-        String period = vendorService.getFormattedPreviousMonthYear();
+        String period = "All assigned tasks";
         
         model.addAttribute("vendor", vendor);
         model.addAttribute("tasks", tasks);

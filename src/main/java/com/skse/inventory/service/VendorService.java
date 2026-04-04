@@ -499,36 +499,31 @@ public class VendorService {
     // ========== PRINT/RECEIPT METHODS ==========
     
     /**
-     * Get vendor tasks for printing task slip (Previous Month Only)
+     * Get all plans/tasks assigned to this vendor for the task slip (any date, including backdated).
+     * Start/end dates come from workflow transitions (e.g. cutting start date from Cutting transition).
      */
     public List<Map<String, Object>> getVendorTasksForSlip(Long vendorId) {
         Vendor vendor = getVendorById(vendorId);
         if (vendor == null) {
             return List.of();
         }
-        
-        String previousMonthYear = VendorMonthlyPayment.getPreviousMonthYear();
-        
-        // Get all plans assigned to this vendor
+
         List<Plan> allPlans = planRepository.findAll();
         List<Map<String, Object>> tasks = new java.util.ArrayList<>();
-        
+
         for (Plan plan : allPlans) {
             boolean isAssigned = false;
             String status = "Not Started";
             LocalDate startDate = null;
             LocalDate endDate = null;
             double paymentDue = 0.0;
-            boolean isFromPreviousMonth = false;
             String operationType = "";
             String rateHeadName = "";
             double rateHeadCost = 0.0;
-            
-            // Check if vendor is assigned to cutting
+
             if (plan.getCuttingVendor() != null && plan.getCuttingVendor().getId().equals(vendorId)) {
                 isAssigned = true;
                 operationType = "Cutting";
-                // Get cutting rate head name from article
                 Article article = articleRepository.findByName(plan.getArticleName()).orElse(null);
                 if (article != null && article.getCuttingRateHead() != null) {
                     rateHeadName = article.getCuttingRateHead().getName();
@@ -537,21 +532,14 @@ public class VendorService {
                 startDate = plan.getCuttingStartDate();
                 endDate = plan.getCuttingEndDate();
                 paymentDue = plan.getCuttingVendorPaymentDue();
-                
-                // Check if this task is from previous month
                 if (endDate != null) {
                     status = "Completed";
-                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(endDate));
                 } else if (startDate != null) {
                     status = "In Progress";
-                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(startDate));
                 }
-            }
-            // Check if vendor is assigned to printing
-            else if (plan.getPrintingVendor() != null && plan.getPrintingVendor().getId().equals(vendorId)) {
+            } else if (plan.getPrintingVendor() != null && plan.getPrintingVendor().getId().equals(vendorId)) {
                 isAssigned = true;
                 operationType = "Printing";
-                // Get printing rate head name from plan
                 if (plan.getPrintingRateHead() != null) {
                     rateHeadName = plan.getPrintingRateHead().getName();
                     rateHeadCost = plan.getPrintingRateHead().getCost();
@@ -559,21 +547,14 @@ public class VendorService {
                 startDate = plan.getPrintingStartDate();
                 endDate = plan.getPrintingEndDate();
                 paymentDue = plan.getPrintingVendorPaymentDue();
-                
-                // Check if this task is from previous month
                 if (endDate != null) {
                     status = "Completed";
-                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(endDate));
                 } else if (startDate != null) {
                     status = "In Progress";
-                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(startDate));
                 }
-            }
-            // Check if vendor is assigned to stitching
-            else if (plan.getStitchingVendor() != null && plan.getStitchingVendor().getId().equals(vendorId)) {
+            } else if (plan.getStitchingVendor() != null && plan.getStitchingVendor().getId().equals(vendorId)) {
                 isAssigned = true;
                 operationType = "Stitching";
-                // Get stitching rate head name from article
                 Article article = articleRepository.findByName(plan.getArticleName()).orElse(null);
                 if (article != null && article.getStitchingRateHead() != null) {
                     rateHeadName = article.getStitchingRateHead().getName();
@@ -582,19 +563,14 @@ public class VendorService {
                 startDate = plan.getStitchingStartDate();
                 endDate = plan.getStitchingEndDate();
                 paymentDue = plan.getStitchingVendorPaymentDue();
-                
-                // Check if this task is from previous month
                 if (endDate != null) {
                     status = "Completed";
-                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(endDate));
                 } else if (startDate != null) {
                     status = "In Progress";
-                    isFromPreviousMonth = previousMonthYear.equals(VendorMonthlyPayment.getMonthYearString(startDate));
                 }
             }
-            
-            // Only include tasks from previous month
-            if (isAssigned && isFromPreviousMonth) {
+
+            if (isAssigned) {
                 Map<String, Object> task = new HashMap<>();
                 task.put("planNumber", plan.getPlanNumber());
                 task.put("articleName", plan.getArticleName());
@@ -611,7 +587,7 @@ public class VendorService {
                 tasks.add(task);
             }
         }
-        
+
         return tasks;
     }
     

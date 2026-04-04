@@ -180,7 +180,7 @@
     </div>
     
     <div class="slip-header">
-        <h1 th:text="'PAYMENT SLIP - ' + ${period}">PAYMENT SLIP - November 2024</h1>
+        <h1 th:text="'TASK SLIP - ' + ${period}">TASK SLIP</h1>
     </div>
     
     <div class="vendor-info">
@@ -191,12 +191,12 @@
     </div>
     
     <div th:if="${tasks.isEmpty()}" class="no-tasks">
-        <strong>⚠️ NO TASKS FROM PREVIOUS MONTH</strong>
-        <p>This vendor has no completed or in-progress tasks from the previous month.</p>
+        <strong>⚠️ NO ASSIGNED TASKS</strong>
+        <p>This vendor has no plans assigned for cutting, printing, or stitching.</p>
     </div>
     
     <div th:if="${!tasks.isEmpty()}">
-        <h3 style="font-size: 14pt; border-bottom: 2px solid #000; padding-bottom: 5px;">TASKS FROM PREVIOUS MONTH</h3>
+        <h3 style="font-size: 14pt; border-bottom: 2px solid #000; padding-bottom: 5px;">ASSIGNED TASKS</h3>
         
         <table class="tasks-table">
             <thead>

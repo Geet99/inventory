@@ -190,7 +190,7 @@
     </p>
     
     <!-- CUTTING VENDOR TASK SLIP -->
-    <div class="vendor-section" th:if="${plan.cuttingVendor != null}">
+    <div class="vendor-section">
         <h3>🔪 CUTTING VENDOR - TASK SLIP</h3>
         
         <div class="task-details">
@@ -221,7 +221,7 @@
             <h4>👤 Vendor Details</h4>
             <div class="info-row">
                 <div class="info-label">Vendor Name:</div>
-                <div class="info-value" th:text="${plan.cuttingVendor.name}">Cutting Master</div>
+                <div class="info-value" th:text="${plan.cuttingVendor != null ? plan.cuttingVendor.name : '—'}">—</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Operation:</div>
@@ -233,11 +233,17 @@
             </div>
             <div class="info-row">
                 <div class="info-label">Start Date:</div>
-                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+                <div class="info-value">
+                    <span th:if="${plan.cuttingStartDate != null}" th:text="${#temporals.format(plan.cuttingStartDate, 'dd-MMM-yyyy')}"></span>
+                    <span th:if="${plan.cuttingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                </div>
             </div>
             <div class="info-row">
                 <div class="info-label">End Date:</div>
-                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+                <div class="info-value">
+                    <span th:if="${plan.cuttingEndDate != null}" th:text="${#temporals.format(plan.cuttingEndDate, 'dd-MMM-yyyy')}"></span>
+                    <span th:if="${plan.cuttingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                </div>
             </div>
         </div>
         
@@ -252,7 +258,7 @@
     </div>
     
     <!-- PRINTING VENDOR TASK SLIP -->
-    <div class="vendor-section" th:if="${plan.printingVendor != null}">
+    <div class="vendor-section">
         <h3>🖨️ PRINTING VENDOR - TASK SLIP</h3>
         
         <div class="task-details">
@@ -287,7 +293,7 @@
             <h4>👤 Vendor Details</h4>
             <div class="info-row">
                 <div class="info-label">Vendor Name:</div>
-                <div class="info-value" th:text="${plan.printingVendor.name}">Print Pro</div>
+                <div class="info-value" th:text="${plan.printingVendor != null ? plan.printingVendor.name : '—'}">—</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Operation:</div>
@@ -299,11 +305,17 @@
             </div>
             <div class="info-row">
                 <div class="info-label">Start Date:</div>
-                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+                <div class="info-value">
+                    <span th:if="${plan.printingStartDate != null}" th:text="${#temporals.format(plan.printingStartDate, 'dd-MMM-yyyy')}"></span>
+                    <span th:if="${plan.printingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                </div>
             </div>
             <div class="info-row">
                 <div class="info-label">End Date:</div>
-                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+                <div class="info-value">
+                    <span th:if="${plan.printingEndDate != null}" th:text="${#temporals.format(plan.printingEndDate, 'dd-MMM-yyyy')}"></span>
+                    <span th:if="${plan.printingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                </div>
             </div>
         </div>
         
@@ -318,7 +330,7 @@
     </div>
     
     <!-- STITCHING VENDOR TASK SLIP -->
-    <div class="vendor-section" th:if="${plan.stitchingVendor != null}">
+    <div class="vendor-section">
         <h3>🧵 STITCHING VENDOR - TASK SLIP</h3>
         
         <div class="task-details">
@@ -349,7 +361,7 @@
             <h4>👤 Vendor Details</h4>
             <div class="info-row">
                 <div class="info-label">Vendor Name:</div>
-                <div class="info-value" th:text="${plan.stitchingVendor.name}">Stitch Expert</div>
+                <div class="info-value" th:text="${plan.stitchingVendor != null ? plan.stitchingVendor.name : '—'}">—</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Operation:</div>
@@ -361,11 +373,17 @@
             </div>
             <div class="info-row">
                 <div class="info-label">Start Date:</div>
-                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+                <div class="info-value">
+                    <span th:if="${plan.stitchingStartDate != null}" th:text="${#temporals.format(plan.stitchingStartDate, 'dd-MMM-yyyy')}"></span>
+                    <span th:if="${plan.stitchingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                </div>
             </div>
             <div class="info-row">
                 <div class="info-label">End Date:</div>
-                <div class="info-value" style="border-bottom: 2px solid #000;">_______________________</div>
+                <div class="info-value">
+                    <span th:if="${plan.stitchingEndDate != null}" th:text="${#temporals.format(plan.stitchingEndDate, 'dd-MMM-yyyy')}"></span>
+                    <span th:if="${plan.stitchingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                </div>
             </div>
         </div>
         

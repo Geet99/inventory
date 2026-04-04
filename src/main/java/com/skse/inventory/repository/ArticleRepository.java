@@ -11,5 +11,7 @@ import java.util.Optional;
 public interface ArticleRepository extends JpaRepository<Article, Long> {
     Optional<Article> findByName(String name);
 
-    List<Article> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByName(String name, String description);
+    List<Article> findAllByOrderByIdAsc();
+
+    List<Article> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByIdAsc(String name, String description);
 }

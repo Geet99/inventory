@@ -178,7 +178,7 @@
                    style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; width: 300px; font-size: 14px; box-sizing: border-box;">
         </div>
         
-        <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
+        <div th:if="${param.error != null and !param.error.empty}" class="error" th:text="${param.error[0]}"></div>
         
         <table id="articlesTable">
                 <thead>
@@ -189,7 +189,6 @@
                         <th>Cutting Cost</th>
                         <th>Printing Cost</th>
                         <th>Stitching Cost</th>
-                        <th>Selling Price</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -201,7 +200,6 @@
                         <td th:text="${'₹' + article.cuttingCost}"></td>
                         <td th:text="${'₹' + article.printingCost}"></td>
                         <td th:text="${'₹' + article.stitchingCost}"></td>
-                        <td th:text="${'₹' + article.slipperCost}"></td>
                         <td>
                             <div class="actions">
                                 <a th:href="@{/articles/edit/{id}(id=${article.id})}" class="btn btn-warning">Edit</a>
@@ -243,7 +241,7 @@
                     var tr = document.createElement('tr');
                     tr.className = 'article-no-results';
                     var td = document.createElement('td');
-                    td.colSpan = 8;
+                    td.colSpan = 7;
                     td.style.textAlign = 'center';
                     td.style.padding = '40px';
                     td.style.color = '#7f8c8d';

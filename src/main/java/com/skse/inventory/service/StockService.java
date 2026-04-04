@@ -121,17 +121,4 @@ public class StockService {
         return stockMovementRepository.findByMovementType(movementType);
     }
 
-    public double getTotalUpperStockValue() {
-        List<UpperStock> upperStocks = getAllUpperStock();
-        return upperStocks.stream()
-            .mapToDouble(stock -> stock.getQuantity() * stock.getArticle().getSlipperCost())
-            .sum();
-    }
-
-    public double getTotalFinishedStockValue() {
-        List<FinishedStock> finishedStocks = getAllFinishedStock();
-        return finishedStocks.stream()
-            .mapToDouble(stock -> stock.getQuantity() * stock.getArticle().getSlipperCost())
-            .sum();
-    }
 }

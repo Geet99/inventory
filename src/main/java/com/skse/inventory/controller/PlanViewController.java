@@ -67,7 +67,14 @@ public class PlanViewController {
     }
 
     @PostMapping("/add")
-    public String addPlan(@ModelAttribute Plan plan, Model model) {
+    public String addPlan(@ModelAttribute Plan plan,
+                          @RequestParam(required = false) Long printingRateHeadId,
+                          Model model) {
+        if (printingRateHeadId != null) {
+            plan.setPrintingRateHead(rateHeadService.getRateHeadById(printingRateHeadId));
+        } else {
+            plan.setPrintingRateHead(null);
+        }
         try {
             planService.createPlan(plan);
             return "redirect:/plans";
@@ -97,7 +104,15 @@ public class PlanViewController {
     }
 
     @PostMapping("/{planNumber}/update")
-    public String updatePlan(@PathVariable String planNumber, @ModelAttribute Plan updatedPlan, Model model) {
+    public String updatePlan(@PathVariable String planNumber,
+                             @ModelAttribute Plan updatedPlan,
+                             @RequestParam(required = false) Long printingRateHeadId,
+                             Model model) {
+        if (printingRateHeadId != null) {
+            updatedPlan.setPrintingRateHead(rateHeadService.getRateHeadById(printingRateHeadId));
+        } else {
+            updatedPlan.setPrintingRateHead(null);
+        }
         try {
             planService.updatePlan(planNumber, updatedPlan);
             return "redirect:/plans";

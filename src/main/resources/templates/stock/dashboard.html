@@ -239,14 +239,14 @@
         
         <div class="stats-grid">
             <div class="stat-card">
-                <h3>Upper Stock Value</h3>
-                <div class="stat-value upper" th:text="${'₹' + #numbers.formatDecimal(totalUpperValue, 1, 2)}"></div>
-                <p>Total value of upper stock</p>
+                <h3>Upper Stock Quantity</h3>
+                <div class="stat-value upper" th:text="${totalUpperQuantity} + ' pairs'"></div>
+                <p>Total pairs in upper stock</p>
             </div>
             <div class="stat-card">
-                <h3>Finished Stock Value</h3>
-                <div class="stat-value finished" th:text="${'₹' + #numbers.formatDecimal(totalFinishedValue, 1, 2)}"></div>
-                <p>Total value of finished stock</p>
+                <h3>Finished Stock Quantity</h3>
+                <div class="stat-value finished" th:text="${totalFinishedQuantity} + ' pairs'"></div>
+                <p>Total pairs in finished stock</p>
             </div>
             <div class="stat-card">
                 <h3>Upper Stock Items</h3>
@@ -275,7 +275,6 @@
                         <th>Article</th>
                         <th>Color</th>
                         <th>Quantity</th>
-                        <th>Value</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -290,10 +289,9 @@
                                 <span th:class="${entry.value.totalQuantity > 50 ? 'quantity-high' : (entry.value.totalQuantity > 20 ? 'quantity-medium' : 'quantity-low')}"
                                       th:text="${entry.value.totalQuantity}"></span>
                             </td>
-                            <td th:text="${'₹' + #numbers.formatDecimal(entry.value.totalValue, 1, 2)}"></td>
                         </tr>
                         <tr class="detail-row" th:id="'upper-detail-' + ${iterStat.index}">
-                            <td colspan="4">
+                            <td colspan="3">
                                 <div class="detail-content">
                                     <strong>Size Breakdown:</strong>
                                     <div class="size-breakdown">
@@ -325,7 +323,6 @@
                         <th>Article</th>
                         <th>Color</th>
                         <th>Quantity</th>
-                        <th>Value</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -340,10 +337,9 @@
                                 <span th:class="${entry.value.totalQuantity > 50 ? 'quantity-high' : (entry.value.totalQuantity > 20 ? 'quantity-medium' : 'quantity-low')}"
                                       th:text="${entry.value.totalQuantity}"></span>
                             </td>
-                            <td th:text="${'₹' + #numbers.formatDecimal(entry.value.totalValue, 1, 2)}"></td>
                         </tr>
                         <tr class="detail-row" th:id="'finished-detail-' + ${iterStat.index}">
-                            <td colspan="4">
+                            <td colspan="3">
                                 <div class="detail-content">
                                     <strong>Size Breakdown:</strong>
                                     <div class="size-breakdown">

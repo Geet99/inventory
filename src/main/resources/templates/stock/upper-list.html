@@ -180,12 +180,11 @@
                         <th>Color</th>
                         <th>Size</th>
                         <th>Quantity</th>
-                        <th>Value</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr th:if="${#lists.isEmpty(upperStocks)}">
-                        <td colspan="5" class="empty-state">
+                        <td colspan="4" class="empty-state">
                             <h3>No upper stock found</h3>
                             <p>Upper stock will appear here when you create plans and process them through the cutting stage.</p>
                         </td>
@@ -198,7 +197,6 @@
                             <span th:class="${stock.quantity > 50 ? 'quantity-high' : (stock.quantity > 20 ? 'quantity-medium' : 'quantity-low')}"
                                   th:text="${stock.quantity}"></span>
                         </td>
-                        <td th:text="${'₹' + #numbers.formatDecimal(stock.quantity * stock.article.slipperCost, 1, 2)}"></td>
                     </tr>
                 </tbody>
             </table>

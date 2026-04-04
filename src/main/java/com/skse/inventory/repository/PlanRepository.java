@@ -14,6 +14,8 @@ import java.util.List;
 public interface PlanRepository extends JpaRepository<Plan, Long> {
     Plan findByPlanNumber(String planNumber);
 
+    boolean existsByArticleName(String articleName);
+
     // Find all plans ordered by creation date (newest first)
     List<Plan> findAllByOrderByCreateDateDesc();
 

@@ -114,7 +114,6 @@ public class TestDataLoader implements CommandLineRunner {
             Article article1 = new Article();
             article1.setName("Nike Classic");
             article1.setDescription("Classic Nike slipper design");
-            article1.setSlipperCost(250.0);
             article1.setCuttingRateHead(cuttingRate);
             article1.setPrintingRateHead(printingRate);
             article1.setStitchingRateHead(stitchingRate);
@@ -123,7 +122,6 @@ public class TestDataLoader implements CommandLineRunner {
             Article article2 = new Article();
             article2.setName("Adidas Sport");
             article2.setDescription("Sports edition slipper");
-            article2.setSlipperCost(300.0);
             article2.setCuttingRateHead(cuttingRate);
             article2.setPrintingRateHead(printingRate);
             article2.setStitchingRateHead(stitchingRate);

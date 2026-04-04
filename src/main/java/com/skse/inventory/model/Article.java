@@ -30,8 +30,6 @@ public class Article {
     private Double cuttingCost;
     private Double printingCost;
     private Double stitchingCost;
-    
-    private Double slipperCost;
 
     public Long getId() {
         return id;
@@ -113,13 +111,5 @@ public class Article {
 
     public void setStitchingCost(Double stitchingCost) {
         this.stitchingCost = stitchingCost;
-    }
-
-    public Double getSlipperCost() {
-        return slipperCost;
-    }
-
-    public void setSlipperCost(Double slipperCost) {
-        this.slipperCost = slipperCost;
     }
 }

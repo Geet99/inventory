@@ -5,6 +5,7 @@ import com.skse.inventory.service.ArticleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -63,7 +64,13 @@ public class ArticleController {
     @Operation(summary = "Delete an article", description = "Deletes an article from the system.")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteArticle(@PathVariable Long id) {
-        articleService.deleteArticle(id);
-        return ResponseEntity.ok("Article deleted successfully");
+        try {
+            articleService.deleteArticle(id);
+            return ResponseEntity.ok("Article deleted successfully");
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
