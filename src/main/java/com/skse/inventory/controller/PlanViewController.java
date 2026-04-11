@@ -24,6 +24,15 @@ import java.util.Map;
 @RequestMapping("/plans")
 public class PlanViewController {
 
+    private static String redirectPlansWithFocus(String planNumber) {
+        return "redirect:/plans?focus=" + URLEncoder.encode(planNumber, StandardCharsets.UTF_8);
+    }
+
+    private static String redirectPlansWithErrorAndFocus(String planNumber, String message) {
+        return "redirect:/plans?error=" + URLEncoder.encode(message, StandardCharsets.UTF_8)
+                + "&focus=" + URLEncoder.encode(planNumber, StandardCharsets.UTF_8);
+    }
+
     @Autowired
     private PlanService planService;
 
@@ -117,7 +126,7 @@ public class PlanViewController {
         }
         try {
             planService.updatePlan(planNumber, updatedPlan);
-            return "redirect:/plans?focus=" + URLEncoder.encode(planNumber, StandardCharsets.UTF_8);
+            return redirectPlansWithFocus(planNumber);
         } catch (IllegalArgumentException ex) {
             Plan plan = updatedPlan;
             model.addAttribute("title", "Edit Plan");
@@ -170,7 +179,7 @@ public class PlanViewController {
                                @RequestParam(required = false) Long printingVendorId,
                                @RequestParam(required = false) Long stitchingVendorId) {
         planService.assignVendorsToPlan(planNumber, cuttingVendorId, printingVendorId, stitchingVendorId);
-        return "redirect:/plans";
+        return redirectPlansWithFocus(planNumber);
     }
 
     @GetMapping("/{planNumber}/confirm-next-state")
@@ -182,7 +191,7 @@ public class PlanViewController {
             }
             PlanStatus next = planService.getNextStatus(plan);
             if (next == null) {
-                return "redirect:/plans?error=" + URLEncoder.encode("Plan is already completed.", StandardCharsets.UTF_8);
+                return redirectPlansWithErrorAndFocus(planNumber, "Plan is already completed.");
             }
             model.addAttribute("plan", plan);
             model.addAttribute("effectiveStatus", planService.getEffectiveStatus(plan));
@@ -194,7 +203,7 @@ public class PlanViewController {
             if (msg.length() > 500) {
                 msg = msg.substring(0, 500) + "…";
             }
-            return "redirect:/plans?error=" + URLEncoder.encode(msg, StandardCharsets.UTF_8);
+            return redirectPlansWithErrorAndFocus(planNumber, msg);
         }
     }
 
@@ -210,22 +219,22 @@ public class PlanViewController {
         try {
             planService.moveToNextState(planNumber, date);
         } catch (IllegalArgumentException | IllegalStateException ex) {
-            return "redirect:/plans?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+            return redirectPlansWithErrorAndFocus(planNumber, ex.getMessage());
         } catch (Exception ex) {
             String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
             if (msg.length() > 500) {
                 msg = msg.substring(0, 500) + "…";
             }
-            return "redirect:/plans?error=" + URLEncoder.encode(msg, StandardCharsets.UTF_8);
+            return redirectPlansWithErrorAndFocus(planNumber, msg);
         }
-        return "redirect:/plans";
+        return redirectPlansWithFocus(planNumber);
     }
     
     @GetMapping("/{planNumber}/send-to-machine")
     public String sendToMachineForm(@PathVariable String planNumber, Model model) {
         Plan plan = planService.getPlanByNumber(planNumber);
         if (plan.getStatus() != PlanStatus.Completed) {
-            return "redirect:/plans?error=Plan must be completed before sending to machine";
+            return redirectPlansWithErrorAndFocus(planNumber, "Plan must be completed before sending to machine");
         }
         model.addAttribute("title", "Send to Machine");
         model.addAttribute("plan", plan);
@@ -235,7 +244,7 @@ public class PlanViewController {
     @PostMapping("/{planNumber}/send-to-machine")
     public String sendToMachine(@PathVariable String planNumber) {
         planService.sendToMachine(planNumber);
-        return "redirect:/plans";
+        return redirectPlansWithFocus(planNumber);
     }
     
     @GetMapping("/dashboard")
