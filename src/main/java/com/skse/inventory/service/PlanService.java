@@ -80,9 +80,40 @@ public class PlanService {
             if (updatedPlan.getCreateDate() != null) {
                 plan.setCreateDate(updatedPlan.getCreateDate());
             }
+            plan.setCuttingStartDate(updatedPlan.getCuttingStartDate());
+            plan.setCuttingEndDate(updatedPlan.getCuttingEndDate());
+            plan.setPrintingStartDate(updatedPlan.getPrintingStartDate());
+            plan.setPrintingEndDate(updatedPlan.getPrintingEndDate());
+            plan.setStitchingStartDate(updatedPlan.getStitchingStartDate());
+            plan.setStitchingEndDate(updatedPlan.getStitchingEndDate());
+            plan.setMachineProcessingDate(updatedPlan.getMachineProcessingDate());
+            validateTransitionDateOrder(plan);
             return planRepository.save(plan);
         } else {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
+        }
+    }
+
+    private static void validateTransitionDateOrder(Plan p) {
+        if (p.getCuttingStartDate() != null && p.getCuttingEndDate() != null
+                && p.getCuttingStartDate().isAfter(p.getCuttingEndDate())) {
+            throw new IllegalArgumentException("Cutting start date cannot be after cutting end date.");
+        }
+        if (p.getCuttingEndDate() != null && p.getPrintingStartDate() != null
+                && p.getCuttingEndDate().isAfter(p.getPrintingStartDate())) {
+            throw new IllegalArgumentException("Cutting end date cannot be after printing start date.");
+        }
+        if (p.getPrintingStartDate() != null && p.getPrintingEndDate() != null
+                && p.getPrintingStartDate().isAfter(p.getPrintingEndDate())) {
+            throw new IllegalArgumentException("Printing start date cannot be after printing end date.");
+        }
+        if (p.getPrintingEndDate() != null && p.getStitchingStartDate() != null
+                && p.getPrintingEndDate().isAfter(p.getStitchingStartDate())) {
+            throw new IllegalArgumentException("Printing end date cannot be after stitching start date.");
+        }
+        if (p.getStitchingStartDate() != null && p.getStitchingEndDate() != null
+                && p.getStitchingStartDate().isAfter(p.getStitchingEndDate())) {
+            throw new IllegalArgumentException("Stitching start date cannot be after stitching end date.");
         }
     }
 

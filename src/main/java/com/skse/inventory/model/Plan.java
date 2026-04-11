@@ -47,12 +47,19 @@ public class Plan {
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate createDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate cuttingStartDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate cuttingEndDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate printingStartDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate printingEndDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate stitchingStartDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate stitchingEndDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate machineProcessingDate; // When sent to machine
 
     private double cuttingVendorPaymentDue;

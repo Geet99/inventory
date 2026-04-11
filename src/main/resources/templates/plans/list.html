@@ -271,6 +271,7 @@
                         <th>Description</th>
                         <th>Total Quantity</th>
                         <th>Status</th>
+                        <th>Timeline<br><span style="font-weight: normal; font-size: 11px;">(dd/MM)</span></th>
                         <th>Cutting Vendor</th>
                         <th>Printing Vendor</th>
                         <th>Stitching Vendor</th>
@@ -290,6 +291,22 @@
                                   th:class="${'status-' + plan.status.name().toLowerCase()}" 
                                   th:text="${plan.status.name().replace('_', ' ')}"></span>
                             <span th:if="${plan.status == null}" class="status-pending">Pending</span>
+                        </td>
+                        <td style="font-size: 11px; line-height: 1.35; max-width: 148px; vertical-align: top;">
+                            <a th:href="|${#httpServletRequest != null ? #httpServletRequest.contextPath : ''}/plans/${plan.planNumber}/edit#workflow-dates|"
+                               style="font-weight: bold; font-size: 12px;">Edit dates</a>
+                            <div th:if="${plan.cuttingStartDate != null or plan.cuttingEndDate != null}" style="margin-top: 4px;">
+                                Cut <span th:text="${plan.cuttingStartDate != null ? #temporals.format(plan.cuttingStartDate, 'dd/MM') : '—'}"></span>–<span th:text="${plan.cuttingEndDate != null ? #temporals.format(plan.cuttingEndDate, 'dd/MM') : '—'}"></span>
+                            </div>
+                            <div th:if="${plan.printingStartDate != null or plan.printingEndDate != null}" style="margin-top: 2px;">
+                                Pr <span th:text="${plan.printingStartDate != null ? #temporals.format(plan.printingStartDate, 'dd/MM') : '—'}"></span>–<span th:text="${plan.printingEndDate != null ? #temporals.format(plan.printingEndDate, 'dd/MM') : '—'}"></span>
+                            </div>
+                            <div th:if="${plan.stitchingStartDate != null or plan.stitchingEndDate != null}" style="margin-top: 2px;">
+                                St <span th:text="${plan.stitchingStartDate != null ? #temporals.format(plan.stitchingStartDate, 'dd/MM') : '—'}"></span>–<span th:text="${plan.stitchingEndDate != null ? #temporals.format(plan.stitchingEndDate, 'dd/MM') : '—'}"></span>
+                            </div>
+                            <div th:if="${plan.machineProcessingDate != null}" style="margin-top: 2px;">
+                                Mach <span th:text="${#temporals.format(plan.machineProcessingDate, 'dd/MM')}"></span>
+                            </div>
                         </td>
                         <td th:text="${plan.cuttingVendor?.name ?: '-'}"></td>
                         <td th:text="${plan.printingVendor?.name ?: '-'}"></td>

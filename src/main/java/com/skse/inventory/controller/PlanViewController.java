@@ -97,6 +97,7 @@ public class PlanViewController {
         Plan plan = planService.getPlanByNumber(planNumber);
         model.addAttribute("title", "Edit Plan");
         model.addAttribute("plan", plan);
+        model.addAttribute("effectiveStatus", planService.getEffectiveStatus(plan));
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         model.addAttribute("cuttingTypes", CuttingType.values());
@@ -121,6 +122,7 @@ public class PlanViewController {
             Plan plan = updatedPlan;
             model.addAttribute("title", "Edit Plan");
             model.addAttribute("plan", plan);
+            model.addAttribute("effectiveStatus", planService.getEffectiveStatus(plan));
             model.addAttribute("articles", articleService.getAllArticles());
             model.addAttribute("colors", colorService.getAllColors());
             model.addAttribute("cuttingTypes", CuttingType.values());
