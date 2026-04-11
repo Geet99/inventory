@@ -23,7 +23,7 @@
     <div class="container" style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <div class="card">
             <h2 style="margin-top: 0;">Confirm plan transition</h2>
-            <p>Plan <strong th:text="${plan.planNumber}"></strong> will move from <strong th:text="${plan.status != null ? plan.status.name().replace('_', ' ') : 'N/A'}"></strong> to <strong th:text="${nextStatus.name().replace('_', ' ')}"></strong>.</p>
+            <p>Plan <strong th:text="${plan.planNumber}"></strong> will move from <strong th:text="${effectiveStatus.name().replace('_', ' ')}"></strong> to <strong th:text="${nextStatus.name().replace('_', ' ')}"></strong>.</p>
             <p class="text-muted">Vendor is optional: if not assigned, this step will not be billed.</p>
             <form th:action="@{'/plans/' + ${plan.planNumber} + '/move-to-next'}" method="post">
                 <div class="form-group">

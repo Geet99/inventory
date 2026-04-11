@@ -215,10 +215,29 @@
                 
                 <div class="form-group">
                     <button type="submit" class="btn btn-success">Update Plan</button>
-                    <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
+                    <a href="#" class="btn btn-secondary" id="planEditCancel">Cancel</a>
                 </div>
             </form>
         </div>
     </div>
+    <script th:inline="javascript">
+        (function () {
+            var el = document.getElementById('planEditCancel');
+            if (!el) return;
+            var planNumber = /*[[${plan.planNumber}]]*/ '';
+            var plansBase = /*[[@{/plans}]]*/ '/plans';
+            el.addEventListener('click', function (e) {
+                e.preventDefault();
+                var target = plansBase + '?focus=' + encodeURIComponent(planNumber);
+                try {
+                    var ret = sessionStorage.getItem('plansListReturn');
+                    if (ret && ret.indexOf(plansBase) === 0) {
+                        target = ret;
+                    }
+                } catch (x) { /* ignore */ }
+                window.location.assign(target);
+            });
+        })();
+    </script>
 </body>
 </html>

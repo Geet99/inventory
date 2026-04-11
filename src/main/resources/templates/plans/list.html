@@ -356,23 +356,95 @@
             </p>
         </div>
     </div>
-    <script>
+    <script th:inline="javascript">
         (function () {
+            var plansBase = /*[[@{/plans}]]*/ '/plans';
+
+            document.body.addEventListener('click', function (e) {
+                var a = e.target.closest && e.target.closest('a[href]');
+                if (!a) return;
+                var href = a.getAttribute('href') || '';
+                if (href.indexOf(plansBase + '/') !== 0) return;
+                if (href.indexOf('/edit') === -1) return;
+                try {
+                    sessionStorage.setItem('plansListReturn', window.location.pathname + window.location.search);
+                    sessionStorage.setItem('plansListScroll', String(window.scrollY));
+                } catch (x) { /* ignore */ }
+            }, true);
+
+            function stripQueryParam(name) {
+                var params = new URLSearchParams(window.location.search);
+                if (!params.has(name)) return;
+                params.delete(name);
+                var next = params.toString();
+                var url = window.location.pathname + (next ? '?' + next : '') + window.location.hash;
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', url);
+                }
+            }
+
+            function scrollToRow(row) {
+                row.classList.add('plan-row-focus');
+                row.scrollIntoView({ block: 'center', behavior: 'auto' });
+                if (typeof requestAnimationFrame === 'function') {
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            row.scrollIntoView({ block: 'center', behavior: 'auto' });
+                        });
+                    });
+                }
+            }
+
+            function restoreSavedScroll() {
+                var y = null;
+                try {
+                    y = sessionStorage.getItem('plansListScroll');
+                } catch (x) { return; }
+                if (y === null || y === '') return;
+                var scrollY = parseInt(y, 10);
+                if (isNaN(scrollY)) return;
+                function go() {
+                    window.scrollTo(0, scrollY);
+                }
+                go();
+                if (typeof requestAnimationFrame === 'function') {
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(go);
+                    });
+                }
+                setTimeout(go, 50);
+                setTimeout(go, 200);
+                try {
+                    sessionStorage.removeItem('plansListScroll');
+                    sessionStorage.removeItem('plansListReturn');
+                } catch (x) { /* ignore */ }
+            }
+
+            if (typeof document.querySelector !== 'function') return;
+
             var params = new URLSearchParams(window.location.search);
             var focus = params.get('focus');
-            if (!focus || typeof document.querySelector !== 'function') return;
-            var esc = window.CSS && typeof window.CSS.escape === 'function'
-                ? window.CSS.escape(focus)
-                : focus.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-            var row = document.querySelector('[data-plan-number="' + esc + '"]');
-            if (!row) return;
-            row.classList.add('plan-row-focus');
-            row.scrollIntoView({ block: 'center', behavior: 'auto' });
-            params.delete('focus');
-            var next = params.toString();
-            var url = window.location.pathname + (next ? '?' + next : '') + window.location.hash;
-            if (window.history && window.history.replaceState) {
-                window.history.replaceState(null, '', url);
+            var usedFocus = false;
+            if (focus) {
+                var esc = window.CSS && typeof window.CSS.escape === 'function'
+                    ? window.CSS.escape(focus)
+                    : focus.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                var row = document.querySelector('[data-plan-number="' + esc + '"]');
+                if (row) {
+                    scrollToRow(row);
+                    usedFocus = true;
+                }
+                stripQueryParam('focus');
+                try {
+                    sessionStorage.removeItem('plansListScroll');
+                } catch (x) { /* ignore */ }
+            }
+            if (!usedFocus) {
+                restoreSavedScroll();
+            } else {
+                try {
+                    sessionStorage.removeItem('plansListReturn');
+                } catch (x) { /* ignore */ }
             }
         })();
     </script>

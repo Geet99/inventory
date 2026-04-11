@@ -177,11 +177,12 @@ public class PlanViewController {
         if (plan == null) {
             return "redirect:/plans?error=" + URLEncoder.encode("Plan not found: " + planNumber, StandardCharsets.UTF_8);
         }
-        PlanStatus next = planService.getNextStatus(plan.getStatus());
+        PlanStatus next = planService.getNextStatus(plan);
         if (next == null) {
             return "redirect:/plans?error=" + URLEncoder.encode("Plan is already completed.", StandardCharsets.UTF_8);
         }
         model.addAttribute("plan", plan);
+        model.addAttribute("effectiveStatus", planService.getEffectiveStatus(plan));
         model.addAttribute("nextStatus", next);
         model.addAttribute("title", "Confirm transition");
         return "plans/confirm-next-state";

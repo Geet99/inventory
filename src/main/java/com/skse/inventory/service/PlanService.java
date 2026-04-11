@@ -262,7 +262,7 @@ public class PlanService {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
 
-        PlanStatus nextStatus = getNextStatus(plan.getStatus());
+        PlanStatus nextStatus = getNextStatus(plan);
         if (nextStatus == null) {
             throw new IllegalStateException("Invalid status transition");
         }
@@ -417,15 +417,50 @@ public class PlanService {
         }
     }
 
-    public PlanStatus getNextStatus(PlanStatus currentStatus) {
-        return switch (currentStatus) {
+    /**
+     * Resolves workflow state when {@link Plan#getStatus()} is null (legacy rows): uses the same
+     * transition dates {@link #moveToNextState(String, LocalDate)} maintains so e.g. cutting started
+     * but not finished maps to {@link PlanStatus#Cutting}, not {@link PlanStatus#Pending_Cutting}.
+     */
+    public PlanStatus getEffectiveStatus(Plan plan) {
+        if (plan.getStatus() != null) {
+            return plan.getStatus();
+        }
+        if (plan.getStitchingEndDate() != null) {
+            return PlanStatus.Completed;
+        }
+        if (plan.getStitchingStartDate() != null) {
+            return PlanStatus.Stitching;
+        }
+        if (plan.getPrintingEndDate() != null) {
+            return PlanStatus.Pending_Stitching;
+        }
+        if (plan.getPrintingStartDate() != null) {
+            return PlanStatus.Printing;
+        }
+        if (plan.getCuttingEndDate() != null) {
+            return PlanStatus.Pending_Printing;
+        }
+        if (plan.getCuttingStartDate() != null) {
+            return PlanStatus.Cutting;
+        }
+        return PlanStatus.Pending_Cutting;
+    }
+
+    /** Next workflow state after {@link #getEffectiveStatus(Plan)}. */
+    public PlanStatus getNextStatus(Plan plan) {
+        return nextStatusAfter(getEffectiveStatus(plan));
+    }
+
+    private static PlanStatus nextStatusAfter(PlanStatus current) {
+        return switch (current) {
             case Pending_Cutting -> PlanStatus.Cutting;
             case Cutting -> PlanStatus.Pending_Printing;
             case Pending_Printing -> PlanStatus.Printing;
             case Printing -> PlanStatus.Pending_Stitching;
             case Pending_Stitching -> PlanStatus.Stitching;
             case Stitching -> PlanStatus.Completed;
-            default -> null;
+            case Completed -> null;
         };
     }
 
