@@ -34,6 +34,23 @@ public class PlanService {
     private VendorService vendorService;
 
     /**
+     * Resolves a plan by primary key ({@link Plan#getPlanNumber()}), trimming the argument.
+     * Tries exact match first, then case-insensitive match so URLs and filters stay consistent
+     * across databases (e.g. PostgreSQL) and proxies that may alter path casing.
+     */
+    private Plan findPlanByNumberOrNull(String planNumber) {
+        if (planNumber == null || planNumber.isBlank()) {
+            return null;
+        }
+        String trimmed = planNumber.trim();
+        Plan exact = planRepository.findByPlanNumber(trimmed);
+        if (exact != null) {
+            return exact;
+        }
+        return planRepository.findByPlanNumberIgnoreCase(trimmed).orElse(null);
+    }
+
+    /**
      * Creates plan. createDate is honored for reporting and cleanup (e.g. deleteCompletedPlansFromPreviousMonth).
      * Defaults to today only when null.
      */
@@ -47,7 +64,7 @@ public class PlanService {
     }
 
     public Plan updatePlan(String planNumber, Plan updatedPlan) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
+        Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan != null) {
             // Only allow changing total & size:quantity pairs until cutting is finalized.
             // After we move to Pending_Printing (and upper stock is updated), changing
@@ -160,7 +177,7 @@ public class PlanService {
      * Deletes a plan only while it is still in Pending_Cutting (not yet started in the workshop).
      */
     public void deletePlan(String planNumber) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
+        Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
         }
@@ -168,7 +185,7 @@ public class PlanService {
             throw new IllegalArgumentException(
                     "Only plans in Pending Cutting state can be deleted. This plan has already progressed.");
         }
-        unlinkStockMovementsFromPlan(planNumber);
+        unlinkStockMovementsFromPlan(plan.getPlanNumber());
         planRepository.delete(plan);
     }
 
@@ -179,22 +196,22 @@ public class PlanService {
      */
     @Transactional
     public void forceCleanupPlan(String planNumber) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
+        Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
         }
         if (plan.getStatus() == PlanStatus.Pending_Cutting) {
-            deletePlan(planNumber);
+            deletePlan(plan.getPlanNumber());
             return;
         }
-        vendorService.removeVendorOrdersForPlan(planNumber);
+        vendorService.removeVendorOrdersForPlan(plan.getPlanNumber());
         if (plan.getMachineProcessingDate() != null) {
             reverseMoveStockFromUpperToFinished(plan);
         }
         if (upperStockWasIncreasedForCuttingOutput(plan)) {
             reverseUpdateUpperStockFromPlan(plan);
         }
-        unlinkStockMovementsFromPlan(planNumber);
+        unlinkStockMovementsFromPlan(plan.getPlanNumber());
         planRepository.delete(plan);
     }
 
@@ -288,10 +305,11 @@ public class PlanService {
 
     @Transactional
     public Plan moveToNextState(String planNumber, LocalDate transitionDate) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
+        Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
+        String canonicalPlanNumber = plan.getPlanNumber();
 
         PlanStatus nextStatus = getNextStatus(plan);
         if (nextStatus == null) {
@@ -309,12 +327,12 @@ public class PlanService {
                 break;
             case Pending_Printing:
                 plan.setCuttingEndDate(date);
-                if (!vendorService.hasVendorOrderForPlanWithRole(planNumber, VendorRole.Cutting)) {
+                if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Cutting)) {
                     if (plan.getCuttingVendor() != null) {
                         double cuttingPayment = calculatePayment(plan, VendorRole.Cutting);
                         plan.setCuttingVendorPaymentDue(cuttingPayment);
                         vendorService.recordVendorOrderToMonth(
-                                plan.getCuttingVendor().getId(), planNumber, cuttingPayment,
+                                plan.getCuttingVendor().getId(), canonicalPlanNumber, cuttingPayment,
                                 VendorRole.Cutting, date);
                     }
                     updateUpperStockFromPlan(plan);
@@ -325,12 +343,12 @@ public class PlanService {
                 break;
             case Pending_Stitching:
                 plan.setPrintingEndDate(date);
-                if (!vendorService.hasVendorOrderForPlanWithRole(planNumber, VendorRole.Printing)) {
+                if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Printing)) {
                     if (plan.getPrintingVendor() != null) {
                         double printingPayment = calculatePayment(plan, VendorRole.Printing);
                         plan.setPrintingVendorPaymentDue(printingPayment);
                         vendorService.recordVendorOrderToMonth(
-                                plan.getPrintingVendor().getId(), planNumber, printingPayment,
+                                plan.getPrintingVendor().getId(), canonicalPlanNumber, printingPayment,
                                 VendorRole.Printing, date);
                     }
                 }
@@ -340,12 +358,12 @@ public class PlanService {
                 break;
             case Completed:
                 plan.setStitchingEndDate(date);
-                if (!vendorService.hasVendorOrderForPlanWithRole(planNumber, VendorRole.Stitching)) {
+                if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Stitching)) {
                     if (plan.getStitchingVendor() != null) {
                         double stitchingPayment = calculatePayment(plan, VendorRole.Stitching);
                         plan.setStitchingVendorPaymentDue(stitchingPayment);
                         vendorService.recordVendorOrderToMonth(
-                                plan.getStitchingVendor().getId(), planNumber, stitchingPayment,
+                                plan.getStitchingVendor().getId(), canonicalPlanNumber, stitchingPayment,
                                 VendorRole.Stitching, date);
                     }
                 }
@@ -357,7 +375,7 @@ public class PlanService {
     }
 
     public Plan sendToMachine(String planNumber) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
+        Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
@@ -573,12 +591,23 @@ public class PlanService {
 
         // Process each result and add to the map
         for (Object[] result : results) {
-            String status = (String) result[0]; // Get status from the first element of the array
-            Long count = (Long) result[1];       // Get count from the second element of the array
-            activeOrders.put(status, count.intValue()); // Add to map (convert Long to int)
+            String statusKey = planStatusGroupKey(result[0]);
+            int count = ((Number) result[1]).intValue();
+            activeOrders.put(statusKey, count);
         }
 
         return activeOrders;
+    }
+
+    /** JPA returns {@link PlanStatus} for {@code SELECT p.status}, not a String. */
+    private static String planStatusGroupKey(Object statusColumn) {
+        if (statusColumn instanceof PlanStatus ps) {
+            return ps.name();
+        }
+        if (statusColumn instanceof String s) {
+            return s;
+        }
+        return String.valueOf(statusColumn);
     }
 
     private void updateUpperStockFromPlan(Plan plan) {
@@ -631,7 +660,7 @@ public class PlanService {
     }
 
     public void assignVendorToPlan(String planNumber, VendorAssignmentRequest vendorAssignmentRequest) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
+        Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
@@ -655,7 +684,7 @@ public class PlanService {
     }
     
     public void assignVendorsToPlan(String planNumber, Long cuttingVendorId, Long printingVendorId, Long stitchingVendorId) {
-        Plan plan = planRepository.findByPlanNumber(planNumber);
+        Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
@@ -689,7 +718,7 @@ public class PlanService {
     }
 
     public Plan getPlanByNumber(String planNumber) {
-        return planRepository.findByPlanNumber(planNumber);
+        return findPlanByNumberOrNull(planNumber);
     }
 
     public List<Plan> getAllPlans() {

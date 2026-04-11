@@ -8,10 +8,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface PlanRepository extends JpaRepository<Plan, Long> {
+public interface PlanRepository extends JpaRepository<Plan, String> {
     Plan findByPlanNumber(String planNumber);
+
+    Optional<Plan> findByPlanNumberIgnoreCase(String planNumber);
 
     boolean existsByArticleName(String articleName);
 
