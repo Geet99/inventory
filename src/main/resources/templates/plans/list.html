@@ -212,6 +212,11 @@
                 align-items: flex-start;
             }
         }
+        tr.plan-row-focus {
+            outline: 2px solid #3498db;
+            outline-offset: -2px;
+            background-color: #e8f4fc;
+        }
     </style>
     <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
@@ -231,6 +236,9 @@
         </div>
         
         <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+        <div th:if="${success}" style="background-color: #d4edda; color: #155724; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #c3e6cb;"
+             th:text="${success}"></div>
 
         <div class="filters">
             <form th:action="@{/plans}" method="get" class="filter-row">
@@ -271,7 +279,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="plan : ${plans}">
+                    <tr th:each="plan : ${plans}" th:attr="data-plan-number=${plan.planNumber}">
                         <td th:text="${plan.planNumber}"></td>
                         <td th:text="${plan.articleName}"></td>
                         <td th:text="${plan.color}"></td>
@@ -321,11 +329,23 @@
                                         Delete
                                     </button>
                                 </form>
+                                <form th:if="${plan.status == null or plan.status.name() != 'Pending_Cutting'}"
+                                      th:action="@{/plans/{planNumber}/force-cleanup(planNumber=${plan.planNumber})}"
+                                      method="post" style="display:inline">
+                                    <button type="submit" class="btn btn-danger" title="Reverse vendor charges and stock, then remove this plan"
+                                            onclick="return confirm('Remove this plan and reverse vendor balances and stock? Blocked if monthly payments already settled. Cannot undo.');">
+                                        Cleanup
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
                 </tbody>
         </table>
+        <p style="font-size: 13px; color: #6c757d; margin-top: 12px;">
+            <strong>Delete</strong> is only for plans still in <strong>Pending Cutting</strong>.
+            For plans that already progressed, use <strong>Cleanup</strong> to reverse vendor pricing and stock, then remove the plan (blocked if monthly vendor payments already cover the amounts).
+        </p>
         
         <div th:if="${#lists.isEmpty(plans)}" style="text-align: center; margin-top: 50px; color: #666;">
             <p th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or filterCreateDateFrom != null or filterCreateDateTo != null}">
@@ -336,5 +356,25 @@
             </p>
         </div>
     </div>
+    <script>
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var focus = params.get('focus');
+            if (!focus || typeof document.querySelector !== 'function') return;
+            var esc = window.CSS && typeof window.CSS.escape === 'function'
+                ? window.CSS.escape(focus)
+                : focus.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            var row = document.querySelector('[data-plan-number="' + esc + '"]');
+            if (!row) return;
+            row.classList.add('plan-row-focus');
+            row.scrollIntoView({ block: 'center', behavior: 'auto' });
+            params.delete('focus');
+            var next = params.toString();
+            var url = window.location.pathname + (next ? '?' + next : '') + window.location.hash;
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', url);
+            }
+        })();
+    </script>
 </body>
 </html>

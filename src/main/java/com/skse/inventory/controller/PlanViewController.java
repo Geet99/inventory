@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -115,7 +116,7 @@ public class PlanViewController {
         }
         try {
             planService.updatePlan(planNumber, updatedPlan);
-            return "redirect:/plans";
+            return "redirect:/plans?focus=" + URLEncoder.encode(planNumber, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException ex) {
             Plan plan = updatedPlan;
             model.addAttribute("title", "Edit Plan");
@@ -135,6 +136,18 @@ public class PlanViewController {
             planService.deletePlan(planNumber);
         } catch (IllegalArgumentException ex) {
             return "redirect:/plans?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+        }
+        return "redirect:/plans";
+    }
+
+    @PostMapping("/{planNumber}/force-cleanup")
+    public String forceCleanupPlan(@PathVariable String planNumber, RedirectAttributes redirectAttributes) {
+        try {
+            planService.forceCleanupPlan(planNumber);
+            redirectAttributes.addFlashAttribute("success",
+                    "Plan removed. Vendor pricing and stock balances were reversed where applicable.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/plans";
     }

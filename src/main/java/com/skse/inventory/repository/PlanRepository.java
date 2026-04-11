@@ -1,7 +1,6 @@
 package com.skse.inventory.repository;
 
 import com.skse.inventory.model.Plan;
-import com.skse.inventory.model.PlanStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,14 +15,14 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
 
     boolean existsByArticleName(String articleName);
 
-    // Find all plans ordered by creation date (newest first)
-    List<Plan> findAllByOrderByCreateDateDesc();
+    // Find all plans ordered by plan number (alphabetical)
+    List<Plan> findAllByOrderByPlanNumberAsc();
 
     @Query("SELECT p FROM Plan p " +
            "WHERE (:planNumber IS NULL OR LOWER(p.planNumber) LIKE LOWER(CONCAT('%', :planNumber, '%'))) " +
            "AND (:createDateFrom IS NULL OR p.createDate >= :createDateFrom) " +
            "AND (:createDateTo IS NULL OR p.createDate <= :createDateTo) " +
-           "ORDER BY p.createDate DESC")
+           "ORDER BY p.planNumber ASC")
     List<Plan> findFiltered(@Param("planNumber") String planNumber,
                            @Param("createDateFrom") LocalDate createDateFrom,
                            @Param("createDateTo") LocalDate createDateTo);

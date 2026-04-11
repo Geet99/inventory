@@ -20,4 +20,6 @@ public interface VendorOrderHistoryRepository extends JpaRepository<VendorOrderH
     List<VendorOrderHistory> findByVendorIdAndType(Long vendorId, String type);
     
     List<VendorOrderHistory> findByVendorIdAndTypeOrderByOrderDateDesc(Long vendorId, String type);
+
+    List<VendorOrderHistory> findByPlanNumberAndType(String planNumber, String type);
 }

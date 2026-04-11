@@ -2,6 +2,7 @@ package com.skse.inventory.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -44,6 +45,7 @@ public class Plan {
     @Enumerated(EnumType.STRING)
     private PlanStatus status;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate createDate;
     private LocalDate cuttingStartDate;
     private LocalDate cuttingEndDate;

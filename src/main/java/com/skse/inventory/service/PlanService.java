@@ -137,11 +137,118 @@ public class PlanService {
             throw new IllegalArgumentException(
                     "Only plans in Pending Cutting state can be deleted. This plan has already progressed.");
         }
+        unlinkStockMovementsFromPlan(planNumber);
+        planRepository.delete(plan);
+    }
+
+    /**
+     * Removes a plan that has already left {@link PlanStatus#Pending_Cutting}: reverses vendor monthly
+     * charges, then stock (machine move if applicable, then cutting output on upper stock).
+     * Use {@link #deletePlan(String)} for plans still pending cutting.
+     */
+    @Transactional
+    public void forceCleanupPlan(String planNumber) {
+        Plan plan = planRepository.findByPlanNumber(planNumber);
+        if (plan == null) {
+            throw new IllegalArgumentException("Plan not found: " + planNumber);
+        }
+        if (plan.getStatus() == PlanStatus.Pending_Cutting) {
+            deletePlan(planNumber);
+            return;
+        }
+        vendorService.removeVendorOrdersForPlan(planNumber);
+        if (plan.getMachineProcessingDate() != null) {
+            reverseMoveStockFromUpperToFinished(plan);
+        }
+        if (upperStockWasIncreasedForCuttingOutput(plan)) {
+            reverseUpdateUpperStockFromPlan(plan);
+        }
+        unlinkStockMovementsFromPlan(planNumber);
+        planRepository.delete(plan);
+    }
+
+    private static boolean upperStockWasIncreasedForCuttingOutput(Plan plan) {
+        PlanStatus s = plan.getStatus();
+        return s != null && s.compareTo(PlanStatus.Pending_Printing) >= 0;
+    }
+
+    /** Inverse of {@link #moveStockFromUpperToFinished(Plan, int)} for {@link Plan#sendToMachine}. */
+    private void reverseMoveStockFromUpperToFinished(Plan plan) {
+        int finalQuantity = plan.getTotal();
+        String[] sizeQuantityPairs = plan.getSizeQuantityPairs().split(",");
+
+        for (String pair : sizeQuantityPairs) {
+            if (pair.trim().isEmpty()) {
+                continue;
+            }
+            String[] sizeQuantity = pair.trim().split(":");
+            String size = sizeQuantity[0].trim();
+            int plannedQuantity = Integer.parseInt(sizeQuantity[1].trim());
+            double proportion = (double) plannedQuantity / plan.getTotal();
+            int finalSizeQuantity = (int) Math.round(finalQuantity * proportion);
+
+            Optional<FinishedStock> finishedStockOpt = finishedStockRepository.findByArticleNameAndSizeAndColor(
+                    plan.getArticleName(), size, plan.getColor());
+            if (finishedStockOpt.isEmpty()) {
+                throw new IllegalStateException(
+                        "Cannot reverse machine step: no finished stock for " + plan.getArticleName()
+                                + " size " + size + " color " + plan.getColor());
+            }
+            FinishedStock finishedStock = finishedStockOpt.get();
+            if (finishedStock.getQuantity() < finalSizeQuantity) {
+                throw new IllegalStateException(
+                        "Cannot reverse machine step: insufficient finished stock for size " + size
+                                + ". Need " + finalSizeQuantity + ", have " + finishedStock.getQuantity());
+            }
+            finishedStock.setQuantity(finishedStock.getQuantity() - finalSizeQuantity);
+            finishedStockRepository.save(finishedStock);
+
+            Optional<UpperStock> upperOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+                    plan.getArticleName(), size, plan.getColor());
+            if (upperOpt.isEmpty()) {
+                throw new IllegalStateException(
+                        "Cannot reverse machine step: no upper stock row for size " + size);
+            }
+            UpperStock upperStock = upperOpt.get();
+            upperStock.setQuantity(upperStock.getQuantity() + finalSizeQuantity);
+            upperStockRepository.save(upperStock);
+        }
+    }
+
+    /** Inverse of {@link #updateUpperStockFromPlan(Plan)}. */
+    private void reverseUpdateUpperStockFromPlan(Plan plan) {
+        String[] sizeQuantityPairs = plan.getSizeQuantityPairs().split(",");
+        for (String pair : sizeQuantityPairs) {
+            if (pair.trim().isEmpty()) {
+                continue;
+            }
+            String[] sizeQuantity = pair.trim().split(":");
+            String size = sizeQuantity[0].trim();
+            int quantity = Integer.parseInt(sizeQuantity[1].trim());
+
+            Optional<UpperStock> upperStockOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+                    plan.getArticleName(), size, plan.getColor());
+            if (upperStockOpt.isEmpty()) {
+                throw new IllegalStateException(
+                        "Cannot reverse cutting stock: no upper stock for article "
+                                + plan.getArticleName() + ", size " + size + ", color " + plan.getColor());
+            }
+            UpperStock stock = upperStockOpt.get();
+            if (stock.getQuantity() < quantity) {
+                throw new IllegalStateException(
+                        "Cannot reverse cutting stock: upper stock would go negative for size "
+                                + size + " (have " + stock.getQuantity() + ", need to remove " + quantity + ").");
+            }
+            stock.setQuantity(stock.getQuantity() - quantity);
+            upperStockRepository.save(stock);
+        }
+    }
+
+    private void unlinkStockMovementsFromPlan(String planNumber) {
         for (StockMovementRequest sm : stockMovementRepository.findByPlanNumber(planNumber)) {
             sm.setPlan(null);
             stockMovementRepository.save(sm);
         }
-        planRepository.delete(plan);
     }
 
     public Plan moveToNextState(String planNumber) {
@@ -451,7 +558,7 @@ public class PlanService {
     }
 
     public List<Plan> getAllPlans() {
-        return planRepository.findAllByOrderByCreateDateDesc();
+        return planRepository.findAllByOrderByPlanNumberAsc();
     }
 
     /**
@@ -461,7 +568,7 @@ public class PlanService {
     public List<Plan> getPlansFiltered(String planNumber, LocalDate createDateFrom, LocalDate createDateTo) {
         String q = (planNumber != null && !planNumber.isBlank()) ? planNumber.trim() : null;
         if (q == null && createDateFrom == null && createDateTo == null) {
-            return planRepository.findAllByOrderByCreateDateDesc();
+            return planRepository.findAllByOrderByPlanNumberAsc();
         }
         return planRepository.findFiltered(q, createDateFrom, createDateTo);
     }

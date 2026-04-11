@@ -8,6 +8,7 @@ import com.skse.inventory.repository.VendorOrderHistoryRepository;
 import com.skse.inventory.repository.VendorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -313,7 +314,56 @@ public class VendorService {
             vendorOrderHistoryRepository.save(orderRecord);
         }
     }
-    
+
+    /**
+     * Reverses vendor ORDER lines and monthly buckets for a plan being force-removed.
+     * Refuses if remaining monthly {@code totalDue} would fall below {@code paidAmount} (settlements already cover the order).
+     */
+    @Transactional
+    public void removeVendorOrdersForPlan(String planNumber) {
+        List<VendorOrderHistory> orders = vendorOrderHistoryRepository.findByPlanNumberAndType(planNumber, "ORDER");
+        for (VendorOrderHistory hist : orders) {
+            Vendor vendor = hist.getVendor();
+            if (vendor == null || hist.getRole() == null || hist.getOrderDate() == null) {
+                continue;
+            }
+            double amount = hist.getAmount();
+            String monthYear = VendorMonthlyPayment.getMonthYearString(hist.getOrderDate());
+            VendorMonthlyPayment mp = vendorMonthlyPaymentRepository
+                    .findByVendorAndMonthYearAndOperationType(vendor, monthYear, hist.getRole())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Cannot reverse vendor charges for plan " + planNumber
+                                    + ": missing monthly payment record for "
+                                    + monthYear + " / " + hist.getRole() + "."));
+
+            double newTotal = mp.getTotalDue() - amount;
+            if (newTotal < -1e-6) {
+                throw new IllegalStateException(
+                        "Cannot remove plan " + planNumber + ": vendor monthly total would become inconsistent.");
+            }
+            if (newTotal + 1e-6 < mp.getPaidAmount()) {
+                throw new IllegalStateException(
+                        "Cannot remove plan " + planNumber
+                                + ": this month's vendor payments already exceed the balance that would remain "
+                                + "after removing this plan's orders. Adjust or reverse settlements first.");
+            }
+            mp.setTotalDue(Math.max(0, newTotal));
+            mp.setLastUpdatedDate(LocalDate.now());
+            if (mp.getPaidAmount() >= mp.getTotalDue() - 1e-6) {
+                mp.setStatus(PaymentStatus.PAID);
+            } else if (mp.getPaidAmount() > 1e-6) {
+                mp.setStatus(PaymentStatus.PARTIAL);
+            } else {
+                mp.setStatus(PaymentStatus.PENDING);
+            }
+            vendorMonthlyPaymentRepository.save(mp);
+
+            vendor.setPaymentDue(vendor.getPaymentDue() - amount);
+            vendorRepository.save(vendor);
+        }
+        vendorOrderHistoryRepository.deleteAll(orders);
+    }
+
     /**
      * Record payment for a specific month
      */

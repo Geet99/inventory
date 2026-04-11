@@ -82,6 +82,18 @@ public class PlanController {
         }
     }
 
+    @Operation(summary = "Force cleanup a Plan",
+            description = "Removes a plan that has left Pending Cutting: reverses vendor monthly charges and stock, then deletes the plan.")
+    @PostMapping("/{planNumber}/force-cleanup")
+    public ResponseEntity<String> forceCleanupPlan(@PathVariable String planNumber) {
+        try {
+            planService.forceCleanupPlan(planNumber);
+            return ResponseEntity.ok("Plan removed; vendor and stock balances reversed where applicable.");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+    }
+
     @Operation(summary = "Move Plan to next state", description = "Moves the Plan to the next status, updating timestamps and stock accordingly.")
     @PostMapping("/{planNumber}/move-to-next-state")
     public ResponseEntity<Plan> moveToNextState(@PathVariable String planNumber) {
