@@ -352,7 +352,7 @@
                             <span th:if="${plan.status == null}" class="status-pending">Pending</span>
                         </td>
                         <td class="timeline-cell">
-                            <a class="timeline-link" th:href="|${#httpServletRequest != null ? #httpServletRequest.contextPath : ''}/plans/${plan.planNumber}/edit#workflow-dates|">Edit</a>
+                            <a class="timeline-link" th:href="@{/plans/edit(planNumber=${plan.planNumber})} + '#workflow-dates'">Edit</a>
                             <ul class="timeline-list"
                                 th:if="${plan.cuttingStartDate != null or plan.cuttingEndDate != null or plan.printingStartDate != null or plan.printingEndDate != null or plan.stitchingStartDate != null or plan.stitchingEndDate != null or plan.machineProcessingDate != null}">
                                 <li th:if="${plan.cuttingStartDate != null or plan.cuttingEndDate != null}">
@@ -395,15 +395,15 @@
                         <td th:text="${#temporals.format(plan.createDate, 'dd/MM/yyyy')}"></td>
                         <td>
                             <div class="actions">
-                                <a th:href="@{/plans/{planNumber}/edit(planNumber=${plan.planNumber})}" class="btn btn-warning">Edit</a>
-                                <a th:href="@{/plans/{planNumber}/print(planNumber=${plan.planNumber})}" class="btn btn-secondary" target="_blank">🖨️ Print</a>
-                                <a th:href="@{/plans/{planNumber}/assign-vendor(planNumber=${plan.planNumber})}" class="btn btn-info">Assign Vendor</a>
-                                <a th:href="@{/plans/{planNumber}/confirm-next-state(planNumber=${plan.planNumber})}" 
+                                <a th:href="@{/plans/edit(planNumber=${plan.planNumber})}" class="btn btn-warning">Edit</a>
+                                <a th:href="@{/plans/print(planNumber=${plan.planNumber})}" class="btn btn-secondary" target="_blank">🖨️ Print</a>
+                                <a th:href="@{/plans/assign-vendor(planNumber=${plan.planNumber})}" class="btn btn-info">Assign Vendor</a>
+                                <a th:href="@{/plans/confirm-next-state(planNumber=${plan.planNumber})}" 
                                    class="btn btn-primary"
                                    th:if="${plan.status == null or plan.status.name() != 'Completed'}">
                                     Next State
                                 </a>
-                                <a th:href="@{/plans/{planNumber}/send-to-machine(planNumber=${plan.planNumber})}" 
+                                <a th:href="@{/plans/send-to-machine(planNumber=${plan.planNumber})}" 
                                    class="btn btn-danger"
                                    th:if="${plan.status != null and plan.status.name() == 'Completed' and plan.machineProcessingDate == null}">
                                     Send to Machine
@@ -420,16 +420,18 @@
                                     Send to Machine
                                 </button>
                                 <form th:if="${plan.status != null and plan.status.name() == 'Pending_Cutting'}"
-                                      th:action="@{/plans/{planNumber}/delete(planNumber=${plan.planNumber})}"
+                                      th:action="@{/plans/delete}"
                                       method="post" style="display:inline">
+                                    <input type="hidden" name="planNumber" th:value="${plan.planNumber}">
                                     <button type="submit" class="btn btn-danger"
                                             onclick="return confirm('Delete this plan? This cannot be undone.');">
                                         Delete
                                     </button>
                                 </form>
                                 <form th:if="${plan.status == null or plan.status.name() != 'Pending_Cutting'}"
-                                      th:action="@{/plans/{planNumber}/force-cleanup(planNumber=${plan.planNumber})}"
+                                      th:action="@{/plans/force-cleanup}"
                                       method="post" style="display:inline">
+                                    <input type="hidden" name="planNumber" th:value="${plan.planNumber}">
                                     <button type="submit" class="btn btn-danger" title="Reverse vendor charges and stock, then remove this plan"
                                             onclick="return confirm('Remove this plan and reverse vendor balances and stock? Blocked if monthly payments already settled. Cannot undo.');">
                                         Cleanup

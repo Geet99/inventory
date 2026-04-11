@@ -176,7 +176,8 @@
         </div>
         
         <div class="card">
-            <form th:action="@{'/plans/' + ${plan.planNumber} + '/assign-vendor'}" method="post">
+            <form th:action="@{/plans/assign-vendor}" method="post">
+                <input type="hidden" name="planNumber" th:value="${plan.planNumber}">
                 <div class="vendor-section">
                     <h4>🔪 Cutting Vendor</h4>
                     <div class="form-group">

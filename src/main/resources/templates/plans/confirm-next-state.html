@@ -25,7 +25,8 @@
             <h2 style="margin-top: 0;">Confirm plan transition</h2>
             <p>Plan <strong th:text="${plan.planNumber}"></strong> will move from <strong th:text="${effectiveStatus.name().replace('_', ' ')}"></strong> to <strong th:text="${nextStatus.name().replace('_', ' ')}"></strong>.</p>
             <p class="text-muted">Vendor is optional: if not assigned, this step will not be billed.</p>
-            <form th:action="@{'/plans/' + ${plan.planNumber} + '/move-to-next'}" method="post">
+            <form th:action="@{/plans/move-to-next}" method="post">
+                <input type="hidden" name="planNumber" th:value="${plan.planNumber}">
                 <div class="form-group">
                     <label for="transitionDate">Transition date</label>
                     <input type="date" id="transitionDate" name="transitionDate" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>

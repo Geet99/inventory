@@ -205,7 +205,8 @@
         </div>
         
         <div class="card">
-            <form th:action="@{'/plans/' + ${plan.planNumber} + '/send-to-machine'}" method="post">
+            <form th:action="@{/plans/send-to-machine}" method="post">
+                <input type="hidden" name="planNumber" th:value="${plan.planNumber}">
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 15px 30px;"
                             onclick="return confirm('⚠️ WARNING: This will send the ENTIRE PLAN (' + [[${plan.total}]] + ' units) to machine processing and move all upper stock to finished stock.\n\nThis action CANNOT be undone!\n\nAre you sure you want to proceed?')">

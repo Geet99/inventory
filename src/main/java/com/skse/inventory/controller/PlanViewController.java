@@ -76,6 +76,30 @@ public class PlanViewController {
         return "plans/new";
     }
 
+    /**
+     * Plan numbers live in query or form fields (not path segments) so characters such as ';'
+     * are not interpreted as matrix parameters by Spring MVC's PathPattern parser.
+     */
+    private String editPlanModel(String planNumber, Model model) {
+        Plan plan = planService.getPlanByNumber(planNumber);
+        if (plan == null) {
+            return "redirect:/plans?error=" + URLEncoder.encode("Plan not found: " + planNumber, StandardCharsets.UTF_8);
+        }
+        model.addAttribute("title", "Edit Plan");
+        model.addAttribute("plan", plan);
+        model.addAttribute("effectiveStatus", planService.getEffectiveStatus(plan));
+        model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("colors", colorService.getAllColors());
+        model.addAttribute("cuttingTypes", CuttingType.values());
+        model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
+        return "plans/edit";
+    }
+
+    @GetMapping("/edit")
+    public String editPlanQuery(@RequestParam("planNumber") String planNumber, Model model) {
+        return editPlanModel(planNumber, model);
+    }
+
     @PostMapping("/add")
     public String addPlan(@ModelAttribute Plan plan,
                           @RequestParam(required = false) Long printingRateHeadId,
@@ -101,24 +125,11 @@ public class PlanViewController {
         }
     }
 
-    @GetMapping("/{planNumber}/edit")
-    public String editPlan(@PathVariable String planNumber, Model model) {
-        Plan plan = planService.getPlanByNumber(planNumber);
-        model.addAttribute("title", "Edit Plan");
-        model.addAttribute("plan", plan);
-        model.addAttribute("effectiveStatus", planService.getEffectiveStatus(plan));
-        model.addAttribute("articles", articleService.getAllArticles());
-        model.addAttribute("colors", colorService.getAllColors());
-        model.addAttribute("cuttingTypes", CuttingType.values());
-        model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
-        return "plans/edit";
-    }
-
-    @PostMapping("/{planNumber}/update")
-    public String updatePlan(@PathVariable String planNumber,
-                             @ModelAttribute Plan updatedPlan,
+    @PostMapping("/update")
+    public String updatePlan(@ModelAttribute Plan updatedPlan,
                              @RequestParam(required = false) Long printingRateHeadId,
                              Model model) {
+        String planNumber = updatedPlan.getPlanNumber();
         if (printingRateHeadId != null) {
             updatedPlan.setPrintingRateHead(rateHeadService.getRateHeadById(printingRateHeadId));
         } else {
@@ -141,18 +152,18 @@ public class PlanViewController {
         }
     }
 
-    @PostMapping("/{planNumber}/delete")
-    public String deletePlan(@PathVariable String planNumber) {
+    @PostMapping("/delete")
+    public String deletePlan(@RequestParam("planNumber") String planNumber) {
         try {
             planService.deletePlan(planNumber);
         } catch (IllegalArgumentException ex) {
             return "redirect:/plans?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
         }
-        return "redirect:/plans";
+        return redirectPlansWithFocus(planNumber);
     }
 
-    @PostMapping("/{planNumber}/force-cleanup")
-    public String forceCleanupPlan(@PathVariable String planNumber, RedirectAttributes redirectAttributes) {
+    @PostMapping("/force-cleanup")
+    public String forceCleanupPlan(@RequestParam("planNumber") String planNumber, RedirectAttributes redirectAttributes) {
         try {
             planService.forceCleanupPlan(planNumber);
             redirectAttributes.addFlashAttribute("success",
@@ -160,12 +171,15 @@ public class PlanViewController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
-        return "redirect:/plans";
+        return redirectPlansWithFocus(planNumber);
     }
 
-    @GetMapping("/{planNumber}/assign-vendor")
-    public String assignVendorForm(@PathVariable String planNumber, Model model) {
+    @GetMapping("/assign-vendor")
+    public String assignVendorForm(@RequestParam("planNumber") String planNumber, Model model) {
         Plan plan = planService.getPlanByNumber(planNumber);
+        if (plan == null) {
+            return "redirect:/plans?error=" + URLEncoder.encode("Plan not found: " + planNumber, StandardCharsets.UTF_8);
+        }
         model.addAttribute("title", "Assign Vendor");
         model.addAttribute("plan", plan);
         model.addAttribute("vendors", vendorService.getAllVendors());
@@ -173,8 +187,8 @@ public class PlanViewController {
         return "plans/assign-vendor";
     }
 
-    @PostMapping("/{planNumber}/assign-vendor")
-    public String assignVendor(@PathVariable String planNumber,
+    @PostMapping("/assign-vendor")
+    public String assignVendor(@RequestParam("planNumber") String planNumber,
                                @RequestParam(required = false) Long cuttingVendorId,
                                @RequestParam(required = false) Long printingVendorId,
                                @RequestParam(required = false) Long stitchingVendorId) {
@@ -182,8 +196,8 @@ public class PlanViewController {
         return redirectPlansWithFocus(planNumber);
     }
 
-    @GetMapping("/{planNumber}/confirm-next-state")
-    public String confirmNextState(@PathVariable String planNumber, Model model) {
+    @GetMapping("/confirm-next-state")
+    public String confirmNextState(@RequestParam("planNumber") String planNumber, Model model) {
         try {
             Plan plan = planService.getPlanByNumber(planNumber);
             if (plan == null) {
@@ -207,8 +221,8 @@ public class PlanViewController {
         }
     }
 
-    @PostMapping("/{planNumber}/move-to-next")
-    public String moveToNextState(@PathVariable String planNumber,
+    @PostMapping("/move-to-next")
+    public String moveToNextState(@RequestParam("planNumber") String planNumber,
                                   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate transitionDate) {
         Plan plan = planService.getPlanByNumber(planNumber);
         if (plan == null) {
@@ -230,9 +244,12 @@ public class PlanViewController {
         return redirectPlansWithFocus(planNumber);
     }
     
-    @GetMapping("/{planNumber}/send-to-machine")
-    public String sendToMachineForm(@PathVariable String planNumber, Model model) {
+    @GetMapping("/send-to-machine")
+    public String sendToMachineForm(@RequestParam("planNumber") String planNumber, Model model) {
         Plan plan = planService.getPlanByNumber(planNumber);
+        if (plan == null) {
+            return "redirect:/plans?error=" + URLEncoder.encode("Plan not found: " + planNumber, StandardCharsets.UTF_8);
+        }
         if (plan.getStatus() != PlanStatus.Completed) {
             return redirectPlansWithErrorAndFocus(planNumber, "Plan must be completed before sending to machine");
         }
@@ -241,8 +258,8 @@ public class PlanViewController {
         return "plans/send-to-machine";
     }
     
-    @PostMapping("/{planNumber}/send-to-machine")
-    public String sendToMachine(@PathVariable String planNumber) {
+    @PostMapping("/send-to-machine")
+    public String sendToMachine(@RequestParam("planNumber") String planNumber) {
         planService.sendToMachine(planNumber);
         return redirectPlansWithFocus(planNumber);
     }
@@ -255,12 +272,79 @@ public class PlanViewController {
         return "plans/dashboard";
     }
     
-    @GetMapping("/{planNumber}/print")
-    public String printPlan(@PathVariable String planNumber, Model model) {
+    @GetMapping("/print")
+    public String printPlan(@RequestParam("planNumber") String planNumber, Model model) {
         Plan plan = planService.getPlanByNumber(planNumber);
+        if (plan == null) {
+            return "redirect:/plans?error=" + URLEncoder.encode("Plan not found: " + planNumber, StandardCharsets.UTF_8);
+        }
         Article article = articleService.getArticleByName(plan.getArticleName());
         model.addAttribute("plan", plan);
         model.addAttribute("article", article);
         return "plans/print";
+    }
+
+    /* Legacy path-style routes (plan numbers without ';' etc. still work). */
+    @GetMapping("/{planNumber}/edit")
+    public String editPlanPath(@PathVariable String planNumber, Model model) {
+        return editPlanModel(planNumber, model);
+    }
+
+    @PostMapping("/{planNumber}/update")
+    public String updatePlanPath(@PathVariable String planNumber,
+                                 @ModelAttribute Plan updatedPlan,
+                                 @RequestParam(required = false) Long printingRateHeadId,
+                                 Model model) {
+        updatedPlan.setPlanNumber(planNumber);
+        return updatePlan(updatedPlan, printingRateHeadId, model);
+    }
+
+    @PostMapping("/{planNumber}/delete")
+    public String deletePlanPath(@PathVariable String planNumber) {
+        return deletePlan(planNumber);
+    }
+
+    @PostMapping("/{planNumber}/force-cleanup")
+    public String forceCleanupPlanPath(@PathVariable String planNumber, RedirectAttributes redirectAttributes) {
+        return forceCleanupPlan(planNumber, redirectAttributes);
+    }
+
+    @GetMapping("/{planNumber}/assign-vendor")
+    public String assignVendorFormPath(@PathVariable String planNumber, Model model) {
+        return assignVendorForm(planNumber, model);
+    }
+
+    @PostMapping("/{planNumber}/assign-vendor")
+    public String assignVendorPath(@PathVariable String planNumber,
+                                   @RequestParam(required = false) Long cuttingVendorId,
+                                   @RequestParam(required = false) Long printingVendorId,
+                                   @RequestParam(required = false) Long stitchingVendorId) {
+        return assignVendor(planNumber, cuttingVendorId, printingVendorId, stitchingVendorId);
+    }
+
+    @GetMapping("/{planNumber}/confirm-next-state")
+    public String confirmNextStatePath(@PathVariable String planNumber, Model model) {
+        return confirmNextState(planNumber, model);
+    }
+
+    @PostMapping("/{planNumber}/move-to-next")
+    public String moveToNextStatePath(@PathVariable String planNumber,
+                                      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate transitionDate) {
+        return moveToNextState(planNumber, transitionDate);
+    }
+
+    @GetMapping("/{planNumber}/send-to-machine")
+    public String sendToMachineFormPath(@PathVariable String planNumber, Model model) {
+        return sendToMachineForm(planNumber, model);
+    }
+
+    @PostMapping("/{planNumber}/send-to-machine")
+    public String sendToMachinePath(@PathVariable String planNumber) {
+        return sendToMachine(planNumber);
+    }
+
+    @GetMapping("/{planNumber}/print")
+    public String printPlanPath(@PathVariable String planNumber, Model model) {
+        return printPlan(planNumber, model);
     }
 }
