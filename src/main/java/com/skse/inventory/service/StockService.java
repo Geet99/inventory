@@ -32,17 +32,17 @@ public class StockService {
     }
 
     public UpperStock getUpperStockByArticleAndSizeAndColor(String articleName, String size, String color) {
-        Optional<UpperStock> stock = upperStockRepository.findByArticleNameAndSizeAndColor(articleName, size, color);
+        Optional<UpperStock> stock = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(articleName, size, color);
         return stock.orElse(null);
     }
 
     public FinishedStock getFinishedStockByArticleAndSizeAndColor(String articleName, String size, String color) {
-        Optional<FinishedStock> stock = finishedStockRepository.findByArticleNameAndSizeAndColor(articleName, size, color);
+        Optional<FinishedStock> stock = finishedStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(articleName, size, color);
         return stock.orElse(null);
     }
 
     public void addToUpperStock(Article article, String size, String color, int quantity) {
-        Optional<UpperStock> existingStock = upperStockRepository.findByArticleNameAndSizeAndColor(
+        Optional<UpperStock> existingStock = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
             article.getName(), size, color);
         
         if (existingStock.isPresent()) {
@@ -60,7 +60,7 @@ public class StockService {
     }
 
     public void addToFinishedStock(Article article, String size, String color, int quantity) {
-        Optional<FinishedStock> existingStock = finishedStockRepository.findByArticleNameAndSizeAndColor(
+        Optional<FinishedStock> existingStock = finishedStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
             article.getName(), size, color);
         
         if (existingStock.isPresent()) {
@@ -79,7 +79,7 @@ public class StockService {
 
     public void moveFromUpperToFinished(Article article, String size, String color, int quantity) {
         // Check upper stock availability
-        Optional<UpperStock> upperStockOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+        Optional<UpperStock> upperStockOpt = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
             article.getName(), size, color);
         
         if (!upperStockOpt.isPresent()) {

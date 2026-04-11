@@ -218,7 +218,7 @@ public class PlanService {
             double proportion = (double) plannedQuantity / plan.getTotal();
             int finalSizeQuantity = (int) Math.round(finalQuantity * proportion);
 
-            Optional<FinishedStock> finishedStockOpt = finishedStockRepository.findByArticleNameAndSizeAndColor(
+            Optional<FinishedStock> finishedStockOpt = finishedStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
                     plan.getArticleName(), size, plan.getColor());
             if (finishedStockOpt.isEmpty()) {
                 throw new IllegalStateException(
@@ -234,7 +234,7 @@ public class PlanService {
             finishedStock.setQuantity(finishedStock.getQuantity() - finalSizeQuantity);
             finishedStockRepository.save(finishedStock);
 
-            Optional<UpperStock> upperOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+            Optional<UpperStock> upperOpt = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
                     plan.getArticleName(), size, plan.getColor());
             if (upperOpt.isEmpty()) {
                 throw new IllegalStateException(
@@ -257,7 +257,7 @@ public class PlanService {
             String size = sizeQuantity[0].trim();
             int quantity = Integer.parseInt(sizeQuantity[1].trim());
 
-            Optional<UpperStock> upperStockOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+            Optional<UpperStock> upperStockOpt = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
                     plan.getArticleName(), size, plan.getColor());
             if (upperStockOpt.isEmpty()) {
                 throw new IllegalStateException(
@@ -388,7 +388,7 @@ public class PlanService {
             int finalSizeQuantity = (int) Math.round(finalQuantity * proportion);
             
             // Check upper stock availability
-            Optional<UpperStock> upperStockOpt = upperStockRepository.findByArticleNameAndSizeAndColor(
+            Optional<UpperStock> upperStockOpt = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
                 plan.getArticleName(), size, plan.getColor());
             
             if (!upperStockOpt.isPresent()) {
@@ -419,13 +419,13 @@ public class PlanService {
             int finalSizeQuantity = (int) Math.round(finalQuantity * proportion);
             
             // Reduce upper stock
-            UpperStock upperStock = upperStockRepository.findByArticleNameAndSizeAndColor(
+            UpperStock upperStock = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
                 plan.getArticleName(), size, plan.getColor()).get();
             upperStock.setQuantity(upperStock.getQuantity() - finalSizeQuantity);
             upperStockRepository.save(upperStock);
             
             // Add to finished stock
-            Optional<FinishedStock> finishedStockOpt = finishedStockRepository.findByArticleNameAndSizeAndColor(
+            Optional<FinishedStock> finishedStockOpt = finishedStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
                 plan.getArticleName(), size, plan.getColor());
             
             if (finishedStockOpt.isPresent()) {
@@ -598,7 +598,7 @@ public class PlanService {
             }
 
             // Update upper stock and finished stock as per size and color
-            Optional<UpperStock> upperStock = upperStockRepository.findByArticleNameAndSizeAndColor(plan.getArticleName(), size, plan.getColor());
+            Optional<UpperStock> upperStock = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(plan.getArticleName(), size, plan.getColor());
             UpperStock stock = null;
             if (upperStock.isPresent()) {
                 stock = upperStock.get();
@@ -681,7 +681,7 @@ public class PlanService {
     }
 
     public List<Plan> getAllPlans() {
-        return planRepository.findAllByOrderByPlanNumberAsc();
+        return planRepository.findAllByOrderByPlanNumberDescIgnoreCase();
     }
 
     /**
@@ -691,7 +691,7 @@ public class PlanService {
     public List<Plan> getPlansFiltered(String planNumber, LocalDate createDateFrom, LocalDate createDateTo) {
         String q = (planNumber != null && !planNumber.isBlank()) ? planNumber.trim() : null;
         if (q == null && createDateFrom == null && createDateTo == null) {
-            return planRepository.findAllByOrderByPlanNumberAsc();
+            return planRepository.findAllByOrderByPlanNumberDescIgnoreCase();
         }
         return planRepository.findFiltered(q, createDateFrom, createDateTo);
     }

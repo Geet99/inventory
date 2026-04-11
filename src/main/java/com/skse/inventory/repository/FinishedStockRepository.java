@@ -14,7 +14,8 @@ import java.util.Optional;
 public interface FinishedStockRepository extends JpaRepository<FinishedStock, Long> {
     boolean existsByArticle_Id(Long articleId);
 
-    Optional<FinishedStock> findByArticleNameAndSizeAndColor(String articleName, String size, String color);
+    Optional<FinishedStock> findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
+            String articleName, String size, String color);
 
     @Query("SELECT f.size, f.color, SUM(f.quantity) FROM FinishedStock f GROUP BY f.size, f.color")
     List<Object[]> getFinishedStockSummary();

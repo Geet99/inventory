@@ -270,7 +270,7 @@ public class VendorService {
             
             // Get or create monthly payment record
             VendorMonthlyPayment monthlyPayment = vendorMonthlyPaymentRepository
-                .findByVendorAndMonthYearAndOperationType(vendor, monthYear, role)
+                .findFirstByVendorAndMonthYearAndOperationTypeOrderByIdAsc(vendor, monthYear, role)
                 .orElse(new VendorMonthlyPayment());
             
             if (monthlyPayment.getId() == null) {
@@ -339,7 +339,7 @@ public class VendorService {
             double amount = hist.getAmount();
             String monthYear = VendorMonthlyPayment.getMonthYearString(hist.getOrderDate());
             VendorMonthlyPayment mp = vendorMonthlyPaymentRepository
-                    .findByVendorAndMonthYearAndOperationType(vendor, monthYear, hist.getRole())
+                    .findFirstByVendorAndMonthYearAndOperationTypeOrderByIdAsc(vendor, monthYear, hist.getRole())
                     .orElseThrow(() -> new IllegalStateException(
                             "Cannot reverse vendor charges for plan " + planNumber
                                     + ": missing monthly payment record for "
@@ -381,7 +381,7 @@ public class VendorService {
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
             VendorMonthlyPayment monthlyPayment = vendorMonthlyPaymentRepository
-                .findByVendorAndMonthYearAndOperationType(vendor, monthYear, operationType)
+                .findFirstByVendorAndMonthYearAndOperationTypeOrderByIdAsc(vendor, monthYear, operationType)
                 .orElse(null);
             
             if (monthlyPayment != null) {
@@ -423,11 +423,6 @@ public class VendorService {
         if (vendor == null) return 0;
         
         String currentMonthYear = VendorMonthlyPayment.getCurrentMonthYear();
-        List<VendorMonthlyPayment> currentMonthPayments = vendorMonthlyPaymentRepository
-            .findByVendorAndMonthYearAndOperationType(vendor, currentMonthYear, vendor.getRole())
-            .stream().toList();
-        
-        // Sum all operation types for current month
         return getAllVendorMonthlyPayments(vendorId, currentMonthYear).stream()
             .mapToDouble(VendorMonthlyPayment::getBalance)
             .sum();
@@ -456,7 +451,7 @@ public class VendorService {
         List<VendorMonthlyPayment> payments = new ArrayList<>();
         for (VendorRole role : VendorRole.values()) {
             vendorMonthlyPaymentRepository
-                .findByVendorAndMonthYearAndOperationType(vendor, monthYear, role)
+                .findFirstByVendorAndMonthYearAndOperationTypeOrderByIdAsc(vendor, monthYear, role)
                 .ifPresent(payments::add);
         }
         return payments;

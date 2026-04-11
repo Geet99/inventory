@@ -12,7 +12,8 @@ import java.util.Optional;
 public interface UpperStockRepository extends JpaRepository<UpperStock, Long> {
     boolean existsByArticle_Id(Long articleId);
 
-    Optional<UpperStock> findByArticleNameAndSizeAndColor(String articleName, String size, String color);
+    Optional<UpperStock> findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
+            String articleName, String size, String color);
 
     @Query("SELECT u.size AS size, u.color AS color, SUM(u.quantity) AS totalQuantity FROM UpperStock u GROUP BY u.size, u.color")
     List<Object[]> getUpperStockSummary();

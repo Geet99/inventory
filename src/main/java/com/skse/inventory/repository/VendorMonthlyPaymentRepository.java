@@ -13,9 +13,12 @@ import java.util.Optional;
 @Repository
 public interface VendorMonthlyPaymentRepository extends JpaRepository<VendorMonthlyPayment, Long> {
     
-    // Find by vendor and month-year
-    Optional<VendorMonthlyPayment> findByVendorAndMonthYearAndOperationType(
-        Vendor vendor, String monthYear, VendorRole operationType);
+    /**
+     * Prefer oldest row when duplicates exist (same vendor / month / role) so transitions do not fail
+     * with "Query did not return a unique result".
+     */
+    Optional<VendorMonthlyPayment> findFirstByVendorAndMonthYearAndOperationTypeOrderByIdAsc(
+            Vendor vendor, String monthYear, VendorRole operationType);
     
     // Find all payments for a vendor
     List<VendorMonthlyPayment> findByVendorOrderByMonthYearDesc(Vendor vendor);

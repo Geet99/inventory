@@ -15,14 +15,14 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
 
     boolean existsByArticleName(String articleName);
 
-    // Find all plans ordered by plan number (alphabetical)
-    List<Plan> findAllByOrderByPlanNumberAsc();
+    // Find all plans ordered by plan number descending (case-insensitive)
+    List<Plan> findAllByOrderByPlanNumberDescIgnoreCase();
 
     @Query("SELECT p FROM Plan p " +
            "WHERE (:planNumber IS NULL OR LOWER(p.planNumber) LIKE LOWER(CONCAT('%', :planNumber, '%'))) " +
            "AND (:createDateFrom IS NULL OR p.createDate >= :createDateFrom) " +
            "AND (:createDateTo IS NULL OR p.createDate <= :createDateTo) " +
-           "ORDER BY p.planNumber ASC")
+           "ORDER BY LOWER(p.planNumber) DESC")
     List<Plan> findFiltered(@Param("planNumber") String planNumber,
                            @Param("createDateFrom") LocalDate createDateFrom,
                            @Param("createDateTo") LocalDate createDateTo);

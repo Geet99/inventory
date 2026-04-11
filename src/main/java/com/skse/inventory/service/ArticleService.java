@@ -123,7 +123,7 @@ public class ArticleService {
         String color = plan.getColor();
         int quantity = plan.getTotal(); // You can adjust this depending on the size-quantity pairs
 
-        Optional<UpperStock> upperStock = upperStockRepository.findByArticleNameAndSizeAndColor(articleName, size, color);
+        Optional<UpperStock> upperStock = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(articleName, size, color);
         if (upperStock.isPresent()) {
             UpperStock stock = upperStock.get();
             stock.setQuantity(stock.getQuantity() + quantity);
