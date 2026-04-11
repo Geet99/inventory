@@ -578,7 +578,10 @@ public class VendorService {
             if (plan.getCuttingVendor() != null && plan.getCuttingVendor().getId().equals(vendorId)) {
                 isAssigned = true;
                 operationType = "Cutting";
-                Article article = articleRepository.findByName(plan.getArticleName()).orElse(null);
+                String articleKey = Article.normalizeNameKey(plan.getArticleName());
+                Article article = articleKey == null
+                        ? null
+                        : articleRepository.findByNameNormalized(articleKey).orElse(null);
                 if (article != null && article.getCuttingRateHead() != null) {
                     rateHeadName = article.getCuttingRateHead().getName();
                     rateHeadCost = article.getCuttingRateHead().getCost();
@@ -609,7 +612,10 @@ public class VendorService {
             } else if (plan.getStitchingVendor() != null && plan.getStitchingVendor().getId().equals(vendorId)) {
                 isAssigned = true;
                 operationType = "Stitching";
-                Article article = articleRepository.findByName(plan.getArticleName()).orElse(null);
+                String articleKey = Article.normalizeNameKey(plan.getArticleName());
+                Article article = articleKey == null
+                        ? null
+                        : articleRepository.findByNameNormalized(articleKey).orElse(null);
                 if (article != null && article.getStitchingRateHead() != null) {
                     rateHeadName = article.getStitchingRateHead().getName();
                     rateHeadCost = article.getStitchingRateHead().getCost();

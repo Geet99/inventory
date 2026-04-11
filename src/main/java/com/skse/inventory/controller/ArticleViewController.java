@@ -56,7 +56,11 @@ public class ArticleViewController {
         if (stitchingRateHeadId != null) {
             article.setStitchingRateHead(rateHeadService.getRateHeadById(stitchingRateHeadId));
         }
-        articleService.createArticle(article);
+        try {
+            articleService.createArticle(article);
+        } catch (IllegalArgumentException ex) {
+            return "redirect:/articles/new?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+        }
         return "redirect:/articles";
     }
 
@@ -89,7 +93,11 @@ public class ArticleViewController {
         if (stitchingRateHeadId != null) {
             article.setStitchingRateHead(rateHeadService.getRateHeadById(stitchingRateHeadId));
         }
-        articleService.updateArticle(id, article);
+        try {
+            articleService.updateArticle(id, article);
+        } catch (IllegalArgumentException ex) {
+            return "redirect:/articles/edit/" + id + "?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+        }
         return "redirect:/articles";
     }
 

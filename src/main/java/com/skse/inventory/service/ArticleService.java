@@ -8,6 +8,7 @@ import com.skse.inventory.repository.FinishedStockRepository;
 import com.skse.inventory.repository.PlanRepository;
 import com.skse.inventory.repository.UpperStockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,7 +31,12 @@ public class ArticleService {
 
     // Create a new article
     public Article createArticle(Article article) {
-        return articleRepository.save(article);
+        requireUniqueName(article.getName(), null);
+        try {
+            return articleRepository.save(article);
+        } catch (DataIntegrityViolationException ex) {
+            throw duplicateNameException(ex);
+        }
     }
 
     // Get all articles
@@ -55,8 +61,11 @@ public class ArticleService {
 
     // Get article by Name
     public Article getArticleByName(String name) {
-        Optional<Article> article = articleRepository.findByName(name);
-        return article.orElse(null);
+        String key = Article.normalizeNameKey(name);
+        if (key == null) {
+            return null;
+        }
+        return articleRepository.findByNameNormalized(key).orElse(null);
     }
 
     // Update an article
@@ -65,6 +74,7 @@ public class ArticleService {
 
         if (existingArticleOpt.isPresent()) {
             Article existingArticle = existingArticleOpt.get();
+            requireUniqueName(updatedArticle.getName(), id);
             existingArticle.setName(updatedArticle.getName());
             existingArticle.setDescription(updatedArticle.getDescription());
 
@@ -89,10 +99,33 @@ public class ArticleService {
                 existingArticle.setStitchingCost(updatedArticle.getStitchingCost());
             }
 
-            return articleRepository.save(existingArticle);
+            try {
+                return articleRepository.save(existingArticle);
+            } catch (DataIntegrityViolationException ex) {
+                throw duplicateNameException(ex);
+            }
         } else {
             return null;
         }
+    }
+
+    private void requireUniqueName(String name, Long excludeArticleId) {
+        String key = Article.normalizeNameKey(name);
+        if (key == null) {
+            throw new IllegalArgumentException("Article name is required and cannot be blank.");
+        }
+        boolean taken = excludeArticleId == null
+                ? articleRepository.existsByNameNormalized(key)
+                : articleRepository.existsByNameNormalizedAndIdNot(key, excludeArticleId);
+        if (taken) {
+            throw new IllegalArgumentException(
+                    "An article with this name already exists (article names are unique ignoring case).");
+        }
+    }
+
+    private static IllegalArgumentException duplicateNameException(DataIntegrityViolationException ex) {
+        return new IllegalArgumentException(
+                "An article with this name already exists (article names are unique ignoring case).", ex);
     }
 
     /**

@@ -3,6 +3,8 @@ package com.skse.inventory.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.Locale;
+
 @Entity
 @Data
 public class Article {
@@ -11,6 +13,13 @@ public class Article {
     private Long id;
 
     private String name;
+
+    /**
+     * Lowercase ({@link Locale#ROOT}) trimmed form of {@link #name}; unique for case-insensitive name uniqueness.
+     */
+    /** Always set by {@link #syncNameNormalized()}; nullable in DDL so Hibernate can add the column to existing tables. */
+    @Column(name = "name_normalized", unique = true, length = 255)
+    private String nameNormalized;
     private String description;
     
     // Rate Head references - centralized cost management
@@ -30,6 +39,27 @@ public class Article {
     private Double cuttingCost;
     private Double printingCost;
     private Double stitchingCost;
+
+    /**
+     * Canonical key for comparing article names without case or leading/trailing whitespace.
+     */
+    public static String normalizeNameKey(String name) {
+        if (name == null) {
+            return null;
+        }
+        String trimmed = name.trim();
+        return trimmed.isEmpty() ? null : trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void syncNameNormalized() {
+        String key = normalizeNameKey(this.name);
+        if (key == null) {
+            throw new IllegalStateException("Article name must be non-blank.");
+        }
+        this.nameNormalized = key;
+    }
 
     public Long getId() {
         return id;

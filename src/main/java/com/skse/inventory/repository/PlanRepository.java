@@ -15,8 +15,9 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
 
     boolean existsByArticleName(String articleName);
 
-    // Find all plans ordered by plan number descending (case-insensitive)
-    List<Plan> findAllByOrderByPlanNumberDescIgnoreCase();
+    /** All plans, newest plan numbers first (case-insensitive). Derived {@code OrderBy...IgnoreCase} is not supported for sort. */
+    @Query("select p from Plan p order by lower(p.planNumber) desc")
+    List<Plan> findAllByOrderByPlanNumberIgnoreCaseDesc();
 
     @Query("SELECT p FROM Plan p " +
            "WHERE (:planNumber IS NULL OR LOWER(p.planNumber) LIKE LOWER(CONCAT('%', :planNumber, '%'))) " +

@@ -164,7 +164,9 @@ public class TestDataLoader implements CommandLineRunner {
         System.out.println("Creating last month's completed plans...");
         
         LocalDate lastMonth = LocalDate.now().minusMonths(1);
-        Article article = articleRepository.findByName("Nike Classic").orElse(null);
+        Article article = articleRepository
+                .findByNameNormalized(Article.normalizeNameKey("Nike Classic"))
+                .orElse(null);
         
         // Find color by name
         Color color = colorRepository.findAll().stream()

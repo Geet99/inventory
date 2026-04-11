@@ -127,6 +127,13 @@
         .btn-secondary:hover {
             background-color: #545b62;
         }
+        .error {
+            color: #c0392b;
+            margin: 0 0 16px 0;
+            padding: 12px;
+            background: #fdeaea;
+            border-radius: 8px;
+        }
         @media (max-width: 768px) {
             .nav-container {
                 flex-direction: column;
@@ -149,7 +156,7 @@
             <div class="card-header">
                 <h2 class="card-title">Add New Article</h2>
             </div>
-            
+            <div th:if="${param.error != null and !param.error.empty}" class="error" th:text="${param.error[0]}" style="padding: 0 20px;"></div>
             <form th:action="@{/articles}" th:object="${article}" method="post" style="padding: 20px;">
                 <div class="form-group">
                     <label for="name">Article Name:</label>

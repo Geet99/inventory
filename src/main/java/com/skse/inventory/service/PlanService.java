@@ -406,7 +406,11 @@ public class PlanService {
         }
         
         // Now move the stock
-        Article article = articleRepository.findByName(plan.getArticleName())
+        String articleKey = Article.normalizeNameKey(plan.getArticleName());
+        if (articleKey == null) {
+            throw new IllegalArgumentException("Plan has no article name.");
+        }
+        Article article = articleRepository.findByNameNormalized(articleKey)
             .orElseThrow(() -> new IllegalArgumentException("Article not found: " + plan.getArticleName()));
         
         for (String pair : sizeQuantityPairs) {
@@ -536,10 +540,14 @@ public class PlanService {
     }
 
     private double calculatePayment(Plan plan, VendorRole roleType) {
-        Article article = articleRepository.findByName(plan.getArticleName())
+        String articleKey = Article.normalizeNameKey(plan.getArticleName());
+        if (articleKey == null) {
+            throw new IllegalArgumentException("Plan has no article name.");
+        }
+        Article article = articleRepository.findByNameNormalized(articleKey)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No article named \"" + plan.getArticleName()
-                                + "\". Fix the plan's article so it matches an existing article name exactly."));
+                                + "\". Fix the plan's article so it matches an existing article (matching is case-insensitive)."));
         int totalQuantity = plan.getTotal();
         Double costPerUnit = switch (roleType) {
             case Cutting -> article.getCuttingCost();
@@ -605,10 +613,14 @@ public class PlanService {
                 stock.setQuantity(stock.getQuantity() + quantity);
             } else {
                 stock = new UpperStock();
-                Article article = articleRepository.findByName(plan.getArticleName())
+                String articleKey = Article.normalizeNameKey(plan.getArticleName());
+                if (articleKey == null) {
+                    throw new IllegalArgumentException("Plan has no article name.");
+                }
+                Article article = articleRepository.findByNameNormalized(articleKey)
                         .orElseThrow(() -> new IllegalArgumentException(
                                 "No article named \"" + plan.getArticleName()
-                                        + "\". Fix the plan's article so it matches an existing article name exactly."));
+                                        + "\". Fix the plan's article so it matches an existing article (matching is case-insensitive)."));
                 stock.setArticle(article);
                 stock.setSize(size);
                 stock.setColor(plan.getColor());
@@ -681,7 +693,7 @@ public class PlanService {
     }
 
     public List<Plan> getAllPlans() {
-        return planRepository.findAllByOrderByPlanNumberDescIgnoreCase();
+        return planRepository.findAllByOrderByPlanNumberIgnoreCaseDesc();
     }
 
     /**
@@ -691,7 +703,7 @@ public class PlanService {
     public List<Plan> getPlansFiltered(String planNumber, LocalDate createDateFrom, LocalDate createDateTo) {
         String q = (planNumber != null && !planNumber.isBlank()) ? planNumber.trim() : null;
         if (q == null && createDateFrom == null && createDateTo == null) {
-            return planRepository.findAllByOrderByPlanNumberDescIgnoreCase();
+            return planRepository.findAllByOrderByPlanNumberIgnoreCaseDesc();
         }
         return planRepository.findFiltered(q, createDateFrom, createDateTo);
     }

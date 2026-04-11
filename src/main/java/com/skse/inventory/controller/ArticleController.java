@@ -21,8 +21,12 @@ public class ArticleController {
 
     @Operation(summary = "Add a new article", description = "Creates a new article in the system.")
     @PostMapping
-    public Article createArticle(@RequestBody Article article) {
-        return articleService.createArticle(article);
+    public ResponseEntity<?> createArticle(@RequestBody Article article) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(articleService.createArticle(article));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
     @Operation(summary = "Get all articles", description = "Retrieves a list of all articles in the system.")
@@ -53,12 +57,16 @@ public class ArticleController {
 
     @Operation(summary = "Update an article", description = "Updates the details of an existing article.")
     @PutMapping("/{id}")
-    public ResponseEntity<Article> updateArticle(@PathVariable Long id, @RequestBody Article updatedArticle) {
-        Article article = articleService.updateArticle(id, updatedArticle);
-        if (article == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> updateArticle(@PathVariable Long id, @RequestBody Article updatedArticle) {
+        try {
+            Article article = articleService.updateArticle(id, updatedArticle);
+            if (article == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(article);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
         }
-        return ResponseEntity.ok(article);
     }
 
     @Operation(summary = "Delete an article", description = "Deletes an article from the system.")
