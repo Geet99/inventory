@@ -175,19 +175,27 @@ public class PlanViewController {
 
     @GetMapping("/{planNumber}/confirm-next-state")
     public String confirmNextState(@PathVariable String planNumber, Model model) {
-        Plan plan = planService.getPlanByNumber(planNumber);
-        if (plan == null) {
-            return "redirect:/plans?error=" + URLEncoder.encode("Plan not found: " + planNumber, StandardCharsets.UTF_8);
+        try {
+            Plan plan = planService.getPlanByNumber(planNumber);
+            if (plan == null) {
+                return "redirect:/plans?error=" + URLEncoder.encode("Plan not found: " + planNumber, StandardCharsets.UTF_8);
+            }
+            PlanStatus next = planService.getNextStatus(plan);
+            if (next == null) {
+                return "redirect:/plans?error=" + URLEncoder.encode("Plan is already completed.", StandardCharsets.UTF_8);
+            }
+            model.addAttribute("plan", plan);
+            model.addAttribute("effectiveStatus", planService.getEffectiveStatus(plan));
+            model.addAttribute("nextStatus", next);
+            model.addAttribute("title", "Confirm transition");
+            return "plans/confirm-next-state";
+        } catch (Exception ex) {
+            String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+            if (msg.length() > 500) {
+                msg = msg.substring(0, 500) + "…";
+            }
+            return "redirect:/plans?error=" + URLEncoder.encode(msg, StandardCharsets.UTF_8);
         }
-        PlanStatus next = planService.getNextStatus(plan);
-        if (next == null) {
-            return "redirect:/plans?error=" + URLEncoder.encode("Plan is already completed.", StandardCharsets.UTF_8);
-        }
-        model.addAttribute("plan", plan);
-        model.addAttribute("effectiveStatus", planService.getEffectiveStatus(plan));
-        model.addAttribute("nextStatus", next);
-        model.addAttribute("title", "Confirm transition");
-        return "plans/confirm-next-state";
     }
 
     @PostMapping("/{planNumber}/move-to-next")
@@ -203,6 +211,12 @@ public class PlanViewController {
             planService.moveToNextState(planNumber, date);
         } catch (IllegalArgumentException | IllegalStateException ex) {
             return "redirect:/plans?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+            if (msg.length() > 500) {
+                msg = msg.substring(0, 500) + "…";
+            }
+            return "redirect:/plans?error=" + URLEncoder.encode(msg, StandardCharsets.UTF_8);
         }
         return "redirect:/plans";
     }

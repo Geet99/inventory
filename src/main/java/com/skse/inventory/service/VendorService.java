@@ -315,6 +315,15 @@ public class VendorService {
         }
     }
 
+    /** True if an ORDER line already exists for this plan and vendor role (idempotent transitions). */
+    public boolean hasVendorOrderForPlanWithRole(String planNumber, VendorRole role) {
+        if (planNumber == null || role == null) {
+            return false;
+        }
+        return vendorOrderHistoryRepository.findByPlanNumberAndType(planNumber, "ORDER").stream()
+                .anyMatch(h -> role.equals(h.getRole()));
+    }
+
     /**
      * Reverses vendor ORDER lines and monthly buckets for a plan being force-removed.
      * Refuses if remaining monthly {@code totalDue} would fall below {@code paidAmount} (settlements already cover the order).

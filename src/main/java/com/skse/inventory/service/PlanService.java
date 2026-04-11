@@ -309,26 +309,30 @@ public class PlanService {
                 break;
             case Pending_Printing:
                 plan.setCuttingEndDate(date);
-                if (plan.getCuttingVendor() != null) {
-                    double cuttingPayment = calculatePayment(plan, VendorRole.Cutting);
-                    plan.setCuttingVendorPaymentDue(cuttingPayment);
-                    vendorService.recordVendorOrderToMonth(
-                        plan.getCuttingVendor().getId(), planNumber, cuttingPayment,
-                        VendorRole.Cutting, date);
+                if (!vendorService.hasVendorOrderForPlanWithRole(planNumber, VendorRole.Cutting)) {
+                    if (plan.getCuttingVendor() != null) {
+                        double cuttingPayment = calculatePayment(plan, VendorRole.Cutting);
+                        plan.setCuttingVendorPaymentDue(cuttingPayment);
+                        vendorService.recordVendorOrderToMonth(
+                                plan.getCuttingVendor().getId(), planNumber, cuttingPayment,
+                                VendorRole.Cutting, date);
+                    }
+                    updateUpperStockFromPlan(plan);
                 }
-                updateUpperStockFromPlan(plan);
                 break;
             case Printing:
                 plan.setPrintingStartDate(date);
                 break;
             case Pending_Stitching:
                 plan.setPrintingEndDate(date);
-                if (plan.getPrintingVendor() != null) {
-                    double printingPayment = calculatePayment(plan, VendorRole.Printing);
-                    plan.setPrintingVendorPaymentDue(printingPayment);
-                    vendorService.recordVendorOrderToMonth(
-                        plan.getPrintingVendor().getId(), planNumber, printingPayment,
-                        VendorRole.Printing, date);
+                if (!vendorService.hasVendorOrderForPlanWithRole(planNumber, VendorRole.Printing)) {
+                    if (plan.getPrintingVendor() != null) {
+                        double printingPayment = calculatePayment(plan, VendorRole.Printing);
+                        plan.setPrintingVendorPaymentDue(printingPayment);
+                        vendorService.recordVendorOrderToMonth(
+                                plan.getPrintingVendor().getId(), planNumber, printingPayment,
+                                VendorRole.Printing, date);
+                    }
                 }
                 break;
             case Stitching:
@@ -336,12 +340,14 @@ public class PlanService {
                 break;
             case Completed:
                 plan.setStitchingEndDate(date);
-                if (plan.getStitchingVendor() != null) {
-                    double stitchingPayment = calculatePayment(plan, VendorRole.Stitching);
-                    plan.setStitchingVendorPaymentDue(stitchingPayment);
-                    vendorService.recordVendorOrderToMonth(
-                        plan.getStitchingVendor().getId(), planNumber, stitchingPayment,
-                        VendorRole.Stitching, date);
+                if (!vendorService.hasVendorOrderForPlanWithRole(planNumber, VendorRole.Stitching)) {
+                    if (plan.getStitchingVendor() != null) {
+                        double stitchingPayment = calculatePayment(plan, VendorRole.Stitching);
+                        plan.setStitchingVendorPaymentDue(stitchingPayment);
+                        vendorService.recordVendorOrderToMonth(
+                                plan.getStitchingVendor().getId(), planNumber, stitchingPayment,
+                                VendorRole.Stitching, date);
+                    }
                 }
                 break;
         }
@@ -449,14 +455,23 @@ public class PlanService {
     }
 
     /**
-     * Resolves workflow state when {@link Plan#getStatus()} is null (legacy rows): uses the same
-     * transition dates {@link #moveToNextState(String, LocalDate)} maintains so e.g. cutting started
-     * but not finished maps to {@link PlanStatus#Cutting}, not {@link PlanStatus#Pending_Cutting}.
+     * Workflow state for transitions and UI. Uses stored {@link Plan#getStatus()} when set, but if
+     * transition dates (e.g. from Edit plan) are ahead of the stored status, uses the later of the two
+     * so "Next state" does not re-apply cutting completion (vendor + upper stock) twice.
      */
     public PlanStatus getEffectiveStatus(Plan plan) {
-        if (plan.getStatus() != null) {
-            return plan.getStatus();
+        if (plan.getStatus() == PlanStatus.Completed) {
+            return PlanStatus.Completed;
         }
+        PlanStatus inferred = inferStatusFromDatesOnly(plan);
+        if (plan.getStatus() == null) {
+            return inferred;
+        }
+        int merged = Math.max(statusOrder(plan.getStatus()), statusOrder(inferred));
+        return statusFromOrder(merged);
+    }
+
+    private static PlanStatus inferStatusFromDatesOnly(Plan plan) {
         if (plan.getStitchingEndDate() != null) {
             return PlanStatus.Completed;
         }
@@ -476,6 +491,31 @@ public class PlanService {
             return PlanStatus.Cutting;
         }
         return PlanStatus.Pending_Cutting;
+    }
+
+    private static int statusOrder(PlanStatus s) {
+        return switch (s) {
+            case Pending_Cutting -> 0;
+            case Cutting -> 1;
+            case Pending_Printing -> 2;
+            case Printing -> 3;
+            case Pending_Stitching -> 4;
+            case Stitching -> 5;
+            case Completed -> 6;
+        };
+    }
+
+    private static PlanStatus statusFromOrder(int order) {
+        return switch (order) {
+            case 0 -> PlanStatus.Pending_Cutting;
+            case 1 -> PlanStatus.Cutting;
+            case 2 -> PlanStatus.Pending_Printing;
+            case 3 -> PlanStatus.Printing;
+            case 4 -> PlanStatus.Pending_Stitching;
+            case 5 -> PlanStatus.Stitching;
+            case 6 -> PlanStatus.Completed;
+            default -> PlanStatus.Pending_Cutting;
+        };
     }
 
     /** Next workflow state after {@link #getEffectiveStatus(Plan)}. */
@@ -534,11 +574,28 @@ public class PlanService {
     }
 
     private void updateUpperStockFromPlan(Plan plan) {
-        String[] sizeQuantityPairs = plan.getSizeQuantityPairs().split(",");
+        String pairs = plan.getSizeQuantityPairs();
+        if (pairs == null || pairs.trim().isEmpty()) {
+            throw new IllegalStateException("Cannot update upper stock: plan has no size:quantity pairs.");
+        }
+        String[] sizeQuantityPairs = pairs.split(",");
         for (String pair : sizeQuantityPairs) {
+            if (pair == null || pair.trim().isEmpty()) {
+                continue;
+            }
             String[] sizeQuantity = pair.trim().split(":");
+            if (sizeQuantity.length != 2) {
+                throw new IllegalArgumentException(
+                        "Invalid size:quantity pair \"" + pair.trim() + "\". Use format like 6:50, 7:30.");
+            }
             String size = sizeQuantity[0].trim();
-            int quantity = Integer.parseInt(sizeQuantity[1].trim());
+            int quantity;
+            try {
+                quantity = Integer.parseInt(sizeQuantity[1].trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException(
+                        "Invalid quantity in pair \"" + pair.trim() + "\": must be a whole number.");
+            }
 
             // Update upper stock and finished stock as per size and color
             Optional<UpperStock> upperStock = upperStockRepository.findByArticleNameAndSizeAndColor(plan.getArticleName(), size, plan.getColor());

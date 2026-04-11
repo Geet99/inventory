@@ -217,6 +217,67 @@
             outline-offset: -2px;
             background-color: #e8f4fc;
         }
+        .timeline-cell {
+            vertical-align: top;
+            min-width: 140px;
+            max-width: 176px;
+            padding: 10px 12px !important;
+            background: linear-gradient(180deg, #fafcfd 0%, #fff 100%);
+            border-left: 1px solid #e8eef2;
+        }
+        .timeline-link {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #fff;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            padding: 5px 12px;
+            border-radius: 999px;
+            text-decoration: none;
+            box-shadow: 0 1px 2px rgba(41, 128, 185, 0.35);
+            margin-bottom: 6px;
+        }
+        .timeline-link:hover {
+            filter: brightness(1.06);
+            color: #fff;
+        }
+        .timeline-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #34495e;
+        }
+        .timeline-list li {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-top: 5px;
+        }
+        .timeline-list li:first-child { margin-top: 0; }
+        .timeline-tag {
+            flex: 0 0 24px;
+            font-weight: 800;
+            font-size: 9px;
+            color: #95a5a6;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .timeline-range {
+            font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 11px;
+            color: #2c3e50;
+            font-variant-numeric: tabular-nums;
+        }
+        .timeline-empty {
+            margin: 6px 0 0 0;
+            font-size: 11px;
+            color: #bdc3c7;
+            font-style: italic;
+        }
     </style>
     <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
@@ -271,7 +332,7 @@
                         <th>Description</th>
                         <th>Total Quantity</th>
                         <th>Status</th>
-                        <th>Timeline<br><span style="font-weight: normal; font-size: 11px;">(dd/MM)</span></th>
+                        <th class="timeline-cell" style="background:#eef2f5;">Timeline <span style="font-weight: normal; font-size: 11px; color: #7f8c8d;">dd/MM</span></th>
                         <th>Cutting Vendor</th>
                         <th>Printing Vendor</th>
                         <th>Stitching Vendor</th>
@@ -292,21 +353,43 @@
                                   th:text="${plan.status.name().replace('_', ' ')}"></span>
                             <span th:if="${plan.status == null}" class="status-pending">Pending</span>
                         </td>
-                        <td style="font-size: 11px; line-height: 1.35; max-width: 148px; vertical-align: top;">
-                            <a th:href="|${#httpServletRequest != null ? #httpServletRequest.contextPath : ''}/plans/${plan.planNumber}/edit#workflow-dates|"
-                               style="font-weight: bold; font-size: 12px;">Edit dates</a>
-                            <div th:if="${plan.cuttingStartDate != null or plan.cuttingEndDate != null}" style="margin-top: 4px;">
-                                Cut <span th:text="${plan.cuttingStartDate != null ? #temporals.format(plan.cuttingStartDate, 'dd/MM') : '—'}"></span>–<span th:text="${plan.cuttingEndDate != null ? #temporals.format(plan.cuttingEndDate, 'dd/MM') : '—'}"></span>
-                            </div>
-                            <div th:if="${plan.printingStartDate != null or plan.printingEndDate != null}" style="margin-top: 2px;">
-                                Pr <span th:text="${plan.printingStartDate != null ? #temporals.format(plan.printingStartDate, 'dd/MM') : '—'}"></span>–<span th:text="${plan.printingEndDate != null ? #temporals.format(plan.printingEndDate, 'dd/MM') : '—'}"></span>
-                            </div>
-                            <div th:if="${plan.stitchingStartDate != null or plan.stitchingEndDate != null}" style="margin-top: 2px;">
-                                St <span th:text="${plan.stitchingStartDate != null ? #temporals.format(plan.stitchingStartDate, 'dd/MM') : '—'}"></span>–<span th:text="${plan.stitchingEndDate != null ? #temporals.format(plan.stitchingEndDate, 'dd/MM') : '—'}"></span>
-                            </div>
-                            <div th:if="${plan.machineProcessingDate != null}" style="margin-top: 2px;">
-                                Mach <span th:text="${#temporals.format(plan.machineProcessingDate, 'dd/MM')}"></span>
-                            </div>
+                        <td class="timeline-cell">
+                            <a class="timeline-link" th:href="|${#httpServletRequest != null ? #httpServletRequest.contextPath : ''}/plans/${plan.planNumber}/edit#workflow-dates|">Edit</a>
+                            <ul class="timeline-list"
+                                th:if="${plan.cuttingStartDate != null or plan.cuttingEndDate != null or plan.printingStartDate != null or plan.printingEndDate != null or plan.stitchingStartDate != null or plan.stitchingEndDate != null or plan.machineProcessingDate != null}">
+                                <li th:if="${plan.cuttingStartDate != null or plan.cuttingEndDate != null}">
+                                    <span class="timeline-tag">Cut</span>
+                                    <span class="timeline-range">
+                                        <span th:text="${plan.cuttingStartDate != null ? #temporals.format(plan.cuttingStartDate, 'dd/MM') : '—'}"></span>
+                                        <span style="color:#bdc3c7;">→</span>
+                                        <span th:text="${plan.cuttingEndDate != null ? #temporals.format(plan.cuttingEndDate, 'dd/MM') : '—'}"></span>
+                                    </span>
+                                </li>
+                                <li th:if="${plan.printingStartDate != null or plan.printingEndDate != null}">
+                                    <span class="timeline-tag">Pr</span>
+                                    <span class="timeline-range">
+                                        <span th:text="${plan.printingStartDate != null ? #temporals.format(plan.printingStartDate, 'dd/MM') : '—'}"></span>
+                                        <span style="color:#bdc3c7;">→</span>
+                                        <span th:text="${plan.printingEndDate != null ? #temporals.format(plan.printingEndDate, 'dd/MM') : '—'}"></span>
+                                    </span>
+                                </li>
+                                <li th:if="${plan.stitchingStartDate != null or plan.stitchingEndDate != null}">
+                                    <span class="timeline-tag">St</span>
+                                    <span class="timeline-range">
+                                        <span th:text="${plan.stitchingStartDate != null ? #temporals.format(plan.stitchingStartDate, 'dd/MM') : '—'}"></span>
+                                        <span style="color:#bdc3c7;">→</span>
+                                        <span th:text="${plan.stitchingEndDate != null ? #temporals.format(plan.stitchingEndDate, 'dd/MM') : '—'}"></span>
+                                    </span>
+                                </li>
+                                <li th:if="${plan.machineProcessingDate != null}">
+                                    <span class="timeline-tag">Mc</span>
+                                    <span class="timeline-range" th:text="${#temporals.format(plan.machineProcessingDate, 'dd/MM')}"></span>
+                                </li>
+                            </ul>
+                            <p class="timeline-empty"
+                               th:if="${plan.cuttingStartDate == null and plan.cuttingEndDate == null and plan.printingStartDate == null and plan.printingEndDate == null and plan.stitchingStartDate == null and plan.stitchingEndDate == null and plan.machineProcessingDate == null}">
+                                No stage dates yet
+                            </p>
                         </td>
                         <td th:text="${plan.cuttingVendor?.name ?: '-'}"></td>
                         <td th:text="${plan.printingVendor?.name ?: '-'}"></td>
