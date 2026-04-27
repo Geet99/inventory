@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -322,6 +321,86 @@ public class VendorService {
         }
         return vendorOrderHistoryRepository.findByPlanNumberAndType(planNumber, "ORDER").stream()
                 .anyMatch(h -> role.equals(h.getRole()));
+    }
+
+    /**
+     * Ensures a plan has at most one ORDER entry per role and that amount/vendor/monthly totals
+     * reflect the latest value after plan edits.
+     * <p>
+     * This intentionally keeps the original order date month when an order already exists, so
+     * editing plan quantities does not silently move dues across months.
+     */
+    @Transactional
+    public void syncVendorOrderForPlanRole(String planNumber,
+                                           VendorRole role,
+                                           Vendor vendor,
+                                           double newAmount,
+                                           LocalDate completionDate) {
+        if (planNumber == null || planNumber.isBlank() || role == null) {
+            return;
+        }
+
+        List<VendorOrderHistory> roleOrders = vendorOrderHistoryRepository
+                .findByPlanNumberAndType(planNumber, "ORDER")
+                .stream()
+                .filter(h -> role.equals(h.getRole()))
+                .toList();
+
+        LocalDate preservedDate = completionDate;
+        for (VendorOrderHistory hist : roleOrders) {
+            if (preservedDate == null && hist.getOrderDate() != null) {
+                preservedDate = hist.getOrderDate();
+            }
+            removeVendorOrderHistoryLine(planNumber, hist);
+        }
+
+        if (vendor == null || newAmount <= 0) {
+            return;
+        }
+        LocalDate orderDate = preservedDate != null ? preservedDate : LocalDate.now();
+        recordVendorOrderToMonth(vendor.getId(), planNumber, newAmount, role, orderDate);
+    }
+
+    private void removeVendorOrderHistoryLine(String planNumber, VendorOrderHistory hist) {
+        Vendor vendor = hist.getVendor();
+        if (vendor == null || hist.getRole() == null || hist.getOrderDate() == null) {
+            vendorOrderHistoryRepository.delete(hist);
+            return;
+        }
+        double amount = hist.getAmount();
+        String monthYear = VendorMonthlyPayment.getMonthYearString(hist.getOrderDate());
+        VendorMonthlyPayment mp = vendorMonthlyPaymentRepository
+                .findFirstByVendorAndMonthYearAndOperationTypeOrderByIdAsc(vendor, monthYear, hist.getRole())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Cannot update plan " + planNumber + ": missing monthly payment record for "
+                                + monthYear + " / " + hist.getRole() + "."));
+
+        double newTotal = mp.getTotalDue() - amount;
+        if (newTotal < -1e-6) {
+            throw new IllegalStateException(
+                    "Cannot update plan " + planNumber + ": vendor monthly total would become inconsistent.");
+        }
+        if (newTotal + 1e-6 < mp.getPaidAmount()) {
+            throw new IllegalStateException(
+                    "Cannot update plan " + planNumber
+                            + ": this month's vendor payments already exceed the balance that would remain "
+                            + "after changing this completed work. Adjust settlements first.");
+        }
+
+        mp.setTotalDue(Math.max(0, newTotal));
+        mp.setLastUpdatedDate(LocalDate.now());
+        if (mp.getPaidAmount() >= mp.getTotalDue() - 1e-6) {
+            mp.setStatus(PaymentStatus.PAID);
+        } else if (mp.getPaidAmount() > 1e-6) {
+            mp.setStatus(PaymentStatus.PARTIAL);
+        } else {
+            mp.setStatus(PaymentStatus.PENDING);
+        }
+        vendorMonthlyPaymentRepository.save(mp);
+
+        vendor.setPaymentDue(vendor.getPaymentDue() - amount);
+        vendorRepository.save(vendor);
+        vendorOrderHistoryRepository.delete(hist);
     }
 
     /**

@@ -66,29 +66,15 @@ public class PlanService {
     public Plan updatePlan(String planNumber, Plan updatedPlan) {
         Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan != null) {
-            // Only allow changing total & size:quantity pairs until cutting is finalized.
-            // After we move to Pending_Printing (and upper stock is updated), changing
-            // these fields would desync plan vs stock, so we keep the original values.
-            PlanStatus status = plan.getStatus();
-            boolean allowQuantityEdit = (status == null
-                    || status == PlanStatus.Pending_Cutting
-                    || status == PlanStatus.Cutting);
+            Plan beforeEdit = snapshotForRecalculation(plan);
+            boolean quantityOrDistributionChanged = stockAffectingFieldsChanged(beforeEdit, updatedPlan);
+            boolean cuttingAlreadyCompleted = isCuttingCompletedForAccounting(beforeEdit);
+            boolean machineAlreadyProcessed = beforeEdit.getMachineProcessingDate() != null;
 
-            if (allowQuantityEdit) {
-                validateTotalAndSizePairs(updatedPlan);
-                plan.setTotal(updatedPlan.getTotal());
-                plan.setSizeQuantityPairs(updatedPlan.getSizeQuantityPairs());
-            } else {
-                // If user tried to change quantities after cutting is finalized, surface an error
-                if (updatedPlan.getTotal() != plan.getTotal()
-                        || (updatedPlan.getSizeQuantityPairs() != null
-                            && !updatedPlan.getSizeQuantityPairs().equals(plan.getSizeQuantityPairs()))) {
-                    throw new IllegalArgumentException(
-                        "Total quantity and Size:Quantity pairs cannot be changed after cutting is completed. " +
-                        "If the actual quantity is different, please adjust it during the Cutting stage."
-                    );
-                }
-            }
+            // Allow quantity edits in every state, then sync previously completed work below.
+            validateTotalAndSizePairs(updatedPlan);
+            plan.setTotal(updatedPlan.getTotal());
+            plan.setSizeQuantityPairs(updatedPlan.getSizeQuantityPairs());
 
             plan.setArticleName(updatedPlan.getArticleName());
             plan.setColor(updatedPlan.getColor());
@@ -105,9 +91,103 @@ public class PlanService {
             plan.setStitchingEndDate(updatedPlan.getStitchingEndDate());
             plan.setMachineProcessingDate(updatedPlan.getMachineProcessingDate());
             validateTransitionDateOrder(plan);
+
+            if (cuttingAlreadyCompleted && quantityOrDistributionChanged) {
+                applyStockSyncForEditedCompletedPlan(beforeEdit, plan, machineAlreadyProcessed);
+            }
+            syncCompletedVendorChargesAfterEdit(beforeEdit, plan);
             return planRepository.save(plan);
         } else {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
+        }
+    }
+
+    private static Plan snapshotForRecalculation(Plan src) {
+        Plan p = new Plan();
+        p.setPlanNumber(src.getPlanNumber());
+        p.setArticleName(src.getArticleName());
+        p.setColor(src.getColor());
+        p.setTotal(src.getTotal());
+        p.setSizeQuantityPairs(src.getSizeQuantityPairs());
+        p.setStatus(src.getStatus());
+        p.setMachineProcessingDate(src.getMachineProcessingDate());
+        p.setCuttingEndDate(src.getCuttingEndDate());
+        p.setPrintingEndDate(src.getPrintingEndDate());
+        p.setStitchingEndDate(src.getStitchingEndDate());
+        p.setCuttingVendor(src.getCuttingVendor());
+        p.setPrintingVendor(src.getPrintingVendor());
+        p.setStitchingVendor(src.getStitchingVendor());
+        p.setPrintingRateHead(src.getPrintingRateHead());
+        return p;
+    }
+
+    private static boolean stockAffectingFieldsChanged(Plan beforeEdit, Plan updatedPlan) {
+        return beforeEdit.getTotal() != updatedPlan.getTotal()
+                || !Objects.equals(beforeEdit.getSizeQuantityPairs(), updatedPlan.getSizeQuantityPairs())
+                || !Objects.equals(beforeEdit.getArticleName(), updatedPlan.getArticleName())
+                || !Objects.equals(beforeEdit.getColor(), updatedPlan.getColor());
+    }
+
+    private boolean isCuttingCompletedForAccounting(Plan plan) {
+        return plan.getCuttingEndDate() != null
+                || (plan.getStatus() != null && plan.getStatus().compareTo(PlanStatus.Pending_Printing) >= 0)
+                || vendorService.hasVendorOrderForPlanWithRole(plan.getPlanNumber(), VendorRole.Cutting);
+    }
+
+    private boolean isPrintingCompletedForAccounting(Plan plan) {
+        return plan.getPrintingEndDate() != null
+                || (plan.getStatus() != null && plan.getStatus().compareTo(PlanStatus.Pending_Stitching) >= 0)
+                || vendorService.hasVendorOrderForPlanWithRole(plan.getPlanNumber(), VendorRole.Printing);
+    }
+
+    private boolean isStitchingCompletedForAccounting(Plan plan) {
+        return plan.getStitchingEndDate() != null
+                || plan.getStatus() == PlanStatus.Completed
+                || vendorService.hasVendorOrderForPlanWithRole(plan.getPlanNumber(), VendorRole.Stitching);
+    }
+
+    private void applyStockSyncForEditedCompletedPlan(Plan beforeEdit, Plan afterEdit, boolean machineAlreadyProcessed) {
+        if (machineAlreadyProcessed) {
+            reverseMoveStockFromUpperToFinished(beforeEdit);
+        }
+        reverseUpdateUpperStockFromPlan(beforeEdit);
+        updateUpperStockFromPlan(afterEdit);
+        if (machineAlreadyProcessed) {
+            moveStockFromUpperToFinished(afterEdit, afterEdit.getTotal());
+        }
+    }
+
+    private void syncCompletedVendorChargesAfterEdit(Plan beforeEdit, Plan plan) {
+        String planNumber = plan.getPlanNumber();
+
+        if (isCuttingCompletedForAccounting(beforeEdit)) {
+            double amount = 0.0;
+            if (plan.getCuttingVendor() != null) {
+                amount = calculatePayment(plan, VendorRole.Cutting);
+            }
+            plan.setCuttingVendorPaymentDue(amount);
+            vendorService.syncVendorOrderForPlanRole(
+                    planNumber, VendorRole.Cutting, plan.getCuttingVendor(), amount, beforeEdit.getCuttingEndDate());
+        }
+
+        if (isPrintingCompletedForAccounting(beforeEdit)) {
+            double amount = 0.0;
+            if (plan.getPrintingVendor() != null) {
+                amount = calculatePayment(plan, VendorRole.Printing);
+            }
+            plan.setPrintingVendorPaymentDue(amount);
+            vendorService.syncVendorOrderForPlanRole(
+                    planNumber, VendorRole.Printing, plan.getPrintingVendor(), amount, beforeEdit.getPrintingEndDate());
+        }
+
+        if (isStitchingCompletedForAccounting(beforeEdit)) {
+            double amount = 0.0;
+            if (plan.getStitchingVendor() != null) {
+                amount = calculatePayment(plan, VendorRole.Stitching);
+            }
+            plan.setStitchingVendorPaymentDue(amount);
+            vendorService.syncVendorOrderForPlanRole(
+                    planNumber, VendorRole.Stitching, plan.getStitchingVendor(), amount, beforeEdit.getStitchingEndDate());
         }
     }
 
@@ -726,15 +806,17 @@ public class PlanService {
     }
 
     /**
-     * Get plans filtered by plan number (contains, case-insensitive) and/or create date range.
-     * Null or blank planNumber and null dates mean no filter on that criterion.
+     * Get plans filtered by plan number/article name (contains, case-insensitive), status,
+     * and/or create date range.
+     * Null or blank inputs and null dates mean no filter on that criterion.
      */
-    public List<Plan> getPlansFiltered(String planNumber, LocalDate createDateFrom, LocalDate createDateTo) {
+    public List<Plan> getPlansFiltered(String planNumber, String articleName, PlanStatus status, LocalDate createDateFrom, LocalDate createDateTo) {
         String q = (planNumber != null && !planNumber.isBlank()) ? planNumber.trim() : null;
-        if (q == null && createDateFrom == null && createDateTo == null) {
+        String articleQ = (articleName != null && !articleName.isBlank()) ? articleName.trim() : null;
+        if (q == null && articleQ == null && status == null && createDateFrom == null && createDateTo == null) {
             return planRepository.findAllByOrderByPlanNumberIgnoreCaseDesc();
         }
-        return planRepository.findFiltered(q, createDateFrom, createDateTo);
+        return planRepository.findFiltered(q, articleQ, status, createDateFrom, createDateTo);
     }
 
     /**

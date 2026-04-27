@@ -50,13 +50,18 @@ public class PlanViewController {
 
     @GetMapping
     public String listPlans(@RequestParam(required = false) String planNumber,
+                           @RequestParam(required = false) String articleName,
+                           @RequestParam(required = false) PlanStatus status,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createDateFrom,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createDateTo,
                            Model model) {
         model.addAttribute("title", "Plans");
-        List<Plan> plans = planService.getPlansFiltered(planNumber, createDateFrom, createDateTo);
+        List<Plan> plans = planService.getPlansFiltered(planNumber, articleName, status, createDateFrom, createDateTo);
         model.addAttribute("plans", plans);
         model.addAttribute("filterPlanNumber", planNumber != null ? planNumber : "");
+        model.addAttribute("filterArticleName", articleName != null ? articleName : "");
+        model.addAttribute("filterStatus", status);
+        model.addAttribute("planStatuses", PlanStatus.values());
         model.addAttribute("filterCreateDateFrom", createDateFrom);
         model.addAttribute("filterCreateDateTo", createDateTo);
         return "plans/list";

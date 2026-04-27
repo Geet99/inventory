@@ -30,7 +30,7 @@
                 <div class="form-group">
                     <label for="transitionDate">Transition date</label>
                     <input type="date" id="transitionDate" name="transitionDate" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
-                    <small class="text-muted">Actual date when this step was completed (default: today)</small>
+                    <small class="text-muted">Actual date for this transition (default: today). Future dates are allowed.</small>
                 </div>
                 <div style="margin-top: 20px;">
                     <button type="submit" class="btn btn-primary">Confirm transition</button>
@@ -39,5 +39,14 @@
             </form>
         </div>
     </div>
+    <script>
+        (function () {
+            // Keep transition date unrestricted (including future dates).
+            var transitionDate = document.getElementById('transitionDate');
+            if (!transitionDate) return;
+            transitionDate.removeAttribute('max');
+            transitionDate.removeAttribute('min');
+        })();
+    </script>
 </body>
 </html>

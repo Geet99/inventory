@@ -289,6 +289,16 @@
                 window.location.assign(target);
             });
         })();
+
+        (function () {
+            // Prevent accidental quantity changes when scrolling on number inputs.
+            document.addEventListener('wheel', function (e) {
+                var active = document.activeElement;
+                if (active && active.tagName === 'INPUT' && active.type === 'number') {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        })();
     </script>
 </body>
 </html>

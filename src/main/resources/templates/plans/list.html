@@ -13,6 +13,7 @@
             max-width: min(1480px, 98vw);
             margin: 0 auto; 
             padding: 16px 12px;
+            box-sizing: border-box;
         }
         .header { 
             text-align: center; 
@@ -134,6 +135,11 @@
             opacity: 0.5;
             cursor: not-allowed;
             pointer-events: none;
+        }
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         table { 
             width: 100%; 
@@ -336,6 +342,20 @@
                     <input type="text" id="planNumber" name="planNumber" th:value="${filterPlanNumber}" placeholder="Search by plan number...">
                 </div>
                 <div class="filter-group">
+                    <label for="articleName">Article name</label>
+                    <input type="text" id="articleName" name="articleName" th:value="${filterArticleName}" placeholder="Search by article name...">
+                </div>
+                <div class="filter-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="">All statuses</option>
+                        <option th:each="statusOpt : ${planStatuses}"
+                                th:value="${statusOpt.name()}"
+                                th:selected="${filterStatus != null and filterStatus == statusOpt}"
+                                th:text="${statusOpt.name().replace('_', ' ')}"></option>
+                    </select>
+                </div>
+                <div class="filter-group">
                     <label for="createDateFrom">Create date from</label>
                     <input type="date" id="createDateFrom" name="createDateFrom" th:value="${filterCreateDateFrom != null ? #temporals.format(filterCreateDateFrom, 'yyyy-MM-dd') : ''}">
                 </div>
@@ -345,12 +365,13 @@
                 </div>
                 <div class="filter-actions">
                     <button type="submit" class="btn btn-primary">Filter</button>
-                    <a th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or filterCreateDateFrom != null or filterCreateDateTo != null}"
+                    <a th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or (filterArticleName != null and !#strings.isEmpty(filterArticleName)) or filterStatus != null or filterCreateDateFrom != null or filterCreateDateTo != null}"
                        th:href="@{/plans}" class="btn btn-secondary">Clear</a>
                 </div>
             </form>
         </div>
         
+        <div class="table-wrap">
         <table>
                 <thead>
                     <tr>
@@ -477,16 +498,17 @@
                     </tr>
                 </tbody>
         </table>
+        </div>
         <p style="font-size: 13px; color: #6c757d; margin-top: 12px;">
             <strong>Delete</strong> is only for plans still in <strong>Pending Cutting</strong>.
             For plans that already progressed, use <strong>Cleanup</strong> to reverse vendor pricing and stock, then remove the plan (blocked if monthly vendor payments already cover the amounts).
         </p>
         
         <div th:if="${#lists.isEmpty(plans)}" style="text-align: center; margin-top: 50px; color: #666;">
-            <p th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or filterCreateDateFrom != null or filterCreateDateTo != null}">
+            <p th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or (filterArticleName != null and !#strings.isEmpty(filterArticleName)) or filterStatus != null or filterCreateDateFrom != null or filterCreateDateTo != null}">
                 No plans match your filters. <a th:href="@{/plans}">Clear filters</a> or <a th:href="@{/plans/new}">add a new plan</a>.
             </p>
-            <p th:if="${filterPlanNumber == null or #strings.isEmpty(filterPlanNumber)} and ${filterCreateDateFrom == null and filterCreateDateTo == null}">
+            <p th:if="${(filterPlanNumber == null or #strings.isEmpty(filterPlanNumber)) and (filterArticleName == null or #strings.isEmpty(filterArticleName)) and filterStatus == null and (filterCreateDateFrom == null and filterCreateDateTo == null)}">
                 No plans found. <a th:href="@{/plans/new}">Create your first plan</a>
             </p>
         </div>
