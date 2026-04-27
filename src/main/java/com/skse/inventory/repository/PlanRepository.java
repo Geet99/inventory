@@ -26,15 +26,26 @@ public interface PlanRepository extends JpaRepository<Plan, String> {
     @Query("SELECT p FROM Plan p " +
            "WHERE (:planNumber IS NULL OR LOWER(p.planNumber) LIKE LOWER(CONCAT('%', :planNumber, '%'))) " +
            "AND (:articleName IS NULL OR LOWER(p.articleName) LIKE LOWER(CONCAT('%', :articleName, '%'))) " +
-           "AND (:status IS NULL OR p.status = :status) " +
            "AND (:createDateFrom IS NULL OR p.createDate >= :createDateFrom) " +
            "AND (:createDateTo IS NULL OR p.createDate <= :createDateTo) " +
            "ORDER BY LOWER(p.planNumber) DESC")
     List<Plan> findFiltered(@Param("planNumber") String planNumber,
                            @Param("articleName") String articleName,
-                           @Param("status") PlanStatus status,
                            @Param("createDateFrom") LocalDate createDateFrom,
                            @Param("createDateTo") LocalDate createDateTo);
+
+    @Query("SELECT p FROM Plan p " +
+           "WHERE (:planNumber IS NULL OR LOWER(p.planNumber) LIKE LOWER(CONCAT('%', :planNumber, '%'))) " +
+           "AND (:articleName IS NULL OR LOWER(p.articleName) LIKE LOWER(CONCAT('%', :articleName, '%'))) " +
+           "AND p.status = :status " +
+           "AND (:createDateFrom IS NULL OR p.createDate >= :createDateFrom) " +
+           "AND (:createDateTo IS NULL OR p.createDate <= :createDateTo) " +
+           "ORDER BY LOWER(p.planNumber) DESC")
+    List<Plan> findFilteredByStatus(@Param("planNumber") String planNumber,
+                                    @Param("articleName") String articleName,
+                                    @Param("status") PlanStatus status,
+                                    @Param("createDateFrom") LocalDate createDateFrom,
+                                    @Param("createDateTo") LocalDate createDateTo);
 
     @Query("SELECT p.status, COUNT(p) " +
             "FROM Plan p " +

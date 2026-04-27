@@ -10,9 +10,9 @@
             background-color: #f5f5f5; 
         }
         .container { 
-            max-width: min(1480px, 98vw);
+            max-width: min(1680px, 99.5vw);
             margin: 0 auto; 
-            padding: 16px 12px;
+            padding: 10px 6px;
             box-sizing: border-box;
         }
         .header { 
@@ -152,19 +152,20 @@
         }
         table th,
         table td {
-            padding: 10px 8px;
+            padding: 8px 6px;
             text-align: left;
             border-bottom: 1px solid #ddd;
             vertical-align: middle;
+            font-size: 13px;
         }
         th.actions-col,
         td.actions-cell {
-            min-width: 280px;
-            max-width: 420px;
+            min-width: 210px;
+            max-width: 290px;
             vertical-align: top;
         }
         td.plan-desc {
-            max-width: 160px;
+            max-width: 110px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -230,12 +231,15 @@
             color: #2c3e50;
             font-size: 13px;
         }
-        .filters input {
+        .filters input,
+        .filters select {
             padding: 8px 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 14px;
             box-sizing: border-box;
+            min-height: 38px;
+            width: 100%;
         }
         .filters .filter-group { min-width: 140px; }
         .filters .filter-actions { display: flex; gap: 8px; align-items: center; }
@@ -256,8 +260,8 @@
             background-color: #e8f4fc;
         }
         .timeline-cell {
-            min-width: 140px;
-            max-width: 176px;
+            min-width: 104px;
+            max-width: 132px;
         }
         .timeline-link {
             display: inline-block;

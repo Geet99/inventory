@@ -816,7 +816,10 @@ public class PlanService {
         if (q == null && articleQ == null && status == null && createDateFrom == null && createDateTo == null) {
             return planRepository.findAllByOrderByPlanNumberIgnoreCaseDesc();
         }
-        return planRepository.findFiltered(q, articleQ, status, createDateFrom, createDateTo);
+        if (status == null) {
+            return planRepository.findFiltered(q, articleQ, createDateFrom, createDateTo);
+        }
+        return planRepository.findFilteredByStatus(q, articleQ, status, createDateFrom, createDateTo);
     }
 
     /**

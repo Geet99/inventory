@@ -24,6 +24,19 @@ import java.util.Map;
 @RequestMapping("/plans")
 public class PlanViewController {
 
+    private static PlanStatus parsePlanStatusOrNull(String rawStatus) {
+        if (rawStatus == null || rawStatus.isBlank()) {
+            return null;
+        }
+        String normalized = rawStatus.trim();
+        for (PlanStatus status : PlanStatus.values()) {
+            if (status.name().equalsIgnoreCase(normalized)) {
+                return status;
+            }
+        }
+        return null;
+    }
+
     private static String redirectPlansWithFocus(String planNumber) {
         return "redirect:/plans?focus=" + URLEncoder.encode(planNumber, StandardCharsets.UTF_8);
     }
@@ -51,17 +64,21 @@ public class PlanViewController {
     @GetMapping
     public String listPlans(@RequestParam(required = false) String planNumber,
                            @RequestParam(required = false) String articleName,
-                           @RequestParam(required = false) PlanStatus status,
+                           @RequestParam(required = false) String status,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createDateFrom,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createDateTo,
                            Model model) {
         model.addAttribute("title", "Plans");
-        List<Plan> plans = planService.getPlansFiltered(planNumber, articleName, status, createDateFrom, createDateTo);
+        PlanStatus statusFilter = parsePlanStatusOrNull(status);
+        List<Plan> plans = planService.getPlansFiltered(planNumber, articleName, statusFilter, createDateFrom, createDateTo);
         model.addAttribute("plans", plans);
         model.addAttribute("filterPlanNumber", planNumber != null ? planNumber : "");
         model.addAttribute("filterArticleName", articleName != null ? articleName : "");
-        model.addAttribute("filterStatus", status);
+        model.addAttribute("filterStatus", statusFilter);
         model.addAttribute("planStatuses", PlanStatus.values());
+        if (status != null && !status.isBlank() && statusFilter == null) {
+            model.addAttribute("error", "Invalid status filter ignored: " + status);
+        }
         model.addAttribute("filterCreateDateFrom", createDateFrom);
         model.addAttribute("filterCreateDateTo", createDateTo);
         return "plans/list";
