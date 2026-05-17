@@ -165,7 +165,7 @@ public class TestDataLoader implements CommandLineRunner {
         
         LocalDate lastMonth = LocalDate.now().minusMonths(1);
         Article article = articleRepository
-                .findByNameNormalized(Article.normalizeNameKey("Nike Classic"))
+                .findFirstByNameNormalizedOrderByIdAsc(Article.normalizeNameKey("Nike Classic"))
                 .orElse(null);
         
         // Find color by name

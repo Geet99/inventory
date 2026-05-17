@@ -247,6 +247,49 @@
             </div>
         </div>
         
+        <!-- Payment due by month (all months) -->
+        <div class="summary-section">
+            <h3>📆 Payment Due by Month</h3>
+            <p style="color: #6c757d; font-size: 14px; margin-top: 0;">
+                Outstanding balance for each month across all vendors. Older months may still be unpaid.
+            </p>
+            <table class="table" th:if="${monthlySummary != null && monthlySummary.dueByMonth != null && !monthlySummary.dueByMonth.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Total Due</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                        <th>Cutting</th>
+                        <th>Printing</th>
+                        <th>Stitching</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="month : ${monthlySummary.dueByMonth}">
+                        <td>
+                            <strong th:text="${month.formattedMonthYear}">Month</strong>
+                            <span th:if="${month.monthYear == T(com.skse.inventory.model.VendorMonthlyPayment).getCurrentMonthYear()}"
+                                  style="font-size: 11px; color: #856404; margin-left: 6px;">(current)</span>
+                            <span th:if="${month.monthYear == T(com.skse.inventory.model.VendorMonthlyPayment).getPreviousMonthYear()}"
+                                  style="font-size: 11px; color: #0c5460; margin-left: 6px;">(previous)</span>
+                        </td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(month.totalDue, 1, 2)}"></td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(month.totalPaid, 1, 2)}"></td>
+                        <td>
+                            <span th:class="${month.balance > 0 ? 'payment-high' : 'payment-low'}"
+                                  th:text="${'₹' + #numbers.formatDecimal(month.balance, 1, 2)}"></span>
+                        </td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(month.cuttingBalance, 1, 2)}"></td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(month.printingBalance, 1, 2)}"></td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(month.stitchingBalance, 1, 2)}"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p th:if="${monthlySummary == null || monthlySummary.dueByMonth == null || monthlySummary.dueByMonth.isEmpty()}"
+               style="color: #6c757d; margin: 0;">No monthly payment records yet.</p>
+        </div>
+
         <!-- Legacy Total Payment Summary -->
         <div style="background-color: #e7f3ff; border: 1px solid #bee5eb; padding: 15px; border-radius: 10px; margin-bottom: 30px;">
             <h4 style="margin-top: 0; color: #0c5460;">ℹ️ Total Cumulative Payment Due (All Months)</h4>

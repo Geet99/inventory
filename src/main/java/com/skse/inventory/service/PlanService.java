@@ -167,7 +167,7 @@ public class PlanService {
             }
             plan.setCuttingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
-                    planNumber, VendorRole.Cutting, plan.getCuttingVendor(), amount, beforeEdit.getCuttingEndDate());
+                    planNumber, VendorRole.Cutting, plan.getCuttingVendor(), amount, plan.getCuttingEndDate());
         }
 
         if (isPrintingCompletedForAccounting(beforeEdit)) {
@@ -177,7 +177,7 @@ public class PlanService {
             }
             plan.setPrintingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
-                    planNumber, VendorRole.Printing, plan.getPrintingVendor(), amount, beforeEdit.getPrintingEndDate());
+                    planNumber, VendorRole.Printing, plan.getPrintingVendor(), amount, plan.getPrintingEndDate());
         }
 
         if (isStitchingCompletedForAccounting(beforeEdit)) {
@@ -187,7 +187,7 @@ public class PlanService {
             }
             plan.setStitchingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
-                    planNumber, VendorRole.Stitching, plan.getStitchingVendor(), amount, beforeEdit.getStitchingEndDate());
+                    planNumber, VendorRole.Stitching, plan.getStitchingVendor(), amount, plan.getStitchingEndDate());
         }
     }
 
@@ -357,15 +357,15 @@ public class PlanService {
             Optional<UpperStock> upperStockOpt = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
                     plan.getArticleName(), size, plan.getColor());
             if (upperStockOpt.isEmpty()) {
-                throw new IllegalStateException(
-                        "Cannot reverse cutting stock: no upper stock for article "
-                                + plan.getArticleName() + ", size " + size + ", color " + plan.getColor());
+                // No row to reverse (never recorded, consumed elsewhere, or name mismatch before fix).
+                continue;
             }
             UpperStock stock = upperStockOpt.get();
             if (stock.getQuantity() < quantity) {
                 throw new IllegalStateException(
-                        "Cannot reverse cutting stock: upper stock would go negative for size "
-                                + size + " (have " + stock.getQuantity() + ", need to remove " + quantity + ").");
+                        "Cannot reverse cutting stock: upper stock would go negative for article "
+                                + plan.getArticleName() + ", size " + size + ", color " + plan.getColor()
+                                + " (have " + stock.getQuantity() + ", need to remove " + quantity + ").");
             }
             stock.setQuantity(stock.getQuantity() - quantity);
             upperStockRepository.save(stock);
@@ -508,7 +508,7 @@ public class PlanService {
         if (articleKey == null) {
             throw new IllegalArgumentException("Plan has no article name.");
         }
-        Article article = articleRepository.findByNameNormalized(articleKey)
+        Article article = articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey)
             .orElseThrow(() -> new IllegalArgumentException("Article not found: " + plan.getArticleName()));
         
         for (String pair : sizeQuantityPairs) {
@@ -642,7 +642,7 @@ public class PlanService {
         if (articleKey == null) {
             throw new IllegalArgumentException("Plan has no article name.");
         }
-        Article article = articleRepository.findByNameNormalized(articleKey)
+        Article article = articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No article named \"" + plan.getArticleName()
                                 + "\". Fix the plan's article so it matches an existing article (matching is case-insensitive)."));
@@ -726,7 +726,7 @@ public class PlanService {
                 if (articleKey == null) {
                     throw new IllegalArgumentException("Plan has no article name.");
                 }
-                Article article = articleRepository.findByNameNormalized(articleKey)
+                Article article = articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey)
                         .orElseThrow(() -> new IllegalArgumentException(
                                 "No article named \"" + plan.getArticleName()
                                         + "\". Fix the plan's article so it matches an existing article (matching is case-insensitive)."));
@@ -816,10 +816,20 @@ public class PlanService {
         if (q == null && articleQ == null && status == null && createDateFrom == null && createDateTo == null) {
             return planRepository.findAllByOrderByPlanNumberIgnoreCaseDesc();
         }
+        String planPattern = toContainsLikePattern(q);
+        String articlePattern = toContainsLikePattern(articleQ);
         if (status == null) {
-            return planRepository.findFiltered(q, articleQ, createDateFrom, createDateTo);
+            return planRepository.findFiltered(planPattern, articlePattern, createDateFrom, createDateTo);
         }
-        return planRepository.findFilteredByStatus(q, articleQ, status, createDateFrom, createDateTo);
+        return planRepository.findFilteredByStatus(planPattern, articlePattern, status, createDateFrom, createDateTo);
+    }
+
+    /** Lowercase %term% pattern for JPQL LIKE. Returns {@code "%"} (match-all) when blank so callers never pass null to a query parameter (PostgreSQL cannot infer the type of a null String parameter). */
+    private static String toContainsLikePattern(String term) {
+        if (term == null || term.isBlank()) {
+            return "%";
+        }
+        return "%" + term.toLowerCase() + "%";
     }
 
     /**

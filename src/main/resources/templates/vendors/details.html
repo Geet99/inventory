@@ -203,6 +203,47 @@
             </div>
         </div>
         
+        <!-- Payment due by month -->
+        <div class="card" th:if="${monthlyDetails.dueByMonth != null && !monthlyDetails.dueByMonth.isEmpty()}">
+            <h3>📆 Payment Due by Month</h3>
+            <p style="color: #7f8c8d; font-size: 14px; margin-top: 0;">
+                Balance owed for each month of completed work (newest first).
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Total Due</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="month : ${monthlyDetails.dueByMonth}">
+                        <td>
+                            <strong th:text="${month.formattedMonthYear}">Month</strong>
+                            <span th:if="${month.monthYear == T(com.skse.inventory.model.VendorMonthlyPayment).getCurrentMonthYear()}"
+                                  style="font-size: 11px; color: #856404; margin-left: 6px;">(current)</span>
+                            <span th:if="${month.monthYear == T(com.skse.inventory.model.VendorMonthlyPayment).getPreviousMonthYear()}"
+                                  style="font-size: 11px; color: #0c5460; margin-left: 6px;">(previous)</span>
+                        </td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(month.totalDue, 1, 2)}"></td>
+                        <td th:text="${'₹' + #numbers.formatDecimal(month.totalPaid, 1, 2)}"></td>
+                        <td>
+                            <span th:style="${month.balance > 0 ? 'font-weight: bold; color: #dc3545;' : 'color: #28a745;'}"
+                                  th:text="${'₹' + #numbers.formatDecimal(month.balance, 1, 2)}"></span>
+                        </td>
+                        <td>
+                            <span th:if="${month.balance <= 0}" style="color: #28a745; font-weight: bold;">Paid</span>
+                            <span th:if="${month.balance > 0 && month.totalPaid > 0}" style="color: #fd7e14; font-weight: bold;">Partial</span>
+                            <span th:if="${month.balance > 0 && month.totalPaid <= 0}" style="color: #ffc107; font-weight: bold;">Pending</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- Current Month Breakdown -->
         <div class="card" th:if="${monthlyDetails.currentMonthPayments != null && !monthlyDetails.currentMonthPayments.isEmpty()}">
             <h3>📊 Current Month Breakdown</h3>

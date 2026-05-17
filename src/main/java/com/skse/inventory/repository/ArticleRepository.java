@@ -11,6 +11,10 @@ import java.util.Optional;
 public interface ArticleRepository extends JpaRepository<Article, Long> {
     Optional<Article> findByName(String name);
 
+    /** Prefer this over {@link #findByNameNormalized} — duplicates must not throw NonUniqueResultException. */
+    Optional<Article> findFirstByNameNormalizedOrderByIdAsc(String nameNormalized);
+
+    @Deprecated
     Optional<Article> findByNameNormalized(String nameNormalized);
 
     boolean existsByNameNormalized(String nameNormalized);

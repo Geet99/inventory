@@ -9,12 +9,6 @@
             margin: 0; 
             background-color: #f5f5f5; 
         }
-        .container { 
-            max-width: min(1680px, 99.5vw);
-            margin: 0 auto; 
-            padding: 10px 6px;
-            box-sizing: border-box;
-        }
         .header { 
             text-align: center; 
             margin-bottom: 30px; 
@@ -260,8 +254,8 @@
             background-color: #e8f4fc;
         }
         .timeline-cell {
-            min-width: 104px;
-            max-width: 132px;
+            min-width: 158px;
+            white-space: nowrap;
         }
         .timeline-link {
             display: inline-block;
@@ -305,6 +299,11 @@
             letter-spacing: 0.06em;
         }
         .timeline-range {
+            display: inline-flex;
+            align-items: baseline;
+            flex-wrap: nowrap;
+            gap: 4px;
+            white-space: nowrap;
             font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
             font-size: 11px;
             color: #2c3e50;
@@ -318,6 +317,16 @@
         }
     </style>
     <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
+    <style>
+        /* Override shared 1200px cap so the plans table uses the full viewport */
+        .container {
+            max-width: none;
+            width: 100%;
+            margin: 0;
+            padding: 10px 12px;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 <body>
     <!-- Include Page Header and Navigation -->
@@ -334,7 +343,7 @@
             </div>
         </div>
         
-        <div th:if="${param.error}" class="error" th:text="${param.error}"></div>
+        <div th:if="${param.error != null and !param.error.empty}" class="error" th:text="${param.error[0]}"></div>
         <div th:if="${error}" class="error" th:text="${error}"></div>
         <div th:if="${success}" style="background-color: #d4edda; color: #155724; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #c3e6cb;"
              th:text="${success}"></div>
@@ -355,7 +364,7 @@
                         <option value="">All statuses</option>
                         <option th:each="statusOpt : ${planStatuses}"
                                 th:value="${statusOpt.name()}"
-                                th:selected="${filterStatus != null and filterStatus == statusOpt}"
+                                th:selected="${filterStatus != null and filterStatus.equals(statusOpt)}"
                                 th:text="${statusOpt.name().replace('_', ' ')}"></option>
                     </select>
                 </div>

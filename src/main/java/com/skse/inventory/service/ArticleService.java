@@ -11,8 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ArticleService {
@@ -44,6 +48,27 @@ public class ArticleService {
         return articleRepository.findAllByOrderByIdAsc();
     }
 
+    /**
+     * Article ids that share a display name with another row (case-insensitive). Includes every id in each duplicate group.
+     */
+    public Set<Long> getArticleIdsWithDuplicateDisplayNames() {
+        List<Article> all = articleRepository.findAllByOrderByIdAsc();
+        Map<String, Long> firstIdByKey = new HashMap<>();
+        Set<Long> duplicateIds = new HashSet<>();
+        for (Article article : all) {
+            String key = Article.normalizeNameKey(article.getName());
+            if (key == null) {
+                continue;
+            }
+            Long existing = firstIdByKey.putIfAbsent(key, article.getId());
+            if (existing != null) {
+                duplicateIds.add(existing);
+                duplicateIds.add(article.getId());
+            }
+        }
+        return duplicateIds;
+    }
+
     // Search articles by name or description (case-insensitive)
     public List<Article> searchArticles(String q) {
         if (q == null || q.trim().isEmpty()) {
@@ -65,7 +90,7 @@ public class ArticleService {
         if (key == null) {
             return null;
         }
-        return articleRepository.findByNameNormalized(key).orElse(null);
+        return articleRepository.findFirstByNameNormalizedOrderByIdAsc(key).orElse(null);
     }
 
     // Update an article

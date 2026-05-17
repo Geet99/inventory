@@ -11,15 +11,14 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
- * Fills {@code name_normalized} for legacy rows. Uses native updates so {@code @PreUpdate} does not
- * overwrite assigned values. When several rows share the same case-insensitive name, the lowest id
- * keeps the canonical key; others get a {@code __dup__} plus id suffix so the unique constraint holds
- * and the application can start (log warns so operators can merge or rename).
+ * Ensures every article has a unique {@code name_normalized}. Uses native updates so {@code @PreUpdate}
+ * does not overwrite assigned values. When several rows share the same case-insensitive name, the
+ * lowest id keeps the canonical key; others get {@code __dup__} plus id so the unique constraint holds.
  */
 @Component
 @Order(1)
@@ -34,31 +33,32 @@ public class ArticleNameNormalizedBackfill implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         @SuppressWarnings("unchecked")
-        List<String> existingKeys = entityManager
-                .createNativeQuery("select name_normalized from article where name_normalized is not null")
-                .getResultList();
-        Set<String> used = new HashSet<>();
-        for (String k : existingKeys) {
-            if (k != null && !k.isBlank()) {
-                used.add(k);
-            }
-        }
-
-        @SuppressWarnings("unchecked")
         List<Object[]> rows = entityManager
                 .createNativeQuery(
                         "select id, name, name_normalized from article where name is not null order by id")
                 .getResultList();
 
+        if (rows.isEmpty()) {
+            return;
+        }
+
+        // Lowest id per case-insensitive display name owns the canonical normalized key.
+        Map<String, Long> canonicalOwnerByNameKey = new HashMap<>();
+        for (Object[] row : rows) {
+            String name = (String) row[1];
+            String nk = Article.normalizeNameKey(name);
+            if (nk == null) {
+                continue;
+            }
+            Long id = ((Number) row[0]).longValue();
+            canonicalOwnerByNameKey.putIfAbsent(nk, id);
+        }
+
         int updated = 0;
         for (Object[] row : rows) {
             Long id = ((Number) row[0]).longValue();
             String name = (String) row[1];
-            String currentNorm = row[2] != null ? String.valueOf(row[2]) : null;
-
-            if (currentNorm != null && !currentNorm.isBlank()) {
-                continue;
-            }
+            String currentNorm = row[2] != null ? String.valueOf(row[2]).trim() : null;
 
             String nk = Article.normalizeNameKey(name);
             if (nk == null) {
@@ -66,13 +66,18 @@ public class ArticleNameNormalizedBackfill implements ApplicationRunner {
                 continue;
             }
 
-            String assign = nk;
-            if (used.contains(nk)) {
-                assign = nk + "__dup__" + id;
+            Long ownerId = canonicalOwnerByNameKey.get(nk);
+            String assign = id.equals(ownerId) ? nk : nk + "__dup__" + id;
+
+            if (assign.equals(currentNorm)) {
+                continue;
+            }
+
+            if (!assign.equals(nk)) {
                 log.warn(
-                        "Article id={} name='{}' conflicts with another row on case-insensitive name; "
-                                + "assigned temporary name_normalized='{}'. Rename or merge this article when convenient.",
-                        id, name, assign);
+                        "Article id={} name='{}' shares a case-insensitive name with article id={}; "
+                                + "assigned name_normalized='{}'. Rename or merge when convenient.",
+                        id, name, ownerId, assign);
             }
 
             entityManager
@@ -80,12 +85,11 @@ public class ArticleNameNormalizedBackfill implements ApplicationRunner {
                     .setParameter(1, assign)
                     .setParameter(2, id)
                     .executeUpdate();
-            used.add(assign);
             updated++;
         }
 
         if (updated > 0) {
-            log.info("Backfilled name_normalized for {} article row(s).", updated);
+            log.info("Reconciled name_normalized for {} article row(s).", updated);
         }
     }
 }

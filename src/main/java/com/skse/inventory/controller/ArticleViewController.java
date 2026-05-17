@@ -28,6 +28,7 @@ public class ArticleViewController {
         model.addAttribute("title", "Articles");
         model.addAttribute("articles", articleService.searchArticles(q));
         model.addAttribute("searchQuery", q != null ? q : "");
+        model.addAttribute("duplicateArticleIds", articleService.getArticleIdsWithDuplicateDisplayNames());
         return "articles/list";
     }
 

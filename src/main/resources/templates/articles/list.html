@@ -179,6 +179,12 @@
         </div>
         
         <div th:if="${param.error != null and !param.error.empty}" class="error" th:text="${param.error[0]}"></div>
+
+        <div th:if="${duplicateArticleIds != null && !duplicateArticleIds.isEmpty()}"
+             style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; color: #856404;">
+            <strong>Duplicate article names detected.</strong>
+            Rows marked below share the same name (ignoring case). Rename or delete extras, or merge them with the cleanup script.
+        </div>
         
         <table id="articlesTable">
                 <thead>
@@ -195,7 +201,12 @@
                 <tbody>
                     <tr th:each="article : ${articles}" th:attr="data-search=${article.name + ' ' + (article.description != null ? article.description : '')}">
                         <td th:text="${article.id}"></td>
-                        <td th:text="${article.name}"></td>
+                        <td>
+                            <span th:text="${article.name}"></span>
+                            <span th:if="${duplicateArticleIds != null && duplicateArticleIds.contains(article.id)}"
+                                  style="margin-left: 8px; font-size: 11px; font-weight: bold; color: #856404;"
+                                  title="Another article has the same name (case-insensitive)">⚠ duplicate</span>
+                        </td>
                         <td th:text="${article.description}"></td>
                         <td th:text="${'₹' + article.cuttingCost}"></td>
                         <td th:text="${'₹' + article.printingCost}"></td>

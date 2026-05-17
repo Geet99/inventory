@@ -186,10 +186,32 @@
                 <p><strong>Role:</strong> <span th:text="${vendor.role}"></span></p>
             </div>
             
-            <div class="monthly-info" th:if="${monthlyDetails != null && monthlyDetails.previousMonthPayments != null && !monthlyDetails.previousMonthPayments.isEmpty()}">
-                <h4>💰 Previous Month Settlement</h4>
-                
-                <div class="payment-breakdown">
+            <div class="monthly-info" th:if="${monthlyDetails != null && monthlyDetails.dueByMonth != null && !monthlyDetails.dueByMonth.isEmpty()}">
+                <h4>📆 Payment Due by Month</h4>
+                <p style="margin: 0 0 12px 0; font-size: 14px; color: #856404;">
+                    Outstanding balance per month (newest first). Settle previous month below.
+                </p>
+                <div class="payment-breakdown" style="margin-bottom: 20px;">
+                    <table>
+                        <thead>
+                            <tr style="border-bottom: 2px solid #dee2e6;">
+                                <th style="text-align: left; padding: 8px;">Month</th>
+                                <th style="text-align: right; padding: 8px;">Balance Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="month : ${monthlyDetails.dueByMonth}" th:if="${month.balance > 0}">
+                                <td style="padding: 8px;" th:text="${month.formattedMonthYear}">Month</td>
+                                <td style="padding: 8px; text-align: right; color: #dc3545; font-weight: bold;"
+                                    th:text="${'₹' + #numbers.formatDecimal(month.balance, 1, 2)}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 th:if="${monthlyDetails.previousMonthPayments != null && !monthlyDetails.previousMonthPayments.isEmpty()}"
+                    style="color: #856404;">💰 Settle Previous Month</h4>
+                <div class="payment-breakdown" th:if="${monthlyDetails.previousMonthPayments != null && !monthlyDetails.previousMonthPayments.isEmpty()}">
                     <table>
                         <tr th:each="payment : ${monthlyDetails.previousMonthPayments}">
                             <td th:text="${payment.operationType + ' (' + payment.formattedMonthYear + ')'}"></td>
@@ -215,10 +237,10 @@
                 </form>
             </div>
             
-            <div th:if="${monthlyDetails == null || monthlyDetails.previousMonthPayments == null || monthlyDetails.previousMonthPayments.isEmpty()}" 
+            <div th:if="${monthlyDetails == null || monthlyDetails.dueByMonth == null || monthlyDetails.dueByMonth.isEmpty()}" 
                  style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 10px; text-align: center;">
                 <h4 style="margin-top: 0; color: #155724;">✅ No Pending Payments</h4>
-                <p style="margin: 0; color: #155724; font-size: 16px;">This vendor has no pending payments from previous month.</p>
+                <p style="margin: 0; color: #155724; font-size: 16px;">This vendor has no monthly payment records.</p>
                 <a th:href="@{/vendors}" class="btn btn-info" style="margin-top: 15px;">Back to Vendors</a>
             </div>
         </div>

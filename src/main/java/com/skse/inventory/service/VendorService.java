@@ -1,5 +1,6 @@
 package com.skse.inventory.service;
 
+import com.skse.inventory.dto.MonthPaymentDueSummary;
 import com.skse.inventory.model.*;
 import com.skse.inventory.repository.ArticleRepository;
 import com.skse.inventory.repository.PlanRepository;
@@ -327,8 +328,10 @@ public class VendorService {
      * Ensures a plan has at most one ORDER entry per role and that amount/vendor/monthly totals
      * reflect the latest value after plan edits.
      * <p>
-     * This intentionally keeps the original order date month when an order already exists, so
-     * editing plan quantities does not silently move dues across months.
+     * Uses {@code completionDate} (typically the plan stage end date after edit) for the month bucket.
+     * When that date's month differs from an existing ORDER line, the amount is removed from the old
+     * month and re-recorded in the new month. Pass {@code null} only when no end date is set; then the
+     * previous order date is preserved if one exists.
      */
     @Transactional
     public void syncVendorOrderForPlanRole(String planNumber,
@@ -570,9 +573,11 @@ public class VendorService {
         }
         
         summary.put("currentMonth", getFormattedCurrentMonthYear());
+        summary.put("previousMonth", getFormattedPreviousMonthYear());
         summary.put("totalDue", totalDue);
         summary.put("dueByRole", dueByRole);
         summary.put("payments", currentMonthPayments);
+        summary.put("dueByMonth", getGlobalPaymentDueByMonth());
         
         return summary;
     }
@@ -606,6 +611,10 @@ public class VendorService {
         // All monthly history
         List<VendorMonthlyPayment> allHistory = getVendorMonthlyPaymentHistory(vendorId);
         summary.put("monthlyHistory", allHistory);
+        List<MonthPaymentDueSummary> dueByMonth = getVendorPaymentDueByMonth(vendorId);
+        summary.put("dueByMonth", dueByMonth);
+        summary.put("totalOutstandingByMonth", dueByMonth.stream()
+                .mapToDouble(MonthPaymentDueSummary::getBalance).sum());
         
         // Recent transactions
         List<VendorOrderHistory> recentHistory = getVendorOrderHistory(vendorId);
@@ -660,7 +669,7 @@ public class VendorService {
                 String articleKey = Article.normalizeNameKey(plan.getArticleName());
                 Article article = articleKey == null
                         ? null
-                        : articleRepository.findByNameNormalized(articleKey).orElse(null);
+                        : articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey).orElse(null);
                 if (article != null && article.getCuttingRateHead() != null) {
                     rateHeadName = article.getCuttingRateHead().getName();
                     rateHeadCost = article.getCuttingRateHead().getCost();
@@ -694,7 +703,7 @@ public class VendorService {
                 String articleKey = Article.normalizeNameKey(plan.getArticleName());
                 Article article = articleKey == null
                         ? null
-                        : articleRepository.findByNameNormalized(articleKey).orElse(null);
+                        : articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey).orElse(null);
                 if (article != null && article.getStitchingRateHead() != null) {
                     rateHeadName = article.getStitchingRateHead().getName();
                     rateHeadCost = article.getStitchingRateHead().getCost();
@@ -884,23 +893,48 @@ public class VendorService {
     }
     
     /**
-     * Get formatted previous month year (e.g., "November 2024")
+     * Payment due aggregated by month across all vendors (newest month first).
+     */
+    public List<MonthPaymentDueSummary> getGlobalPaymentDueByMonth() {
+        return aggregatePaymentsByMonth(vendorMonthlyPaymentRepository.findAll());
+    }
+
+    /**
+     * Payment due aggregated by month for one vendor (newest month first).
+     */
+    public List<MonthPaymentDueSummary> getVendorPaymentDueByMonth(Long vendorId) {
+        return aggregatePaymentsByMonth(getVendorMonthlyPaymentHistory(vendorId));
+    }
+
+    private List<MonthPaymentDueSummary> aggregatePaymentsByMonth(List<VendorMonthlyPayment> payments) {
+        Map<String, MonthPaymentDueSummary> byMonth = new LinkedHashMap<>();
+        for (VendorMonthlyPayment payment : payments) {
+            if (payment.getMonthYear() == null) {
+                continue;
+            }
+            byMonth.computeIfAbsent(payment.getMonthYear(), k -> new MonthPaymentDueSummary())
+                    .addPayment(payment);
+        }
+        return byMonth.values().stream()
+                .sorted(Comparator.comparing(MonthPaymentDueSummary::getMonthYear).reversed())
+                .toList();
+    }
+
+    /**
+     * Get formatted previous month year (e.g., "April 2026")
      */
     public String getFormattedPreviousMonthYear() {
-        String monthYear = VendorMonthlyPayment.getPreviousMonthYear();
-        if (monthYear != null && monthYear.length() == 6) {
-            String month = monthYear.substring(0, 2);
-            String year = monthYear.substring(2);
-            return getMonthName(month) + " " + year;
-        }
-        return monthYear;
+        return formatMonthYearLabel(VendorMonthlyPayment.getPreviousMonthYear());
     }
-    
+
     /**
      * Get formatted current month year (e.g., "December 2024")
      */
     public String getFormattedCurrentMonthYear() {
-        String monthYear = VendorMonthlyPayment.getCurrentMonthYear();
+        return formatMonthYearLabel(VendorMonthlyPayment.getCurrentMonthYear());
+    }
+
+    private String formatMonthYearLabel(String monthYear) {
         if (monthYear != null && monthYear.length() == 6) {
             String month = monthYear.substring(0, 2);
             String year = monthYear.substring(2);

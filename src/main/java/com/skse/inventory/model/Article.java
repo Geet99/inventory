@@ -58,7 +58,16 @@ public class Article {
         if (key == null) {
             throw new IllegalStateException("Article name must be non-blank.");
         }
+        // Legacy duplicate rows use name_normalized = key + "__dup__" + id (see ArticleNameNormalizedBackfill).
+        if (this.id != null && this.nameNormalized != null
+                && this.nameNormalized.equals(key + "__dup__" + this.id)) {
+            return;
+        }
         this.nameNormalized = key;
+    }
+
+    public boolean hasDuplicateNormalizedKey() {
+        return nameNormalized != null && nameNormalized.contains("__dup__");
     }
 
     public Long getId() {
