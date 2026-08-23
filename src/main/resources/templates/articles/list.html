@@ -208,9 +208,9 @@
                                   title="Another article has the same name (case-insensitive)">⚠ duplicate</span>
                         </td>
                         <td th:text="${article.description}"></td>
-                        <td th:text="${'₹' + article.cuttingCost}"></td>
-                        <td th:text="${'₹' + article.printingCost}"></td>
-                        <td th:text="${'₹' + article.stitchingCost}"></td>
+                        <td th:text="${article.cuttingCost != null ? '₹' + #numbers.formatDecimal(article.cuttingCost, 1, 2) : '—'}"></td>
+                        <td th:text="${article.printingCost != null ? '₹' + #numbers.formatDecimal(article.printingCost, 1, 2) : '—'}"></td>
+                        <td th:text="${article.stitchingCost != null ? '₹' + #numbers.formatDecimal(article.stitchingCost, 1, 2) : '—'}"></td>
                         <td>
                             <div class="actions">
                                 <a th:href="@{/articles/edit/{id}(id=${article.id})}" class="btn btn-warning">Edit</a>

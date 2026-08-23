@@ -35,9 +35,14 @@ public class VendorViewController {
     }
 
     @PostMapping("/add")
-    public String addVendor(@ModelAttribute Vendor vendor) {
-        vendorService.createVendor(vendor);
-        return "redirect:/vendors";
+    public String addVendor(@ModelAttribute Vendor vendor, RedirectAttributes redirectAttributes) {
+        try {
+            vendorService.createVendor(vendor);
+            return "redirect:/vendors";
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/vendors/new";
+        }
     }
 
     @GetMapping("/{id}/edit")
