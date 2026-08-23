@@ -2,6 +2,7 @@ package com.skse.inventory.config;
 
 import com.skse.inventory.model.*;
 import com.skse.inventory.repository.*;
+import com.skse.inventory.service.RateHeadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -13,22 +14,25 @@ import java.time.YearMonth;
 @Component
 @Profile("dev") // Only run in development mode
 public class TestDataLoader implements CommandLineRunner {
-    
+
     @Autowired
     private ArticleRepository articleRepository;
-    
+
     @Autowired
     private ColorRepository colorRepository;
-    
+
     @Autowired
     private VendorRepository vendorRepository;
-    
+
     @Autowired
     private RateHeadRepository rateHeadRepository;
-    
+
+    @Autowired
+    private RateHeadService rateHeadService;
+
     @Autowired
     private PlanRepository planRepository;
-    
+
     @Autowired
     private VendorMonthlyPaymentRepository vendorMonthlyPaymentRepository;
     
@@ -66,40 +70,53 @@ public class TestDataLoader implements CommandLineRunner {
     
     private void createRateHeads() {
         if (rateHeadRepository.count() == 0) {
-            System.out.println("Creating test rate heads...");
-            
-            // Cutting rates
+            System.out.println("Creating test rate heads with price history...");
+
+            LocalDate twoMonthsAgo = LocalDate.now().minusMonths(2).withDayOfMonth(1);
+            LocalDate oneMonthAgo = LocalDate.now().minusMonths(1).withDayOfMonth(1);
+            LocalDate thisMonth = LocalDate.now().withDayOfMonth(1);
+
+            // Cutting rate — single price entry
             RateHead cutting1 = new RateHead();
             cutting1.setName("Standard Cutting");
             cutting1.setOperationType(VendorRole.Cutting);
             cutting1.setCost(15.0);
             cutting1.setActive(true);
             rateHeadRepository.save(cutting1);
-            
-            // Printing rates
+            rateHeadService.addPriceEntry(cutting1.getId(), 15.0, twoMonthsAgo);
+
+            // Basic Printing — two price entries (rate increased this month)
             RateHead printing1 = new RateHead();
             printing1.setName("Basic Printing");
             printing1.setOperationType(VendorRole.Printing);
             printing1.setCost(12.0);
             printing1.setActive(true);
             rateHeadRepository.save(printing1);
-            
+            rateHeadService.addPriceEntry(printing1.getId(), 12.0, twoMonthsAgo);
+            rateHeadService.addPriceEntry(printing1.getId(), 14.0, thisMonth);
+            // Plans created last month should use ₹12, plans from this month ₹14
+
+            // Premium Printing — single price entry
             RateHead printing2 = new RateHead();
             printing2.setName("Premium Printing");
             printing2.setOperationType(VendorRole.Printing);
             printing2.setCost(18.0);
             printing2.setActive(true);
             rateHeadRepository.save(printing2);
-            
-            // Stitching rates
+            rateHeadService.addPriceEntry(printing2.getId(), 18.0, twoMonthsAgo);
+
+            // Stitching rate — two price entries (rate increased last month)
             RateHead stitching1 = new RateHead();
             stitching1.setName("Standard Stitching");
             stitching1.setOperationType(VendorRole.Stitching);
             stitching1.setCost(20.0);
             stitching1.setActive(true);
             rateHeadRepository.save(stitching1);
-            
-            System.out.println("✓ Created 4 rate heads");
+            rateHeadService.addPriceEntry(stitching1.getId(), 18.0, twoMonthsAgo);
+            rateHeadService.addPriceEntry(stitching1.getId(), 20.0, oneMonthAgo);
+            // Plans from 2 months ago use ₹18, plans from last month onward use ₹20
+
+            System.out.println("✓ Created 4 rate heads with price history entries");
         }
     }
     
@@ -162,25 +179,31 @@ public class TestDataLoader implements CommandLineRunner {
     
     private void createLastMonthPlans() {
         System.out.println("Creating last month's completed plans...");
-        
+
         LocalDate lastMonth = LocalDate.now().minusMonths(1);
         Article article = articleRepository
                 .findFirstByNameNormalizedOrderByIdAsc(Article.normalizeNameKey("Nike Classic"))
                 .orElse(null);
-        
-        // Find color by name
+
         Color color = colorRepository.findAll().stream()
             .filter(c -> c.getName().equals("Red"))
             .findFirst()
             .orElse(null);
-        
+
         Vendor cuttingVendor = vendorRepository.findByRole(VendorRole.Cutting).get(0);
         Vendor printingVendor = vendorRepository.findByRole(VendorRole.Printing).get(0);
         Vendor stitchingVendor = vendorRepository.findByRole(VendorRole.Stitching).get(0);
         RateHead printingRate = rateHeadRepository.findByOperationType(VendorRole.Printing).get(0);
-        
+
         if (article != null && color != null) {
-            // Create 3 completed plans from last month
+            LocalDate planDate = lastMonth.withDayOfMonth(5);
+            RateHead cuttingRH = article.getCuttingRateHead();
+            RateHead stitchingRH = article.getStitchingRateHead();
+
+            Double cuttingCost = rateHeadService.getCostForDate(cuttingRH, planDate);
+            Double printingCost = rateHeadService.getCostForDate(printingRate, planDate);
+            Double stitchingCost = rateHeadService.getCostForDate(stitchingRH, planDate);
+
             for (int i = 1; i <= 3; i++) {
                 Plan plan = new Plan();
                 plan.setPlanNumber("PLAN-LM-" + i);
@@ -189,80 +212,99 @@ public class TestDataLoader implements CommandLineRunner {
                 plan.setSizeQuantityPairs("6:50, 7:40, 8:30");
                 plan.setTotal(120);
                 plan.setStatus(PlanStatus.Completed);
-                plan.setCreateDate(lastMonth.withDayOfMonth(5));
-                
+                plan.setCreateDate(planDate);
+
                 plan.setCuttingVendor(cuttingVendor);
                 plan.setCuttingStartDate(lastMonth.withDayOfMonth(6));
                 plan.setCuttingEndDate(lastMonth.withDayOfMonth(8));
-                plan.setCuttingVendorPaymentDue(article.getCuttingCost() * 120);
-                
+                plan.setCuttingVendorPaymentDue(cuttingCost != null ? cuttingCost * 120 : 0);
+
                 plan.setPrintingVendor(printingVendor);
                 plan.setPrintingRateHead(printingRate);
                 plan.setPrintingStartDate(lastMonth.withDayOfMonth(9));
                 plan.setPrintingEndDate(lastMonth.withDayOfMonth(11));
-                plan.setPrintingVendorPaymentDue(printingRate.getCost() * 120);
-                
+                plan.setPrintingVendorPaymentDue(printingCost != null ? printingCost * 120 : 0);
+
                 plan.setStitchingVendor(stitchingVendor);
                 plan.setStitchingStartDate(lastMonth.withDayOfMonth(12));
                 plan.setStitchingEndDate(lastMonth.withDayOfMonth(15));
-                plan.setStitchingVendorPaymentDue(article.getStitchingCost() * 120);
-                
+                plan.setStitchingVendorPaymentDue(stitchingCost != null ? stitchingCost * 120 : 0);
+
                 planRepository.save(plan);
             }
-            System.out.println("✓ Created 3 completed plans from last month");
+            System.out.println("✓ Created 3 completed plans from last month (using date-based rate lookup)");
+            System.out.println("  Rates used for plan date " + planDate + ":");
+            System.out.println("  - Cutting: ₹" + cuttingCost + " × 120 = ₹" + (cuttingCost != null ? cuttingCost * 120 : 0));
+            System.out.println("  - Printing: ₹" + printingCost + " × 120 = ₹" + (printingCost != null ? printingCost * 120 : 0));
+            System.out.println("  - Stitching: ₹" + stitchingCost + " × 120 = ₹" + (stitchingCost != null ? stitchingCost * 120 : 0));
         }
     }
     
     private void createLastMonthVendorPayments() {
         System.out.println("Creating last month's vendor payment records...");
-        
+
         YearMonth lastMonth = YearMonth.now().minusMonths(1);
         String lastMonthYear = VendorMonthlyPayment.getPreviousMonthYear();
-        
+        LocalDate planDate = LocalDate.now().minusMonths(1).withDayOfMonth(5);
+
         Vendor cuttingVendor = vendorRepository.findByRole(VendorRole.Cutting).get(0);
         Vendor printingVendor = vendorRepository.findByRole(VendorRole.Printing).get(0);
         Vendor stitchingVendor = vendorRepository.findByRole(VendorRole.Stitching).get(0);
-        
+
+        Article article = articleRepository
+                .findFirstByNameNormalizedOrderByIdAsc(Article.normalizeNameKey("Nike Classic"))
+                .orElse(null);
+        RateHead printingRate = rateHeadRepository.findByOperationType(VendorRole.Printing).get(0);
+
+        // Use date-based rates to compute totals (3 plans × 120 units × rate)
+        Double cuttingCost = article != null ? rateHeadService.getCostForDate(article.getCuttingRateHead(), planDate) : 15.0;
+        Double printingCost = rateHeadService.getCostForDate(printingRate, planDate);
+        Double stitchingCost = article != null ? rateHeadService.getCostForDate(article.getStitchingRateHead(), planDate) : 20.0;
+
+        double cuttingTotal = (cuttingCost != null ? cuttingCost : 15.0) * 360; // 3 plans × 120
+        double printingTotal = (printingCost != null ? printingCost : 12.0) * 360;
+        double stitchingTotal = (stitchingCost != null ? stitchingCost : 20.0) * 360;
+
         // Cutting vendor - Pending payment (not paid yet)
         VendorMonthlyPayment cuttingPayment = new VendorMonthlyPayment();
         cuttingPayment.setVendor(cuttingVendor);
         cuttingPayment.setMonthYear(lastMonthYear);
         cuttingPayment.setOperationType(VendorRole.Cutting);
-        cuttingPayment.setTotalDue(5400.0); // 3 plans * 120 units * 15 per unit
+        cuttingPayment.setTotalDue(cuttingTotal);
         cuttingPayment.setPaidAmount(0.0);
         cuttingPayment.setStatus(PaymentStatus.PENDING);
         cuttingPayment.setCreatedDate(lastMonth.atDay(15));
         cuttingPayment.setLastUpdatedDate(lastMonth.atDay(15));
         vendorMonthlyPaymentRepository.save(cuttingPayment);
-        
+
         // Printing vendor - Partially paid
         VendorMonthlyPayment printingPayment = new VendorMonthlyPayment();
         printingPayment.setVendor(printingVendor);
         printingPayment.setMonthYear(lastMonthYear);
         printingPayment.setOperationType(VendorRole.Printing);
-        printingPayment.setTotalDue(4320.0); // 3 plans * 120 units * 12 per unit
+        printingPayment.setTotalDue(printingTotal);
         printingPayment.setPaidAmount(2000.0);
         printingPayment.setStatus(PaymentStatus.PARTIAL);
         printingPayment.setCreatedDate(lastMonth.atDay(15));
         printingPayment.setLastUpdatedDate(lastMonth.atDay(20));
         vendorMonthlyPaymentRepository.save(printingPayment);
-        
+
         // Stitching vendor - Fully paid (to test cleanup)
         VendorMonthlyPayment stitchingPayment = new VendorMonthlyPayment();
         stitchingPayment.setVendor(stitchingVendor);
         stitchingPayment.setMonthYear(lastMonthYear);
         stitchingPayment.setOperationType(VendorRole.Stitching);
-        stitchingPayment.setTotalDue(7200.0); // 3 plans * 120 units * 20 per unit
-        stitchingPayment.setPaidAmount(7200.0);
+        stitchingPayment.setTotalDue(stitchingTotal);
+        stitchingPayment.setPaidAmount(stitchingTotal);
         stitchingPayment.setStatus(PaymentStatus.PAID);
         stitchingPayment.setCreatedDate(lastMonth.atDay(15));
         stitchingPayment.setLastUpdatedDate(lastMonth.atDay(25));
         vendorMonthlyPaymentRepository.save(stitchingPayment);
-        
-        System.out.println("✓ Created 3 vendor monthly payment records:");
-        System.out.println("  - Cutting: ₹5,400 (PENDING)");
-        System.out.println("  - Printing: ₹4,320 (PARTIAL - ₹2,000 paid, ₹2,320 remaining)");
-        System.out.println("  - Stitching: ₹7,200 (PAID - ready for cleanup)");
+
+        System.out.printf("✓ Created 3 vendor monthly payment records (rates for %s):%n", planDate);
+        System.out.printf("  - Cutting: ₹%.0f (PENDING)%n", cuttingTotal);
+        System.out.printf("  - Printing: ₹%.0f (PARTIAL - ₹2,000 paid)%n", printingTotal);
+        System.out.printf("  - Stitching: ₹%.0f (PAID - ready for cleanup)%n", stitchingTotal);
     }
 }
 

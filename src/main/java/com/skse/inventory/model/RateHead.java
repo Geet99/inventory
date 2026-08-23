@@ -9,14 +9,15 @@ public class RateHead {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private String name;
-    
+
     @Enumerated(EnumType.STRING)
     private VendorRole operationType; // Cutting, Printing, or Stitching
-    
+
+    /** Current/latest cost — kept in sync when price entries are added. Used for display and legacy fallback. */
     private Double cost;
-    
+
     private boolean active = true;
     
     // Getters and Setters
@@ -51,7 +52,7 @@ public class RateHead {
     public void setCost(Double cost) {
         this.cost = cost;
     }
-    
+
     public boolean isActive() {
         return active;
     }

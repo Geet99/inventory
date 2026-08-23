@@ -49,7 +49,7 @@ public interface PlanRepository extends JpaRepository<Plan, String> {
 
     @Query("SELECT p.status, COUNT(p) " +
             "FROM Plan p " +
-            "WHERE p.status NOT IN ('Completed') " +
+            "WHERE p.status <> com.skse.inventory.model.PlanStatus.Completed " +
             "GROUP BY p.status")
     List<Object[]> getActiveOrdersByState();
 

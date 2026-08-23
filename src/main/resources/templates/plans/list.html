@@ -488,21 +488,23 @@
                                         title="Complete the plan before sending to machine">
                                     Machine
                                 </button>
-                                <form th:if="${plan.status != null and plan.status.name() == 'Pending_Cutting'}"
+                                <form th:if="${plan.status == null or plan.status.name() != 'Completed'}"
                                       th:action="@{/plans/delete}"
                                       method="post" style="display:inline">
                                     <input type="hidden" name="planNumber" th:value="${plan.planNumber}">
                                     <button type="submit" class="btn btn-danger"
-                                            onclick="return confirm('Delete this plan? This cannot be undone.');">
+                                            title="Delete this plan and reverse vendor payments for completed stages"
+                                            onclick="return confirm('Delete this plan? Vendor payments for completed stages will be reversed. This cannot be undone.');">
                                         Delete
                                     </button>
                                 </form>
-                                <form th:if="${plan.status == null or plan.status.name() != 'Pending_Cutting'}"
+                                <form th:if="${plan.status != null and plan.status.name() == 'Completed'}"
                                       th:action="@{/plans/force-cleanup}"
                                       method="post" style="display:inline">
                                     <input type="hidden" name="planNumber" th:value="${plan.planNumber}">
-                                    <button type="submit" class="btn btn-danger" title="Reverse vendor charges and stock, then remove this plan"
-                                            onclick="return confirm('Remove this plan and reverse vendor balances and stock? Blocked if monthly payments already settled. Cannot undo.');">
+                                    <button type="submit" class="btn btn-danger"
+                                            title="Remove this completed plan and its vendor payment records"
+                                            onclick="return confirm('Remove this completed plan and clean up vendor payment records? Cannot undo.');">
                                         Cleanup
                                     </button>
                                 </form>
@@ -513,8 +515,8 @@
         </table>
         </div>
         <p style="font-size: 13px; color: #6c757d; margin-top: 12px;">
-            <strong>Delete</strong> is only for plans still in <strong>Pending Cutting</strong>.
-            For plans that already progressed, use <strong>Cleanup</strong> to reverse vendor pricing and stock, then remove the plan (blocked if monthly vendor payments already cover the amounts).
+            <strong>Delete</strong> removes in-progress plans and reverses vendor payments for any completed stages.
+            <strong>Cleanup</strong> is for finished (Completed) plans — removes the plan and its vendor payment records.
         </p>
         
         <div th:if="${#lists.isEmpty(plans)}" style="text-align: center; margin-top: 50px; color: #666;">

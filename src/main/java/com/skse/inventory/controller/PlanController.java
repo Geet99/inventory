@@ -71,24 +71,24 @@ public class PlanController {
         return ResponseEntity.ok(plan);
     }
 
-    @Operation(summary = "Delete a Plan", description = "Deletes the Plan and removes its associated data.")
+    @Operation(summary = "Delete a Plan", description = "Deletes an in-progress plan and reverses vendor payments for completed stages.")
     @DeleteMapping("/{planNumber}/delete")
     public ResponseEntity<String> deletePlan(@PathVariable String planNumber) {
         try {
             planService.deletePlan(planNumber);
-            return ResponseEntity.ok("Plan deleted successfully");
-        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.ok("Plan deleted; vendor payments reversed where applicable.");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         }
     }
 
-    @Operation(summary = "Force cleanup a Plan",
-            description = "Removes a plan that has left Pending Cutting: reverses vendor monthly charges and stock, then deletes the plan.")
+    @Operation(summary = "Cleanup a completed Plan",
+            description = "Removes a completed plan and its vendor payment records.")
     @PostMapping("/{planNumber}/force-cleanup")
     public ResponseEntity<String> forceCleanupPlan(@PathVariable String planNumber) {
         try {
             planService.forceCleanupPlan(planNumber);
-            return ResponseEntity.ok("Plan removed; vendor and stock balances reversed where applicable.");
+            return ResponseEntity.ok("Plan removed; vendor payment records cleaned up.");
         } catch (IllegalArgumentException | IllegalStateException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         }

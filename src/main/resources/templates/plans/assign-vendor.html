@@ -184,9 +184,10 @@
                         <label for="cuttingVendorId">Select Cutting Vendor:</label>
                         <select id="cuttingVendorId" name="cuttingVendorId">
                             <option value="">-- No Change --</option>
-                            <option th:each="vendor : ${vendors}" 
+                            <option value="0">-- Unassign --</option>
+                            <option th:each="vendor : ${vendors}"
                                     th:if="${vendor.role != null and vendor.role.name() == 'Cutting'}"
-                                    th:value="${vendor.id}" 
+                                    th:value="${vendor.id}"
                                     th:text="${vendor.name}"
                                     th:selected="${plan.cuttingVendor != null && plan.cuttingVendor.id == vendor.id}"></option>
                         </select>
@@ -202,9 +203,10 @@
                         <label for="printingVendorId">Select Printing Vendor:</label>
                         <select id="printingVendorId" name="printingVendorId">
                             <option value="">-- No Change --</option>
-                            <option th:each="vendor : ${vendors}" 
+                            <option value="0">-- Unassign --</option>
+                            <option th:each="vendor : ${vendors}"
                                     th:if="${vendor.role != null and vendor.role.name() == 'Printing'}"
-                                    th:value="${vendor.id}" 
+                                    th:value="${vendor.id}"
                                     th:text="${vendor.name}"
                                     th:selected="${plan.printingVendor != null && plan.printingVendor.id == vendor.id}"></option>
                         </select>
@@ -220,9 +222,10 @@
                         <label for="stitchingVendorId">Select Stitching Vendor:</label>
                         <select id="stitchingVendorId" name="stitchingVendorId">
                             <option value="">-- No Change --</option>
-                            <option th:each="vendor : ${vendors}" 
+                            <option value="0">-- Unassign --</option>
+                            <option th:each="vendor : ${vendors}"
                                     th:if="${vendor.role != null and vendor.role.name() == 'Stitching'}"
-                                    th:value="${vendor.id}" 
+                                    th:value="${vendor.id}"
                                     th:text="${vendor.name}"
                                     th:selected="${plan.stitchingVendor != null && plan.stitchingVendor.id == vendor.id}"></option>
                         </select>

@@ -6,6 +6,7 @@ import com.skse.inventory.repository.UpperStockRepository;
 import com.skse.inventory.repository.StockMovementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -77,6 +78,7 @@ public class StockService {
         }
     }
 
+    @Transactional
     public void moveFromUpperToFinished(Article article, String size, String color, int quantity) {
         // Check upper stock availability
         Optional<UpperStock> upperStockOpt = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(

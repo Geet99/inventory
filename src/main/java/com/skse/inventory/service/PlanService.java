@@ -33,6 +33,9 @@ public class PlanService {
     @Autowired
     private VendorService vendorService;
 
+    @Autowired
+    private RateHeadService rateHeadService;
+
     /**
      * Resolves a plan by primary key ({@link Plan#getPlanNumber()}), trimming the argument.
      * Tries exact match first, then case-insensitive match so URLs and filters stay consistent
@@ -118,6 +121,7 @@ public class PlanService {
         p.setPrintingVendor(src.getPrintingVendor());
         p.setStitchingVendor(src.getStitchingVendor());
         p.setPrintingRateHead(src.getPrintingRateHead());
+        p.setCreateDate(src.getCreateDate());
         return p;
     }
 
@@ -163,7 +167,7 @@ public class PlanService {
         if (isCuttingCompletedForAccounting(beforeEdit)) {
             double amount = 0.0;
             if (plan.getCuttingVendor() != null) {
-                amount = calculatePayment(plan, VendorRole.Cutting);
+                amount = calculatePayment(plan, VendorRole.Cutting, plan.getCuttingEndDate());
             }
             plan.setCuttingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
@@ -173,7 +177,7 @@ public class PlanService {
         if (isPrintingCompletedForAccounting(beforeEdit)) {
             double amount = 0.0;
             if (plan.getPrintingVendor() != null) {
-                amount = calculatePayment(plan, VendorRole.Printing);
+                amount = calculatePayment(plan, VendorRole.Printing, plan.getPrintingEndDate());
             }
             plan.setPrintingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
@@ -183,7 +187,7 @@ public class PlanService {
         if (isStitchingCompletedForAccounting(beforeEdit)) {
             double amount = 0.0;
             if (plan.getStitchingVendor() != null) {
-                amount = calculatePayment(plan, VendorRole.Stitching);
+                amount = calculatePayment(plan, VendorRole.Stitching, plan.getStitchingEndDate());
             }
             plan.setStitchingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
@@ -254,25 +258,28 @@ public class PlanService {
     }
 
     /**
-     * Deletes a plan only while it is still in Pending_Cutting (not yet started in the workshop).
+     * Deletes an in-progress plan (any status before Completed).
+     * Reverses vendor payments for any stages that have already been completed.
+     * Does NOT reverse stock.
      */
+    @Transactional
     public void deletePlan(String planNumber) {
         Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
         }
-        if (plan.getStatus() != PlanStatus.Pending_Cutting) {
+        if (plan.getStatus() == PlanStatus.Completed) {
             throw new IllegalArgumentException(
-                    "Only plans in Pending Cutting state can be deleted. This plan has already progressed.");
+                    "Completed plans cannot be deleted. Use Cleanup instead.");
         }
+        vendorService.removeVendorOrdersForPlan(plan.getPlanNumber());
         unlinkStockMovementsFromPlan(plan.getPlanNumber());
         planRepository.delete(plan);
     }
 
     /**
-     * Removes a plan that has already left {@link PlanStatus#Pending_Cutting}: reverses vendor monthly
-     * charges, then stock (machine move if applicable, then cutting output on upper stock).
-     * Use {@link #deletePlan(String)} for plans still pending cutting.
+     * Cleanup for finished (Completed) plans: removes the plan from the screen
+     * and its vendor payment info. Does NOT reverse stock.
      */
     @Transactional
     public void forceCleanupPlan(String planNumber) {
@@ -280,17 +287,11 @@ public class PlanService {
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
         }
-        if (plan.getStatus() == PlanStatus.Pending_Cutting) {
-            deletePlan(plan.getPlanNumber());
-            return;
+        if (plan.getStatus() != PlanStatus.Completed) {
+            throw new IllegalArgumentException(
+                    "Only completed plans can be cleaned up. Use Delete for in-progress plans.");
         }
         vendorService.removeVendorOrdersForPlan(plan.getPlanNumber());
-        if (plan.getMachineProcessingDate() != null) {
-            reverseMoveStockFromUpperToFinished(plan);
-        }
-        if (upperStockWasIncreasedForCuttingOutput(plan)) {
-            reverseUpdateUpperStockFromPlan(plan);
-        }
         unlinkStockMovementsFromPlan(plan.getPlanNumber());
         planRepository.delete(plan);
     }
@@ -409,7 +410,7 @@ public class PlanService {
                 plan.setCuttingEndDate(date);
                 if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Cutting)) {
                     if (plan.getCuttingVendor() != null) {
-                        double cuttingPayment = calculatePayment(plan, VendorRole.Cutting);
+                        double cuttingPayment = calculatePayment(plan, VendorRole.Cutting, date);
                         plan.setCuttingVendorPaymentDue(cuttingPayment);
                         vendorService.recordVendorOrderToMonth(
                                 plan.getCuttingVendor().getId(), canonicalPlanNumber, cuttingPayment,
@@ -425,7 +426,7 @@ public class PlanService {
                 plan.setPrintingEndDate(date);
                 if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Printing)) {
                     if (plan.getPrintingVendor() != null) {
-                        double printingPayment = calculatePayment(plan, VendorRole.Printing);
+                        double printingPayment = calculatePayment(plan, VendorRole.Printing, date);
                         plan.setPrintingVendorPaymentDue(printingPayment);
                         vendorService.recordVendorOrderToMonth(
                                 plan.getPrintingVendor().getId(), canonicalPlanNumber, printingPayment,
@@ -440,7 +441,7 @@ public class PlanService {
                 plan.setStitchingEndDate(date);
                 if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Stitching)) {
                     if (plan.getStitchingVendor() != null) {
-                        double stitchingPayment = calculatePayment(plan, VendorRole.Stitching);
+                        double stitchingPayment = calculatePayment(plan, VendorRole.Stitching, date);
                         plan.setStitchingVendorPaymentDue(stitchingPayment);
                         vendorService.recordVendorOrderToMonth(
                                 plan.getStitchingVendor().getId(), canonicalPlanNumber, stitchingPayment,
@@ -637,7 +638,18 @@ public class PlanService {
         };
     }
 
-    private double calculatePayment(Plan plan, VendorRole roleType) {
+    /**
+     * Calculates the payment amount for a plan's operation type.
+     * Uses the plan's createDate to find the rate from the rate head's price history,
+     * so new price entries with later effective dates don't affect older plans.
+     */
+    /**
+     * Calculates the payment amount for a plan's operation type.
+     * Uses the provided effectiveDate to find the rate from the rate head's price history.
+     * For transitions, this is the transition date (when the stage completes).
+     * For recalculations, this is the stage's end date.
+     */
+    private double calculatePayment(Plan plan, VendorRole roleType, LocalDate effectiveDate) {
         String articleKey = Article.normalizeNameKey(plan.getArticleName());
         if (articleKey == null) {
             throw new IllegalArgumentException("Plan has no article name.");
@@ -646,21 +658,120 @@ public class PlanService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No article named \"" + plan.getArticleName()
                                 + "\". Fix the plan's article so it matches an existing article (matching is case-insensitive)."));
-        int totalQuantity = plan.getTotal();
-        Double costPerUnit = switch (roleType) {
-            case Cutting -> article.getCuttingCost();
-            case Printing -> (plan.getPrintingRateHead() != null)
-                    ? plan.getPrintingRateHead().getCost()
-                    : article.getPrintingCost();
-            case Stitching -> article.getStitchingCost();
-            default -> 0.0;
+
+        // Identify the rate head for this operation (Plan-level for printing, Article-level otherwise)
+        RateHead rateHead = switch (roleType) {
+            case Cutting -> article.getCuttingRateHead();
+            case Printing -> plan.getPrintingRateHead() != null ? plan.getPrintingRateHead() : article.getPrintingRateHead();
+            case Stitching -> article.getStitchingRateHead();
         };
+
+        Double costPerUnit = null;
+
+        if (rateHead != null) {
+            LocalDate lookupDate = effectiveDate != null ? effectiveDate : LocalDate.now();
+            costPerUnit = rateHeadService.getCostForDate(rateHead, lookupDate);
+        }
+
+        // Fall back to legacy cost fields on article (no rate head assigned or no price entries)
+        if (costPerUnit == null) {
+            costPerUnit = switch (roleType) {
+                case Cutting -> article.getCuttingCost();
+                case Printing -> article.getPrintingCost();
+                case Stitching -> article.getStitchingCost();
+            };
+        }
+
         if (costPerUnit == null) {
             throw new IllegalStateException(
                     "Missing " + roleType + " cost for article \"" + article.getName()
                             + "\". Set cutting/printing/stitching rate heads (or legacy costs) on the article before completing this stage.");
         }
-        return costPerUnit * totalQuantity;
+        return costPerUnit * plan.getTotal();
+    }
+
+    /**
+     * Recalculates vendor payments for all plans that use the given rate head.
+     * Called after a price entry is added, updated, or deleted so that
+     * already-completed stages reflect the corrected rate.
+     */
+    @Transactional
+    public void recalculatePaymentsForRateHead(RateHead rateHead) {
+        if (rateHead == null) return;
+
+        // Find articles that reference this rate head
+        List<Article> articles = articleRepository.findAllByOrderByIdAsc();
+        Set<String> affectedArticleNames = new HashSet<>();
+        Map<String, Set<VendorRole>> articleRoles = new HashMap<>();
+
+        for (Article article : articles) {
+            Set<VendorRole> roles = new HashSet<>();
+            if (rateHead.equals(article.getCuttingRateHead())) roles.add(VendorRole.Cutting);
+            if (rateHead.equals(article.getPrintingRateHead())) roles.add(VendorRole.Printing);
+            if (rateHead.equals(article.getStitchingRateHead())) roles.add(VendorRole.Stitching);
+            if (!roles.isEmpty()) {
+                String normalized = Article.normalizeNameKey(article.getName());
+                affectedArticleNames.add(normalized);
+                articleRoles.put(normalized, roles);
+            }
+        }
+
+        List<Plan> allPlans = planRepository.findAll();
+        for (Plan plan : allPlans) {
+            boolean changed = false;
+            String normalized = Article.normalizeNameKey(plan.getArticleName());
+
+            // Check cutting (rate head comes from article)
+            if (affectedArticleNames.contains(normalized)
+                    && articleRoles.get(normalized).contains(VendorRole.Cutting)
+                    && plan.getCuttingEndDate() != null
+                    && plan.getCuttingVendor() != null) {
+                double amount = calculatePayment(plan, VendorRole.Cutting, plan.getCuttingEndDate());
+                if (Math.abs(amount - plan.getCuttingVendorPaymentDue()) > 0.001) {
+                    plan.setCuttingVendorPaymentDue(amount);
+                    vendorService.syncVendorOrderForPlanRole(
+                            plan.getPlanNumber(), VendorRole.Cutting, plan.getCuttingVendor(), amount, plan.getCuttingEndDate());
+                    changed = true;
+                }
+            }
+
+            // Check printing (rate head can come from plan or article)
+            boolean printingAffected = false;
+            if (plan.getPrintingRateHead() != null && rateHead.getId().equals(plan.getPrintingRateHead().getId())) {
+                printingAffected = true;
+            } else if (plan.getPrintingRateHead() == null
+                    && affectedArticleNames.contains(normalized)
+                    && articleRoles.getOrDefault(normalized, Set.of()).contains(VendorRole.Printing)) {
+                printingAffected = true;
+            }
+            if (printingAffected && plan.getPrintingEndDate() != null && plan.getPrintingVendor() != null) {
+                double amount = calculatePayment(plan, VendorRole.Printing, plan.getPrintingEndDate());
+                if (Math.abs(amount - plan.getPrintingVendorPaymentDue()) > 0.001) {
+                    plan.setPrintingVendorPaymentDue(amount);
+                    vendorService.syncVendorOrderForPlanRole(
+                            plan.getPlanNumber(), VendorRole.Printing, plan.getPrintingVendor(), amount, plan.getPrintingEndDate());
+                    changed = true;
+                }
+            }
+
+            // Check stitching (rate head comes from article)
+            if (affectedArticleNames.contains(normalized)
+                    && articleRoles.get(normalized).contains(VendorRole.Stitching)
+                    && plan.getStitchingEndDate() != null
+                    && plan.getStitchingVendor() != null) {
+                double amount = calculatePayment(plan, VendorRole.Stitching, plan.getStitchingEndDate());
+                if (Math.abs(amount - plan.getStitchingVendorPaymentDue()) > 0.001) {
+                    plan.setStitchingVendorPaymentDue(amount);
+                    vendorService.syncVendorOrderForPlanRole(
+                            plan.getPlanNumber(), VendorRole.Stitching, plan.getStitchingVendor(), amount, plan.getStitchingEndDate());
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                planRepository.save(plan);
+            }
+        }
     }
 
     public Map<String, Integer> getActiveOrdersByState() {
@@ -769,29 +880,41 @@ public class PlanService {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
 
-        // Only update vendors that were selected (not null or empty)
-        if (cuttingVendorId != null && cuttingVendorId > 0) {
-            Vendor cuttingVendor = vendorService.getVendorById(cuttingVendorId);
-            if (cuttingVendor == null) {
-                throw new IllegalArgumentException("Cutting vendor not found");
+        // null = no change, 0 = unassign, >0 = assign that vendor
+        if (cuttingVendorId != null) {
+            if (cuttingVendorId == 0) {
+                plan.setCuttingVendor(null);
+            } else {
+                Vendor cuttingVendor = vendorService.getVendorById(cuttingVendorId);
+                if (cuttingVendor == null) {
+                    throw new IllegalArgumentException("Cutting vendor not found");
+                }
+                plan.setCuttingVendor(cuttingVendor);
             }
-            plan.setCuttingVendor(cuttingVendor);
         }
-        
-        if (printingVendorId != null && printingVendorId > 0) {
-            Vendor printingVendor = vendorService.getVendorById(printingVendorId);
-            if (printingVendor == null) {
-                throw new IllegalArgumentException("Printing vendor not found");
+
+        if (printingVendorId != null) {
+            if (printingVendorId == 0) {
+                plan.setPrintingVendor(null);
+            } else {
+                Vendor printingVendor = vendorService.getVendorById(printingVendorId);
+                if (printingVendor == null) {
+                    throw new IllegalArgumentException("Printing vendor not found");
+                }
+                plan.setPrintingVendor(printingVendor);
             }
-            plan.setPrintingVendor(printingVendor);
         }
-        
-        if (stitchingVendorId != null && stitchingVendorId > 0) {
-            Vendor stitchingVendor = vendorService.getVendorById(stitchingVendorId);
-            if (stitchingVendor == null) {
-                throw new IllegalArgumentException("Stitching vendor not found");
+
+        if (stitchingVendorId != null) {
+            if (stitchingVendorId == 0) {
+                plan.setStitchingVendor(null);
+            } else {
+                Vendor stitchingVendor = vendorService.getVendorById(stitchingVendorId);
+                if (stitchingVendor == null) {
+                    throw new IllegalArgumentException("Stitching vendor not found");
+                }
+                plan.setStitchingVendor(stitchingVendor);
             }
-            plan.setStitchingVendor(stitchingVendor);
         }
 
         planRepository.save(plan);
@@ -840,7 +963,7 @@ public class PlanService {
         LocalDate now = LocalDate.now();
         LocalDate startOfPreviousMonth = now.minusMonths(1).withDayOfMonth(1);
         LocalDate endOfPreviousMonth = now.withDayOfMonth(1).minusDays(1);
-        
+
         List<Plan> completedPlans = planRepository.findAll().stream()
             .filter(plan -> plan.getStatus() == PlanStatus.Completed)
             .filter(plan -> {
@@ -850,8 +973,12 @@ public class PlanService {
                     && !createDate.isAfter(endOfPreviousMonth);
             })
             .toList();
-        
+
         int count = completedPlans.size();
+        for (Plan plan : completedPlans) {
+            vendorService.removeVendorOrdersForPlan(plan.getPlanNumber());
+            unlinkStockMovementsFromPlan(plan.getPlanNumber());
+        }
         planRepository.deleteAll(completedPlans);
         return count;
     }

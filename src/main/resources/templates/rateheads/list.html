@@ -230,6 +230,13 @@
     <div th:replace="~{fragments/navigation :: navbar}"></div>
 
     <div class="container">
+        <div th:if="${success}" style="background-color: #d4edda; color: #155724; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;">
+            <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" style="background-color: #f8d7da; color: #721c24; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;">
+            <span th:text="${error}"></span>
+        </div>
+
         <div class="page-header">
             <h2>Rate Heads Management</h2>
             <a th:href="@{/rateheads/new}" class="btn btn-success">➕ Add New Rate Head</a>
@@ -244,9 +251,23 @@
                th:classappend="${currentFilter == op} ? 'filter-active' : ''"></a>
         </div>
         
+        <!-- Migration tools: seed initial price entries -->
+        <div th:if="${needsSeeding}" class="info-box" style="background-color: #fff3cd; border-color: #ffc107; color: #856404;">
+            <h4>⚠️ Price History Setup Needed</h4>
+            <p>Some rate heads have a cost but no price entries. Seed initial price entries to enable date-based pricing. Choose an effective date (e.g., the date these rates started being used).</p>
+            <form th:action="@{/rateheads/seed-prices}" method="post" style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                <label style="font-size: 13px; font-weight: bold;">Effective From:</label>
+                <input type="date" name="effectiveFrom" required style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 5px;">
+                <button type="submit" class="btn btn-warning" onclick="return confirm('This will create a price entry for each rate head that has no price history. Continue?')">Seed Price Entries</button>
+            </form>
+        </div>
+
         <div class="info-box">
             <h4>ℹ️ About Rate Heads</h4>
-            <p>Rate Heads centralize operation costs (Cutting, Printing, Stitching). When you update a rate head cost, all future vendor payments for articles using that rate head will automatically use the updated cost.</p>
+            <p>Rate Heads centralize operation costs (Cutting, Printing, Stitching). Each rate head has a price history with effective dates. Plans use the price that was effective when the stage completed. Editing a price entry retroactively updates all affected plan payments. Click Edit to manage price entries.</p>
+            <form th:action="@{/rateheads/recalculate-all}" method="post" style="margin-top: 10px;">
+                <button type="submit" class="btn btn-info" onclick="return confirm('Recalculate vendor payments for ALL plans? This may take a moment.')">Recalculate All Payments</button>
+            </form>
         </div>
         
         <table>
@@ -254,7 +275,8 @@
                     <tr>
                         <th>Name</th>
                         <th>Operation Type</th>
-                        <th>Cost (₹)</th>
+                        <th>Current Cost (₹)</th>
+                        <th>Effective From</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -266,7 +288,8 @@
                             <span th:class="${'operation-' + #strings.toLowerCase(rateHead.operationType)}" 
                                   th:text="${rateHead.operationType}"></span>
                         </td>
-                        <td th:text="${'₹' + #numbers.formatDecimal(rateHead.cost, 1, 2)}"></td>
+                        <td th:text="${rateHead.cost != null ? '₹' + #numbers.formatDecimal(rateHead.cost, 1, 2) : '—'}"></td>
+                        <td th:text="${latestEffectiveDates.containsKey(rateHead.id) ? latestEffectiveDates.get(rateHead.id) : '—'}"></td>
                         <td>
                             <span th:class="${rateHead.active ? 'status-active' : 'status-inactive'}" 
                                   th:text="${rateHead.active ? 'Active' : 'Inactive'}"></span>

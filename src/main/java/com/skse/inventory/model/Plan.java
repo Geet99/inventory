@@ -28,6 +28,7 @@ public class Plan {
     @JoinColumn(name = "cutting_vendor_id")
     private Vendor cuttingVendor;
     
+    @Enumerated(EnumType.STRING)
     private CuttingType cuttingType;
     
     @ManyToOne
@@ -258,4 +259,5 @@ public class Plan {
     public void setMachineProcessingDate(LocalDate machineProcessingDate) {
         this.machineProcessingDate = machineProcessingDate;
     }
+
 }

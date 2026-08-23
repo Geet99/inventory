@@ -36,6 +36,9 @@ public class VendorService {
     @Autowired
     private VendorMonthlyPaymentRepository vendorMonthlyPaymentRepository;
 
+    @Autowired
+    private RateHeadService rateHeadService;
+
     public List<Vendor> getAllVendors() {
         return vendorRepository.findAll();
     }
@@ -61,8 +64,40 @@ public class VendorService {
         return null;
     }
 
+    @Transactional
     public void deleteVendor(Long id) {
-        vendorRepository.deleteById(id);
+        Vendor vendor = getVendorById(id);
+        if (vendor == null) {
+            throw new IllegalArgumentException("Vendor not found: " + id);
+        }
+
+        // Unlink vendor from all plans that reference it
+        for (Plan plan : planRepository.findAll()) {
+            boolean changed = false;
+            if (plan.getCuttingVendor() != null && plan.getCuttingVendor().getId().equals(id)) {
+                plan.setCuttingVendor(null);
+                changed = true;
+            }
+            if (plan.getPrintingVendor() != null && plan.getPrintingVendor().getId().equals(id)) {
+                plan.setPrintingVendor(null);
+                changed = true;
+            }
+            if (plan.getStitchingVendor() != null && plan.getStitchingVendor().getId().equals(id)) {
+                plan.setStitchingVendor(null);
+                changed = true;
+            }
+            if (changed) {
+                planRepository.save(plan);
+            }
+        }
+
+        // Delete monthly payment records for this vendor (no cascade on Vendor side)
+        List<VendorMonthlyPayment> monthlyPayments =
+                vendorMonthlyPaymentRepository.findByVendorOrderByMonthYearDesc(vendor);
+        vendorMonthlyPaymentRepository.deleteAll(monthlyPayments);
+
+        // OrderHistory is cascade-deleted via Vendor.orderHistory
+        vendorRepository.delete(vendor);
     }
 
     public List<Vendor> getVendorsByRole(VendorRole role) {
@@ -81,6 +116,7 @@ public class VendorService {
         }
     }
 
+    @Transactional
     public void recordVendorPayment(Long vendorId, double amount, String planNumber) {
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
@@ -149,6 +185,7 @@ public class VendorService {
         vendorRepository.save(vendor);
     }
 
+    @Transactional
     public void recordVendorOrder(Long vendorId, String planNumber, double amount, VendorRole role) {
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
@@ -262,7 +299,8 @@ public class VendorService {
      * completionDate drives: (1) which month-year the due is added to, (2) order history orderDate.
      * Do not replace with LocalDate.now() - finances must use the actual completion/transition date.
      */
-    public void recordVendorOrderToMonth(Long vendorId, String planNumber, double amount, 
+    @Transactional
+    public void recordVendorOrderToMonth(Long vendorId, String planNumber, double amount,
                                          VendorRole role, LocalDate completionDate) {
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
@@ -458,7 +496,8 @@ public class VendorService {
     /**
      * Record payment for a specific month
      */
-    public void recordMonthlyPayment(Long vendorId, String monthYear, VendorRole operationType, 
+    @Transactional
+    public void recordMonthlyPayment(Long vendorId, String monthYear, VendorRole operationType,
                                      double amount, String planNumber) {
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
@@ -671,8 +710,11 @@ public class VendorService {
                         ? null
                         : articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey).orElse(null);
                 if (article != null && article.getCuttingRateHead() != null) {
-                    rateHeadName = article.getCuttingRateHead().getName();
-                    rateHeadCost = article.getCuttingRateHead().getCost();
+                    RateHead rh = article.getCuttingRateHead();
+                    rateHeadName = rh.getName();
+                    LocalDate rateDate = plan.getCuttingEndDate() != null ? plan.getCuttingEndDate() : LocalDate.now();
+                    Double cost = rateHeadService.getCostForDate(rh, rateDate);
+                    rateHeadCost = cost != null ? cost : 0.0;
                 }
                 startDate = plan.getCuttingStartDate();
                 endDate = plan.getCuttingEndDate();
@@ -686,8 +728,11 @@ public class VendorService {
                 isAssigned = true;
                 operationType = "Printing";
                 if (plan.getPrintingRateHead() != null) {
-                    rateHeadName = plan.getPrintingRateHead().getName();
-                    rateHeadCost = plan.getPrintingRateHead().getCost();
+                    RateHead rh = plan.getPrintingRateHead();
+                    rateHeadName = rh.getName();
+                    LocalDate rateDate = plan.getPrintingEndDate() != null ? plan.getPrintingEndDate() : LocalDate.now();
+                    Double cost = rateHeadService.getCostForDate(rh, rateDate);
+                    rateHeadCost = cost != null ? cost : 0.0;
                 }
                 startDate = plan.getPrintingStartDate();
                 endDate = plan.getPrintingEndDate();
@@ -705,8 +750,11 @@ public class VendorService {
                         ? null
                         : articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey).orElse(null);
                 if (article != null && article.getStitchingRateHead() != null) {
-                    rateHeadName = article.getStitchingRateHead().getName();
-                    rateHeadCost = article.getStitchingRateHead().getCost();
+                    RateHead rh = article.getStitchingRateHead();
+                    rateHeadName = rh.getName();
+                    LocalDate rateDate = plan.getStitchingEndDate() != null ? plan.getStitchingEndDate() : LocalDate.now();
+                    Double cost = rateHeadService.getCostForDate(rh, rateDate);
+                    rateHeadCost = cost != null ? cost : 0.0;
                 }
                 startDate = plan.getStitchingStartDate();
                 endDate = plan.getStitchingEndDate();
