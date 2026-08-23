@@ -94,7 +94,7 @@ public class PlanViewController {
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         model.addAttribute("cuttingTypes", CuttingType.values());
-        model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
+        model.addAttribute("printingRateHeads", rateHeadService.getActiveRateHeadsByOperationType(VendorRole.Printing));
         return "plans/new";
     }
 
@@ -113,7 +113,7 @@ public class PlanViewController {
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         model.addAttribute("cuttingTypes", CuttingType.values());
-        model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
+        model.addAttribute("printingRateHeads", rateHeadService.getActiveRateHeadsByOperationType(VendorRole.Printing));
         return "plans/edit";
     }
 
@@ -141,7 +141,7 @@ public class PlanViewController {
             model.addAttribute("articles", articleService.getAllArticles());
             model.addAttribute("colors", colorService.getAllColors());
             model.addAttribute("cuttingTypes", CuttingType.values());
-            model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
+            model.addAttribute("printingRateHeads", rateHeadService.getActiveRateHeadsByOperationType(VendorRole.Printing));
             model.addAttribute("error", ex.getMessage());
             return "plans/new";
         }
@@ -168,7 +168,7 @@ public class PlanViewController {
             model.addAttribute("articles", articleService.getAllArticles());
             model.addAttribute("colors", colorService.getAllColors());
             model.addAttribute("cuttingTypes", CuttingType.values());
-            model.addAttribute("printingRateHeads", rateHeadService.getRateHeadsByOperationType(VendorRole.Printing));
+            model.addAttribute("printingRateHeads", rateHeadService.getActiveRateHeadsByOperationType(VendorRole.Printing));
             model.addAttribute("error", ex.getMessage());
             return "plans/edit";
         }
@@ -216,8 +216,12 @@ public class PlanViewController {
                                @RequestParam(required = false) Long cuttingVendorId,
                                @RequestParam(required = false) Long printingVendorId,
                                @RequestParam(required = false) Long stitchingVendorId) {
-        planService.assignVendorsToPlan(planNumber, cuttingVendorId, printingVendorId, stitchingVendorId);
-        return redirectPlansWithFocus(planNumber);
+        try {
+            planService.assignVendorsToPlan(planNumber, cuttingVendorId, printingVendorId, stitchingVendorId);
+            return redirectPlansWithFocus(planNumber);
+        } catch (Exception ex) {
+            return redirectPlansWithErrorAndFocus(planNumber, ex.getMessage());
+        }
     }
 
     @GetMapping("/confirm-next-state")
@@ -284,8 +288,12 @@ public class PlanViewController {
     
     @PostMapping("/send-to-machine")
     public String sendToMachine(@RequestParam("planNumber") String planNumber) {
-        planService.sendToMachine(planNumber);
-        return redirectPlansWithFocus(planNumber);
+        try {
+            planService.sendToMachine(planNumber);
+            return redirectPlansWithFocus(planNumber);
+        } catch (Exception ex) {
+            return redirectPlansWithErrorAndFocus(planNumber, ex.getMessage());
+        }
     }
     
     @GetMapping("/dashboard")
