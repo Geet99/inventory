@@ -99,8 +99,12 @@ public class RateHeadViewController {
     }
 
     @PostMapping("/update/{id}")
-    public String updateRateHead(@PathVariable Long id, @ModelAttribute RateHead rateHead) {
-        rateHeadService.updateRateHead(id, rateHead);
+    public String updateRateHead(@PathVariable Long id, @ModelAttribute RateHead rateHead, RedirectAttributes redirectAttributes) {
+        try {
+            rateHeadService.updateRateHead(id, rateHead);
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
         return "redirect:/rateheads";
     }
 
@@ -150,8 +154,13 @@ public class RateHeadViewController {
     }
 
     @PostMapping("/delete/{id}")
-    public String deleteRateHead(@PathVariable Long id) {
-        rateHeadService.deleteRateHead(id);
+    public String deleteRateHead(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            rateHeadService.deleteRateHead(id);
+            redirectAttributes.addFlashAttribute("success", "Rate head deleted successfully.");
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("error", "Failed to delete rate head: " + ex.getMessage());
+        }
         return "redirect:/rateheads";
     }
 

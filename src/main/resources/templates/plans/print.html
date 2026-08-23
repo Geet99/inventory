@@ -172,7 +172,7 @@
         
         <div class="info-row">
             <div class="info-label">Created Date:</div>
-            <div class="info-value" th:text="${#temporals.format(plan.createDate, 'dd-MMM-yyyy')}">01-Jan-2024</div>
+            <div class="info-value" th:text="${plan.createDate != null ? #temporals.format(plan.createDate, 'dd-MMM-yyyy') : 'N/A'}">01-Jan-2024</div>
         </div>
         
         <div class="info-row">
