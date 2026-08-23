@@ -362,12 +362,13 @@
             const targetId = row.getAttribute('data-target');
             const detailRow = document.getElementById(targetId);
             const expandIcon = row.querySelector('.expand-icon');
-            
+
             if (detailRow.classList.contains('show')) {
                 detailRow.classList.remove('show');
                 expandIcon.classList.remove('expanded');
             } else {
                 detailRow.classList.add('show');
+                detailRow.style.display = '';  // Clear inline style so CSS class takes effect
                 expandIcon.classList.add('expanded');
             }
         }
@@ -413,17 +414,17 @@
             rowPairs.forEach((detailRow, summaryRow) => {
                 const articleCell = summaryRow.querySelector('td:first-child span:last-child');
                 const articleName = articleCell ? articleCell.textContent.toLowerCase() : '';
-                
+
                 if (articleName.includes(searchLower)) {
                     summaryRow.style.display = '';
-                    // Keep detail row hidden unless it was expanded
-                    if (!detailRow.classList.contains('show')) {
-                        detailRow.style.display = 'none';
-                    }
+                    detailRow.style.display = '';  // Clear inline style; CSS classes handle visibility
                     visibleCount++;
                 } else {
                     summaryRow.style.display = 'none';
                     detailRow.style.display = 'none';
+                    detailRow.classList.remove('show');  // Collapse hidden rows
+                    var icon = summaryRow.querySelector('.expand-icon');
+                    if (icon) icon.classList.remove('expanded');
                 }
             });
             

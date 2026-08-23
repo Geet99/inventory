@@ -168,15 +168,23 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="cost">Cost (₹) *</label>
-                    <input type="number" id="cost" th:field="*{cost}" 
-                           step="0.01" min="0" required 
+                    <label for="initialCost">Initial Cost (₹) *</label>
+                    <input type="number" id="initialCost" name="initialCost"
+                           step="0.01" min="0" required
                            placeholder="0.00" class="form-control">
                     <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                        Enter the cost per unit for this operation
+                        Cost per unit for this operation
                     </p>
                 </div>
-                
+
+                <div class="form-group">
+                    <label for="initialEffectiveFrom">Effective From *</label>
+                    <input type="date" id="initialEffectiveFrom" name="initialEffectiveFrom" required class="form-control">
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Stages completing on or after this date will use this rate. You can add more price entries later.
+                    </p>
+                </div>
+
                 <div class="form-group">
                     <label for="active">
                         <input type="checkbox" id="active" th:field="*{active}" checked>

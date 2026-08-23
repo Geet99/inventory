@@ -4,65 +4,15 @@
     <th:block th:replace="~{fragments/navigation :: favicon}"></th:block>
     <title>Edit Rate Head - SKSE Inventory</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            background-color: #f5f5f5; 
-        }
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 20px;
-        }
-        .header { 
-            text-align: center; 
-            margin-bottom: 30px; 
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .header h1 { 
-            color: #2c3e50; 
-            margin-bottom: 10px; 
-            font-size: 28px;
-        }
-        .header p { 
-            color: #7f8c8d; 
-            font-size: 16px; 
+        body {
+            font-family: Arial, sans-serif;
             margin: 0;
+            background-color: #f5f5f5;
         }
-        .nav {
-            background: white;
-            padding: 15px 0;
-            margin-bottom: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .nav-container {
-            max-width: 1200px;
+        .container {
+            max-width: 900px;
             margin: 0 auto;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .nav a {
-            text-decoration: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            color: #2c3e50;
-            font-weight: bold;
-            transition: all 0.2s;
-            font-size: 14px;
-        }
-        .nav a:hover {
-            background-color: #ecf0f1;
-            transform: translateY(-1px);
-        }
-        .nav a.active {
-            background-color: #3498db;
-            color: white;
+            padding: 20px;
         }
         .card {
             background: white;
@@ -104,96 +54,149 @@
             font-size: 14px;
             box-sizing: border-box;
         }
-        .btn { 
-            padding: 10px 20px; 
-            text-decoration: none; 
-            border-radius: 5px; 
-            margin: 5px; 
-            display: inline-block; 
+        .btn {
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 5px;
+            display: inline-block;
             font-weight: bold;
             transition: background-color 0.2s;
             border: none;
             cursor: pointer;
             font-size: 14px;
         }
-        .btn-success { 
-            background-color: #28a745; 
-            color: white; 
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-success:hover { background-color: #1e7e34; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #545b62; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-warning { background-color: #ffc107; color: #212529; }
+        .btn-warning:hover { background-color: #e0a800; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
         }
-        .btn-success:hover {
-            background-color: #1e7e34;
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
         }
-        .btn-secondary { 
-            background-color: #6c757d; 
-            color: white; 
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
         }
-        .btn-secondary:hover {
-            background-color: #545b62;
+        .alert-success {
+            background-color: #d4edda; color: #155724; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;
         }
+        .alert-error {
+            background-color: #f8d7da; color: #721c24; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;
+        }
+        .inline-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .inline-form input { width: auto; }
     </style>
     <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
 </head>
 <body>
-    <!-- Include Page Header and Navigation -->
     <div th:replace="~{fragments/navigation :: page-header}"></div>
     <div th:replace="~{fragments/navigation :: navbar}"></div>
-    
+
     <div class="container">
+        <div th:if="${success}" class="alert-success"><span th:text="${success}"></span></div>
+        <div th:if="${error}" class="alert-error"><span th:text="${error}"></span></div>
+
+        <!-- Rate Head Details -->
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">Edit Rate Head</h2>
             </div>
-            
             <form th:action="@{/rateheads/update/{id}(id=${rateHead.id})}" th:object="${rateHead}" method="post" style="padding: 20px;">
                 <div class="form-group">
                     <label for="name">Rate Head Name *</label>
-                    <input type="text" id="name" th:field="*{name}" required 
-                           placeholder="e.g., Standard Cutting, Premium Printing" class="form-control">
-                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                        Enter a descriptive name for this rate head
-                    </p>
+                    <input type="text" id="name" th:field="*{name}" required class="form-control">
                 </div>
-                
                 <div class="form-group">
                     <label for="operationType">Operation Type *</label>
                     <select id="operationType" th:field="*{operationType}" required class="form-control">
-                        <option value="">-- Select Operation Type --</option>
-                        <option th:each="type : ${operationTypes}" 
-                                th:value="${type}" 
-                                th:text="${type}"></option>
+                        <option value="">-- Select --</option>
+                        <option th:each="type : ${operationTypes}" th:value="${type}" th:text="${type}"></option>
                     </select>
-                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                        Select the operation type for this rate head
-                    </p>
                 </div>
-                
-                <div class="form-group">
-                    <label for="cost">Cost (₹) *</label>
-                    <input type="number" id="cost" th:field="*{cost}" 
-                           step="0.01" min="0" required 
-                           placeholder="0.00" class="form-control">
-                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                        <strong>Note:</strong> Updating this cost will affect all future vendor payments for articles using this rate head
-                    </p>
-                </div>
-                
                 <div class="form-group">
                     <label for="active">
-                        <input type="checkbox" id="active" th:field="*{active}">
-                        Active
+                        <input type="checkbox" id="active" th:field="*{active}"> Active
                     </label>
-                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                        Only active rate heads will be available for selection in articles
-                    </p>
                 </div>
-                
                 <div class="form-group">
                     <button type="submit" class="btn btn-success">Update Rate Head</button>
-                    <a th:href="@{/rateheads}" class="btn btn-secondary">Cancel</a>
+                    <a th:href="@{/rateheads}" class="btn btn-secondary">Back to List</a>
                 </div>
             </form>
+        </div>
+
+        <!-- Price History -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Price History</h2>
+                <p style="margin: 5px 0 0; font-size: 13px; color: #7f8c8d;">
+                    Current cost: <strong th:text="${rateHead.cost != null ? '₹' + #numbers.formatDecimal(rateHead.cost, 1, 2) : '—'}"></strong>
+                    (auto-synced to the latest entry below)
+                </p>
+            </div>
+            <div style="padding: 20px;">
+                <table th:if="${priceHistory != null && !priceHistory.isEmpty()}">
+                    <thead>
+                        <tr>
+                            <th>Effective From</th>
+                            <th>Cost (₹)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="price : ${priceHistory}">
+                            <td>
+                                <form th:action="@{/rateheads/{id}/prices/{priceId}/update(id=${rateHead.id}, priceId=${price.id})}" method="post" class="inline-form">
+                                    <input type="date" name="effectiveFrom" th:value="${price.effectiveFrom}" required style="width: 160px;">
+                                    <input type="number" name="cost" th:value="${price.cost}" step="0.01" min="0" required style="width: 100px;">
+                                    <button type="submit" class="btn btn-warning btn-sm">Save</button>
+                                </form>
+                            </td>
+                            <td th:text="${'₹' + #numbers.formatDecimal(price.cost, 1, 2)}"></td>
+                            <td>
+                                <form th:action="@{/rateheads/{id}/prices/{priceId}/delete(id=${rateHead.id}, priceId=${price.id})}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Delete this price entry?')">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p th:if="${priceHistory == null || priceHistory.isEmpty()}" style="color: #999; text-align: center;">
+                    No price entries yet. Add one below.
+                </p>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ecf0f1;">
+
+                <h4 style="margin: 0 0 10px; color: #2c3e50;">Add New Price Entry</h4>
+                <form th:action="@{/rateheads/{id}/prices/add(id=${rateHead.id})}" method="post" class="inline-form">
+                    <label style="font-size: 13px;">Effective From:</label>
+                    <input type="date" name="effectiveFrom" required style="width: 160px;">
+                    <label style="font-size: 13px;">Cost (₹):</label>
+                    <input type="number" name="cost" step="0.01" min="0" required placeholder="0.00" style="width: 100px;">
+                    <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                </form>
+                <p style="font-size: 12px; color: #666; margin-top: 8px;">
+                    Plans use the price whose effective date is latest but still ≤ the stage completion date.
+                </p>
+            </div>
         </div>
     </div>
 </body>
 </html>
-

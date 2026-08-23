@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -42,6 +43,9 @@ public class VendorViewController {
     @GetMapping("/{id}/edit")
     public String editVendor(@PathVariable Long id, Model model) {
         Vendor vendor = vendorService.getVendorById(id);
+        if (vendor == null) {
+            return "redirect:/vendors";
+        }
         model.addAttribute("vendor", vendor);
         model.addAttribute("roles", VendorRole.values());
         return "vendors/edit";
@@ -51,14 +55,19 @@ public class VendorViewController {
     public String updateVendor(@PathVariable Long id, 
                                @RequestParam String name,
                                @RequestParam VendorRole role,
-                               @RequestParam(required = false, defaultValue = "true") boolean active) {
+                               @RequestParam(required = false, defaultValue = "false") boolean active) {
         vendorService.updateVendor(id, name, role, active);
         return "redirect:/vendors";
     }
 
     @PostMapping("/{id}/delete")
-    public String deleteVendor(@PathVariable Long id) {
-        vendorService.deleteVendor(id);
+    public String deleteVendor(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            vendorService.deleteVendor(id);
+            redirectAttributes.addFlashAttribute("success", "Vendor deleted successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Failed to delete vendor: " + e.getMessage());
+        }
         return "redirect:/vendors";
     }
 
@@ -91,26 +100,35 @@ public class VendorViewController {
     @GetMapping("/{id}/payment")
     public String vendorPaymentForm(@PathVariable Long id, Model model) {
         Vendor vendor = vendorService.getVendorById(id);
+        if (vendor == null) {
+            return "redirect:/vendors";
+        }
         // Get previous month's payment details
         Map<String, Object> monthlyDetails = vendorService.getVendorMonthlySummary(id);
-        
+
         model.addAttribute("vendor", vendor);
         model.addAttribute("monthlyDetails", monthlyDetails);
         return "vendors/payment";
     }
 
     @PostMapping("/{id}/payment")
-    public String recordPayment(@PathVariable Long id, 
+    public String recordPayment(@PathVariable Long id,
                                @RequestParam double amount,
-                               @RequestParam(required = false) String planNumber) {
-        // For monthly settlements, planNumber is not needed
-        if (planNumber == null || planNumber.isEmpty()) {
-            planNumber = "MONTHLY_SETTLEMENT";
+                               @RequestParam(required = false) String planNumber,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            // For monthly settlements, planNumber is not needed
+            if (planNumber == null || planNumber.isEmpty()) {
+                planNumber = "MONTHLY_SETTLEMENT";
+            }
+            vendorService.recordVendorPayment(id, amount, planNumber);
+
+            // Redirect to payment receipt for printing
+            return "redirect:/vendors/" + id + "/payment-receipt";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Failed to settle payment: " + e.getMessage());
+            return "redirect:/vendors/" + id + "/payment";
         }
-        vendorService.recordVendorPayment(id, amount, planNumber);
-        
-        // Redirect to payment receipt for printing
-        return "redirect:/vendors/" + id + "/payment-receipt";
     }
 
     @GetMapping("/report")
@@ -139,32 +157,38 @@ public class VendorViewController {
     @GetMapping("/{id}/task-slip")
     public String printTaskSlip(@PathVariable Long id, Model model) {
         Vendor vendor = vendorService.getVendorById(id);
+        if (vendor == null) {
+            return "redirect:/vendors";
+        }
         List<Map<String, Object>> tasks = vendorService.getVendorTasksForSlip(id);
-        
+
         int totalQuantity = tasks.stream()
-            .mapToInt(task -> (Integer) task.get("quantity"))
+            .mapToInt(task -> ((Number) task.get("quantity")).intValue())
             .sum();
-        
+
         double totalPaymentDue = tasks.stream()
-            .mapToDouble(task -> (Double) task.get("paymentDue"))
+            .mapToDouble(task -> ((Number) task.get("paymentDue")).doubleValue())
             .sum();
-        
+
         String period = "All assigned tasks";
-        
+
         model.addAttribute("vendor", vendor);
         model.addAttribute("tasks", tasks);
         model.addAttribute("totalQuantity", totalQuantity);
         model.addAttribute("totalPaymentDue", totalPaymentDue);
         model.addAttribute("period", period);
-        
+
         return "vendors/task-slip";
     }
     
     @GetMapping("/{id}/payment-receipt")
     public String printPaymentReceipt(@PathVariable Long id, Model model) {
         Vendor vendor = vendorService.getVendorById(id);
+        if (vendor == null) {
+            return "redirect:/vendors";
+        }
         Map<String, Object> receiptData = vendorService.getPaymentReceiptData(id);
-        
+
         model.addAttribute("vendor", vendor);
         model.addAttribute("settlementPeriod", receiptData.get("settlementPeriod"));
         model.addAttribute("workDetails", receiptData.get("workDetails"));

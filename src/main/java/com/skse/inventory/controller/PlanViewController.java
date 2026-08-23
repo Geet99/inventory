@@ -160,7 +160,7 @@ public class PlanViewController {
         try {
             planService.updatePlan(planNumber, updatedPlan);
             return redirectPlansWithFocus(planNumber);
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             Plan plan = updatedPlan;
             model.addAttribute("title", "Edit Plan");
             model.addAttribute("plan", plan);
@@ -175,11 +175,13 @@ public class PlanViewController {
     }
 
     @PostMapping("/delete")
-    public String deletePlan(@RequestParam("planNumber") String planNumber) {
+    public String deletePlan(@RequestParam("planNumber") String planNumber, RedirectAttributes redirectAttributes) {
         try {
             planService.deletePlan(planNumber);
-        } catch (IllegalArgumentException ex) {
-            return "redirect:/plans?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
+            redirectAttributes.addFlashAttribute("success",
+                    "Plan deleted. Vendor payment records reversed where applicable.");
+        } catch (Exception ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return redirectPlansWithFocus(planNumber);
     }
@@ -189,7 +191,7 @@ public class PlanViewController {
         try {
             planService.forceCleanupPlan(planNumber);
             redirectAttributes.addFlashAttribute("success",
-                    "Plan removed. Vendor pricing and stock balances were reversed where applicable.");
+                    "Plan removed. Vendor payment records were cleaned up.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -322,8 +324,8 @@ public class PlanViewController {
     }
 
     @PostMapping("/{planNumber}/delete")
-    public String deletePlanPath(@PathVariable String planNumber) {
-        return deletePlan(planNumber);
+    public String deletePlanPath(@PathVariable String planNumber, RedirectAttributes redirectAttributes) {
+        return deletePlan(planNumber, redirectAttributes);
     }
 
     @PostMapping("/{planNumber}/force-cleanup")

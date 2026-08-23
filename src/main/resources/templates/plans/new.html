@@ -262,13 +262,13 @@
                 <div class="form-group">
                     <label for="printingRateHead">Printing Rate Head</label>
                     <select id="printingRateHead" name="printingRateHeadId">
-                        <option value="">Select Printing Rate Head</option>
-                        <option th:each="rateHead : ${printingRateHeads}" 
-                                th:value="${rateHead.id}" 
+                        <option value="">-- None --</option>
+                        <option th:each="rateHead : ${printingRateHeads}"
+                                th:value="${rateHead.id}"
                                 th:selected="${plan.printingRateHead != null && plan.printingRateHead.id == rateHead.id}"
                                 th:text="${rateHead.name + ' - ₹' + rateHead.cost}"></option>
                     </select>
-                    <small class="text-muted">Select the printing rate to be used for this plan</small>
+                    <small class="text-muted">Select the printing rate to be used for this plan (optional)</small>
                 </div>
                 
                 <div class="form-group">
