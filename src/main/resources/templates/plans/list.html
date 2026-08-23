@@ -458,7 +458,7 @@
                         <td th:text="${plan.cuttingVendor?.name ?: '-'}"></td>
                         <td th:text="${plan.printingVendor?.name ?: '-'}"></td>
                         <td th:text="${plan.stitchingVendor?.name ?: '-'}"></td>
-                        <td th:text="${#temporals.format(plan.createDate, 'dd/MM/yyyy')}"></td>
+                        <td th:text="${plan.createDate != null ? #temporals.format(plan.createDate, 'dd/MM/yyyy') : '-'}"></td>
                         <td class="actions-cell">
                             <div class="actions">
                                 <a th:href="@{/plans/edit(planNumber=${plan.planNumber})}" class="btn btn-warning" title="Edit plan">Edit</a>

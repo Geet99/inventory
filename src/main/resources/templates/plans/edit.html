@@ -209,7 +209,7 @@
                         <option th:each="rateHead : ${printingRateHeads}"
                                 th:value="${rateHead.id}"
                                 th:selected="${plan.printingRateHead != null && plan.printingRateHead.id == rateHead.id}"
-                                th:text="${rateHead.name + ' - ₹' + rateHead.cost}"></option>
+                                th:text="${rateHead.name + ' - ₹' + (rateHead.cost != null ? #numbers.formatDecimal(rateHead.cost, 1, 2) : '0.00')}"></option>
                     </select>
                     <small class="text-muted">Select the printing rate to be used for this plan. Choose "None" to unassign.</small>
                 </div>
