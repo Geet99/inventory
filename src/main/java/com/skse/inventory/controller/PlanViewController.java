@@ -206,7 +206,7 @@ public class PlanViewController {
         }
         model.addAttribute("title", "Assign Vendor");
         model.addAttribute("plan", plan);
-        model.addAttribute("vendors", vendorService.getAllVendors());
+        model.addAttribute("vendors", vendorService.getActiveVendors());
         model.addAttribute("roles", VendorRole.values());
         return "plans/assign-vendor";
     }
