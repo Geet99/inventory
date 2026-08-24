@@ -134,7 +134,7 @@ public class PlanViewController {
         try {
             planService.createPlan(plan);
             return "redirect:/plans";
-        } catch (IllegalArgumentException ex) {
+        } catch (Exception ex) {
             model.addAttribute("title", "Create New Plan");
             model.addAttribute("plan", plan);
             model.addAttribute("roles", VendorRole.values());
@@ -160,7 +160,7 @@ public class PlanViewController {
         try {
             planService.updatePlan(planNumber, updatedPlan);
             return redirectPlansWithFocus(planNumber);
-        } catch (IllegalArgumentException | IllegalStateException ex) {
+        } catch (Exception ex) {
             Plan plan = updatedPlan;
             model.addAttribute("title", "Edit Plan");
             model.addAttribute("plan", plan);
