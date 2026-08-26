@@ -6,6 +6,8 @@ import com.skse.inventory.repository.PlanRepository;
 import com.skse.inventory.repository.UpperStockRepository;
 import com.skse.inventory.repository.FinishedStockRepository;
 import com.skse.inventory.repository.StockMovementRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import java.util.*;
 
 @Service
 public class PlanService {
+    private static final Logger log = LoggerFactory.getLogger(PlanService.class);
     @Autowired
     private PlanRepository planRepository;
 
@@ -397,6 +400,9 @@ public class PlanService {
             throw new IllegalStateException("Invalid status transition");
         }
 
+        log.info("moveToNextState: plan={} currentStatus={} effectiveStatus={} -> nextStatus={}",
+                canonicalPlanNumber, plan.getStatus(), getEffectiveStatus(plan), nextStatus);
+
         // Use transition date everywhere: plan timestamps and vendor payment month (financial)
         LocalDate date = transitionDate != null ? transitionDate : LocalDate.now();
 
@@ -408,7 +414,10 @@ public class PlanService {
                 break;
             case Pending_Printing:
                 plan.setCuttingEndDate(date);
-                if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Cutting)) {
+                boolean hasExistingOrder = vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Cutting);
+                log.info("Pending_Printing: plan={} hasExistingCuttingOrder={} cuttingVendor={}",
+                        canonicalPlanNumber, hasExistingOrder, plan.getCuttingVendor() != null ? plan.getCuttingVendor().getName() : "NONE");
+                if (!hasExistingOrder) {
                     if (plan.getCuttingVendor() != null) {
                         double cuttingPayment = calculatePayment(plan, VendorRole.Cutting, date);
                         plan.setCuttingVendorPaymentDue(cuttingPayment);
@@ -416,7 +425,11 @@ public class PlanService {
                                 plan.getCuttingVendor().getId(), canonicalPlanNumber, cuttingPayment,
                                 VendorRole.Cutting, date);
                     }
+                    log.info("Calling updateUpperStockFromPlan for plan={}", canonicalPlanNumber);
                     updateUpperStockFromPlan(plan);
+                    log.info("updateUpperStockFromPlan completed for plan={}", canonicalPlanNumber);
+                } else {
+                    log.warn("SKIPPING upper stock update for plan={} because vendor order already exists!", canonicalPlanNumber);
                 }
                 break;
             case Printing:
@@ -826,10 +839,12 @@ public class PlanService {
             }
 
             // Update upper stock and finished stock as per size and color
+            log.info("updateUpperStock: article={} size={} color={} qty={}", plan.getArticleName(), size, plan.getColor(), quantity);
             Optional<UpperStock> upperStock = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(plan.getArticleName(), size, plan.getColor());
             UpperStock stock = null;
             if (upperStock.isPresent()) {
                 stock = upperStock.get();
+                log.info("updateUpperStock: found existing stock id={} oldQty={} newQty={}", stock.getId(), stock.getQuantity(), stock.getQuantity() + quantity);
                 stock.setQuantity(stock.getQuantity() + quantity);
             } else {
                 stock = new UpperStock();
@@ -841,6 +856,7 @@ public class PlanService {
                         .orElseThrow(() -> new IllegalArgumentException(
                                 "No article named \"" + plan.getArticleName()
                                         + "\". Fix the plan's article so it matches an existing article (matching is case-insensitive)."));
+                log.info("updateUpperStock: creating new stock for article={} (id={}) size={} color={} qty={}", article.getName(), article.getId(), size, plan.getColor(), quantity);
                 stock.setArticle(article);
                 stock.setSize(size);
                 stock.setColor(plan.getColor());
