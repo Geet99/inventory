@@ -7,6 +7,8 @@ import com.skse.inventory.repository.PlanRepository;
 import com.skse.inventory.repository.VendorMonthlyPaymentRepository;
 import com.skse.inventory.repository.VendorOrderHistoryRepository;
 import com.skse.inventory.repository.VendorRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class VendorService {
+    private static final Logger log = LoggerFactory.getLogger(VendorService.class);
 
     @Autowired
     private VendorRepository vendorRepository;
@@ -48,6 +51,7 @@ public class VendorService {
     }
 
     public Vendor createVendor(Vendor vendor) {
+        log.info("Creating vendor: name={} role={}", vendor.getName(), vendor.getRole());
         return vendorRepository.save(vendor);
     }
 
@@ -66,6 +70,7 @@ public class VendorService {
 
     @Transactional
     public void deleteVendor(Long id) {
+        log.info("Deleting vendor id={}", id);
         Vendor vendor = getVendorById(id);
         if (vendor == null) {
             throw new IllegalArgumentException("Vendor not found: " + id);
@@ -118,6 +123,7 @@ public class VendorService {
 
     @Transactional
     public void recordVendorPayment(Long vendorId, double amount, String planNumber) {
+        log.info("recordVendorPayment: vendorId={} amount={} planNumber={}", vendorId, amount, planNumber);
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
             // Check if this is a monthly settlement
@@ -302,6 +308,8 @@ public class VendorService {
     @Transactional
     public void recordVendorOrderToMonth(Long vendorId, String planNumber, double amount,
                                          VendorRole role, LocalDate completionDate) {
+        log.info("recordVendorOrderToMonth: vendorId={} plan={} amount={} role={} date={}",
+                vendorId, planNumber, amount, role, completionDate);
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
             String monthYear = VendorMonthlyPayment.getMonthYearString(completionDate);
@@ -377,6 +385,8 @@ public class VendorService {
                                            Vendor vendor,
                                            double newAmount,
                                            LocalDate completionDate) {
+        log.info("syncVendorOrderForPlanRole: plan={} role={} vendor={} newAmount={} date={}",
+                planNumber, role, vendor != null ? vendor.getName() : "null", newAmount, completionDate);
         if (planNumber == null || planNumber.isBlank() || role == null) {
             return;
         }
@@ -450,6 +460,7 @@ public class VendorService {
      */
     @Transactional
     public void removeVendorOrdersForPlan(String planNumber) {
+        log.info("removeVendorOrdersForPlan: plan={}", planNumber);
         List<VendorOrderHistory> orders = vendorOrderHistoryRepository.findByPlanNumberAndType(planNumber, "ORDER");
         for (VendorOrderHistory hist : orders) {
             Vendor vendor = hist.getVendor();
@@ -499,6 +510,7 @@ public class VendorService {
     @Transactional
     public void recordMonthlyPayment(Long vendorId, String monthYear, VendorRole operationType,
                                      double amount, String planNumber) {
+        log.info("recordMonthlyPayment: vendorId={} month={} type={} amount={}", vendorId, monthYear, operationType, amount);
         Vendor vendor = getVendorById(vendorId);
         if (vendor != null) {
             VendorMonthlyPayment monthlyPayment = vendorMonthlyPaymentRepository

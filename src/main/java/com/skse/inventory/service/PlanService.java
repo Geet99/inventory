@@ -61,6 +61,7 @@ public class PlanService {
      * Defaults to today only when null.
      */
     public Plan createPlan(Plan plan) {
+        log.info("createPlan: planNumber={} article={} color={} total={}", plan.getPlanNumber(), plan.getArticleName(), plan.getColor(), plan.getTotal());
         validateTotalAndSizePairs(plan);
         if (plan.getCreateDate() == null) {
             plan.setCreateDate(LocalDate.now());
@@ -267,6 +268,7 @@ public class PlanService {
      */
     @Transactional
     public void deletePlan(String planNumber) {
+        log.info("deletePlan: planNumber={}", planNumber);
         Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found: " + planNumber);
@@ -469,6 +471,7 @@ public class PlanService {
     }
 
     public Plan sendToMachine(String planNumber) {
+        log.info("sendToMachine: planNumber={}", planNumber);
         Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
@@ -711,6 +714,7 @@ public class PlanService {
     @Transactional
     public void recalculatePaymentsForRateHead(RateHead rateHead) {
         if (rateHead == null) return;
+        log.info("recalculatePaymentsForRateHead: rateHead={} (id={})", rateHead.getName(), rateHead.getId());
 
         // Find articles that reference this rate head
         List<Article> articles = articleRepository.findAllByOrderByIdAsc();
@@ -891,6 +895,7 @@ public class PlanService {
     }
     
     public void assignVendorsToPlan(String planNumber, Long cuttingVendorId, Long printingVendorId, Long stitchingVendorId) {
+        log.info("assignVendorsToPlan: plan={} cutting={} printing={} stitching={}", planNumber, cuttingVendorId, printingVendorId, stitchingVendorId);
         Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
