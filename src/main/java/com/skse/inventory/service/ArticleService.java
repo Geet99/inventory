@@ -7,6 +7,8 @@ import com.skse.inventory.repository.ArticleRepository;
 import com.skse.inventory.repository.FinishedStockRepository;
 import com.skse.inventory.repository.PlanRepository;
 import com.skse.inventory.repository.UpperStockRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import java.util.Set;
 
 @Service
 public class ArticleService {
+    private static final Logger log = LoggerFactory.getLogger(ArticleService.class);
 
     @Autowired
     private ArticleRepository articleRepository;
@@ -35,6 +38,7 @@ public class ArticleService {
 
     // Create a new article
     public Article createArticle(Article article) {
+        log.info("Creating article: name={}", article.getName());
         requireUniqueName(article.getName(), null);
         try {
             return articleRepository.save(article);
@@ -158,6 +162,7 @@ public class ArticleService {
      * Upper/finished stock rows reference the article with a non-null FK; plans reference the article by name.
      */
     public void deleteArticle(Long id) {
+        log.info("Deleting article id={}", id);
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Article not found."));
         if (upperStockRepository.existsByArticle_Id(id)) {

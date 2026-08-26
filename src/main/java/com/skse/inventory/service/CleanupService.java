@@ -3,6 +3,8 @@ package com.skse.inventory.service;
 import com.skse.inventory.model.PaymentStatus;
 import com.skse.inventory.model.VendorMonthlyPayment;
 import com.skse.inventory.repository.VendorMonthlyPaymentRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,7 @@ import java.util.Map;
 
 @Service
 public class CleanupService {
+    private static final Logger log = LoggerFactory.getLogger(CleanupService.class);
     
     @Autowired
     private PlanService planService;
@@ -47,6 +50,7 @@ public class CleanupService {
     
     @Transactional
     public Map<String, Integer> deleteRecordsFromPreviousMonth() {
+        log.info("Starting cleanup of previous month's records");
         Map<String, Integer> result = new HashMap<>();
         
         // First check if cleanup is allowed

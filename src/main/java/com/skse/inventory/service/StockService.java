@@ -4,6 +4,8 @@ import com.skse.inventory.model.*;
 import com.skse.inventory.repository.FinishedStockRepository;
 import com.skse.inventory.repository.UpperStockRepository;
 import com.skse.inventory.repository.StockMovementRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,7 @@ import java.util.Optional;
 
 @Service
 public class StockService {
+    private static final Logger log = LoggerFactory.getLogger(StockService.class);
     
     @Autowired
     private UpperStockRepository upperStockRepository;
@@ -43,14 +46,17 @@ public class StockService {
     }
 
     public void addToUpperStock(Article article, String size, String color, int quantity) {
+        log.info("addToUpperStock: article={} size={} color={} qty={}", article.getName(), size, color, quantity);
         Optional<UpperStock> existingStock = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
             article.getName(), size, color);
-        
+
         if (existingStock.isPresent()) {
             UpperStock stock = existingStock.get();
+            log.info("addToUpperStock: existing id={} oldQty={} newQty={}", stock.getId(), stock.getQuantity(), stock.getQuantity() + quantity);
             stock.setQuantity(stock.getQuantity() + quantity);
             upperStockRepository.save(stock);
         } else {
+            log.info("addToUpperStock: creating new stock entry");
             UpperStock newStock = new UpperStock();
             newStock.setArticle(article);
             newStock.setSize(size);
@@ -80,6 +86,7 @@ public class StockService {
 
     @Transactional
     public void moveFromUpperToFinished(Article article, String size, String color, int quantity) {
+        log.info("moveFromUpperToFinished: article={} size={} color={} qty={}", article.getName(), size, color, quantity);
         // Check upper stock availability
         Optional<UpperStock> upperStockOpt = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
             article.getName(), size, color);

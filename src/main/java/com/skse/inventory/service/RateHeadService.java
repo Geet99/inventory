@@ -5,6 +5,8 @@ import com.skse.inventory.model.RateHeadPrice;
 import com.skse.inventory.model.VendorRole;
 import com.skse.inventory.repository.RateHeadPriceRepository;
 import com.skse.inventory.repository.RateHeadRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import java.util.Optional;
 
 @Service
 public class RateHeadService {
+    private static final Logger log = LoggerFactory.getLogger(RateHeadService.class);
 
     @Autowired
     private RateHeadRepository rateHeadRepository;
@@ -23,6 +26,7 @@ public class RateHeadService {
     private RateHeadPriceRepository rateHeadPriceRepository;
 
     public RateHead createRateHead(RateHead rateHead) {
+        log.info("Creating rate head: name={} operationType={} cost={}", rateHead.getName(), rateHead.getOperationType(), rateHead.getCost());
         return rateHeadRepository.save(rateHead);
     }
 
@@ -56,6 +60,7 @@ public class RateHeadService {
 
     @Transactional
     public void deleteRateHead(Long id) {
+        log.info("deleteRateHead: id={}", id);
         RateHead rateHead = getRateHeadById(id);
         if (rateHead != null) {
             rateHeadPriceRepository.deleteByRateHead(rateHead);
@@ -85,6 +90,7 @@ public class RateHeadService {
      */
     @Transactional
     public RateHeadPrice addPriceEntry(Long rateHeadId, Double cost, LocalDate effectiveFrom) {
+        log.info("addPriceEntry: rateHeadId={} cost={} effectiveFrom={}", rateHeadId, cost, effectiveFrom);
         RateHead rateHead = getRateHeadById(rateHeadId);
         if (rateHead == null) {
             throw new IllegalArgumentException("Rate head not found: " + rateHeadId);
@@ -100,6 +106,7 @@ public class RateHeadService {
 
     @Transactional
     public RateHeadPrice updatePriceEntry(Long priceId, Double cost, LocalDate effectiveFrom) {
+        log.info("updatePriceEntry: priceId={} cost={} effectiveFrom={}", priceId, cost, effectiveFrom);
         RateHeadPrice price = rateHeadPriceRepository.findById(priceId).orElse(null);
         if (price == null) {
             throw new IllegalArgumentException("Price entry not found: " + priceId);
@@ -113,6 +120,7 @@ public class RateHeadService {
 
     @Transactional
     public void deletePriceEntry(Long priceId) {
+        log.info("deletePriceEntry: priceId={}", priceId);
         RateHeadPrice price = rateHeadPriceRepository.findById(priceId).orElse(null);
         if (price == null) return;
         RateHead rateHead = price.getRateHead();
@@ -139,9 +147,13 @@ public class RateHeadService {
         }
         List<RateHeadPrice> prices = rateHeadPriceRepository.findEffectivePrices(rateHead, date);
         if (!prices.isEmpty()) {
-            return prices.get(0).getCost();
+            Double cost = prices.get(0).getCost();
+            log.debug("getCostForDate: rateHead={} date={} -> cost={} (from price entry effectiveFrom={})",
+                    rateHead.getName(), date, cost, prices.get(0).getEffectiveFrom());
+            return cost;
         }
         // No price entries (legacy rate head) — use the rate head's own cost field
+        log.debug("getCostForDate: rateHead={} date={} -> cost={} (legacy fallback)", rateHead.getName(), date, rateHead.getCost());
         return rateHead.getCost();
     }
 }
