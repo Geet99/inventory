@@ -5,16 +5,22 @@
     <title>Confirm transition - SKSE Inventory</title>
     <th:block th:replace="~{fragments/navigation :: common-styles}"></th:block>
     <style>
-        .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 24px; max-width: 480px; margin: 0 auto; }
+        .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 24px; max-width: 560px; margin: 0 auto; }
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #2c3e50; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .form-group textarea { font-family: monospace; resize: vertical; }
         .btn { padding: 10px 20px; border-radius: 6px; font-weight: bold; text-decoration: none; display: inline-block; border: none; cursor: pointer; font-size: 14px; }
         .btn-primary { background: #007bff; color: white; }
         .btn-primary:hover { background: #0056b3; }
         .btn-secondary { background: #6c757d; color: white; margin-left: 8px; }
         .btn-secondary:hover { background: #545b62; }
         .text-muted { color: #6c757d; font-size: 13px; margin-top: 4px; }
+        .quantity-section { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+        .quantity-section h4 { margin: 0 0 12px 0; color: #2c3e50; font-size: 15px; }
+        .validation-error { color: #dc3545; font-size: 13px; margin-top: 4px; display: none; }
+        .current-info { background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 13px; }
+        .current-info strong { color: #0c5460; }
     </style>
 </head>
 <body>
@@ -25,27 +31,142 @@
             <h2 style="margin-top: 0;">Confirm plan transition</h2>
             <p>Plan <strong th:text="${plan.planNumber}"></strong> will move from <strong th:text="${effectiveStatus.name().replace('_', ' ')}"></strong> to <strong th:text="${nextStatus.name().replace('_', ' ')}"></strong>.</p>
             <p class="text-muted">Vendor is optional: if not assigned, this step will not be billed.</p>
-            <form th:action="@{/plans/move-to-next}" method="post">
+            <form id="transitionForm" th:action="@{/plans/move-to-next}" method="post" onsubmit="return validateForm()">
                 <input type="hidden" name="planNumber" th:value="${plan.planNumber}">
                 <div class="form-group">
                     <label for="transitionDate">Transition date</label>
                     <input type="date" id="transitionDate" name="transitionDate" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
                     <small class="text-muted">Actual date for this transition (default: today). Future dates are allowed.</small>
                 </div>
+
+                <!-- Final quantity section: only for stage-ending transitions -->
+                <div th:if="${nextStatus.name() == 'Pending_Printing' or nextStatus.name() == 'Pending_Stitching' or nextStatus.name() == 'Completed'}"
+                     class="quantity-section" id="quantitySection">
+                    <h4>Final Quantity (actual output)</h4>
+                    <div class="current-info">
+                        <strong>Current plan total:</strong> <span th:text="${plan.total}"></span> |
+                        <strong>Sizes:</strong> <span th:text="${plan.sizeQuantityPairs}"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="finalQuantity">Final quantity</label>
+                        <input type="number" id="finalQuantity" name="finalQuantity"
+                               th:value="${plan.total}" min="1" required>
+                        <small class="text-muted">If the actual output differs from the plan, update this. Vendor payment will be based on this quantity.</small>
+                    </div>
+                    <div id="sizeQuantitySection" style="display: none;">
+                        <div class="form-group">
+                            <label for="newSizeQuantityPairs">Size:Quantity Pairs</label>
+                            <textarea id="newSizeQuantityPairs" name="newSizeQuantityPairs" rows="3"
+                                      th:text="${plan.sizeQuantityPairs}"></textarea>
+                            <small class="text-muted">Adjust individual size quantities to match the new total (e.g., 6:48, 7:30, 8:20)</small>
+                            <div id="validationError" class="validation-error"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="margin-top: 20px;">
-                    <button type="submit" class="btn btn-primary">Confirm transition</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Confirm transition</button>
                     <a th:href="@{/plans}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         </div>
     </div>
-    <script>
+    <script th:inline="javascript">
         (function () {
-            // Keep transition date unrestricted (including future dates).
             var transitionDate = document.getElementById('transitionDate');
-            if (!transitionDate) return;
-            transitionDate.removeAttribute('max');
-            transitionDate.removeAttribute('min');
+            if (transitionDate) {
+                transitionDate.removeAttribute('max');
+                transitionDate.removeAttribute('min');
+            }
+
+            var finalQuantityInput = document.getElementById('finalQuantity');
+            if (!finalQuantityInput) return; // Not a stage-ending transition
+
+            var originalTotal = /*[[${plan.total}]]*/ 0;
+            var originalPairs = /*[[${plan.sizeQuantityPairs}]]*/ '';
+            var sizeQuantitySection = document.getElementById('sizeQuantitySection');
+            var pairsTextarea = document.getElementById('newSizeQuantityPairs');
+            var validationError = document.getElementById('validationError');
+
+            finalQuantityInput.addEventListener('input', function () {
+                var newTotal = parseInt(this.value);
+                if (newTotal !== originalTotal && !isNaN(newTotal)) {
+                    sizeQuantitySection.style.display = 'block';
+                    // Pre-fill with existing pairs if not already edited
+                    if (pairsTextarea.value.trim() === originalPairs.trim() || pairsTextarea.value.trim() === '') {
+                        pairsTextarea.value = originalPairs;
+                    }
+                } else if (newTotal === originalTotal) {
+                    sizeQuantitySection.style.display = 'none';
+                    pairsTextarea.value = originalPairs;
+                    validationError.style.display = 'none';
+                }
+            });
+
+            // Live validation of size:quantity sum
+            if (pairsTextarea) {
+                pairsTextarea.addEventListener('input', function () {
+                    validatePairsSum();
+                });
+            }
+
+            function parsePairsSum() {
+                var text = pairsTextarea.value.trim();
+                if (!text) return 0;
+                var pairs = text.split(',');
+                var sum = 0;
+                for (var i = 0; i < pairs.length; i++) {
+                    var p = pairs[i].trim();
+                    if (!p) continue;
+                    var parts = p.split(':');
+                    if (parts.length !== 2) return -1;
+                    var qty = parseInt(parts[1].trim());
+                    if (isNaN(qty) || qty <= 0) return -1;
+                    sum += qty;
+                }
+                return sum;
+            }
+
+            function validatePairsSum() {
+                var newTotal = parseInt(finalQuantityInput.value);
+                if (isNaN(newTotal) || sizeQuantitySection.style.display === 'none') {
+                    validationError.style.display = 'none';
+                    return true;
+                }
+                var sum = parsePairsSum();
+                if (sum === -1) {
+                    validationError.textContent = 'Invalid format. Use size:quantity (e.g., 6:50, 7:30)';
+                    validationError.style.display = 'block';
+                    return false;
+                }
+                if (sum !== newTotal) {
+                    validationError.textContent = 'Size quantities sum (' + sum + ') does not match final quantity (' + newTotal + ')';
+                    validationError.style.display = 'block';
+                    return false;
+                }
+                validationError.style.display = 'none';
+                return true;
+            }
+
+            window.validateForm = function () {
+                if (!finalQuantityInput) return true;
+                var newTotal = parseInt(finalQuantityInput.value);
+                if (isNaN(newTotal) || newTotal <= 0) {
+                    alert('Final quantity must be greater than zero.');
+                    return false;
+                }
+                // If total changed, validate size pairs
+                if (newTotal !== originalTotal) {
+                    if (!validatePairsSum()) {
+                        pairsTextarea.focus();
+                        return false;
+                    }
+                } else {
+                    // Total unchanged, clear the textarea so backend ignores it
+                    pairsTextarea.value = '';
+                }
+                return true;
+            };
         })();
     </script>
 </body>

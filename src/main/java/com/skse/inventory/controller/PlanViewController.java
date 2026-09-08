@@ -251,7 +251,9 @@ public class PlanViewController {
 
     @PostMapping("/move-to-next")
     public String moveToNextState(@RequestParam("planNumber") String planNumber,
-                                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate transitionDate) {
+                                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate transitionDate,
+                                  @RequestParam(required = false) Integer finalQuantity,
+                                  @RequestParam(required = false) String newSizeQuantityPairs) {
         Plan plan = planService.getPlanByNumber(planNumber);
         if (plan == null) {
             String message = "Plan not found: " + planNumber;
@@ -259,7 +261,7 @@ public class PlanViewController {
         }
         LocalDate date = transitionDate != null ? transitionDate : LocalDate.now();
         try {
-            planService.moveToNextState(planNumber, date);
+            planService.moveToNextState(planNumber, date, finalQuantity, newSizeQuantityPairs);
         } catch (IllegalArgumentException | IllegalStateException ex) {
             return redirectPlansWithErrorAndFocus(planNumber, ex.getMessage());
         } catch (Exception ex) {
@@ -361,8 +363,10 @@ public class PlanViewController {
 
     @PostMapping("/{planNumber}/move-to-next")
     public String moveToNextStatePath(@PathVariable String planNumber,
-                                      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate transitionDate) {
-        return moveToNextState(planNumber, transitionDate);
+                                      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate transitionDate,
+                                      @RequestParam(required = false) Integer finalQuantity,
+                                      @RequestParam(required = false) String newSizeQuantityPairs) {
+        return moveToNextState(planNumber, transitionDate, finalQuantity, newSizeQuantityPairs);
     }
 
     @GetMapping("/{planNumber}/send-to-machine")
