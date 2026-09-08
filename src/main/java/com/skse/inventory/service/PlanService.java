@@ -386,11 +386,15 @@ public class PlanService {
     }
 
     public Plan moveToNextState(String planNumber) {
-        return moveToNextState(planNumber, LocalDate.now());
+        return moveToNextState(planNumber, LocalDate.now(), null, null);
+    }
+
+    public Plan moveToNextState(String planNumber, LocalDate transitionDate) {
+        return moveToNextState(planNumber, transitionDate, null, null);
     }
 
     @Transactional
-    public Plan moveToNextState(String planNumber, LocalDate transitionDate) {
+    public Plan moveToNextState(String planNumber, LocalDate transitionDate, Integer finalQuantity, String newSizeQuantityPairs) {
         Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
@@ -416,6 +420,7 @@ public class PlanService {
                 break;
             case Pending_Printing:
                 plan.setCuttingEndDate(date);
+                applyFinalQuantity(plan, finalQuantity, newSizeQuantityPairs);
                 boolean hasExistingOrder = vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Cutting);
                 log.info("Pending_Printing: plan={} hasExistingCuttingOrder={} cuttingVendor={}",
                         canonicalPlanNumber, hasExistingOrder, plan.getCuttingVendor() != null ? plan.getCuttingVendor().getName() : "NONE");
@@ -439,6 +444,7 @@ public class PlanService {
                 break;
             case Pending_Stitching:
                 plan.setPrintingEndDate(date);
+                applyFinalQuantity(plan, finalQuantity, newSizeQuantityPairs);
                 if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Printing)) {
                     if (plan.getPrintingVendor() != null) {
                         double printingPayment = calculatePayment(plan, VendorRole.Printing, date);
@@ -454,6 +460,7 @@ public class PlanService {
                 break;
             case Completed:
                 plan.setStitchingEndDate(date);
+                applyFinalQuantity(plan, finalQuantity, newSizeQuantityPairs);
                 if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Stitching)) {
                     if (plan.getStitchingVendor() != null) {
                         double stitchingPayment = calculatePayment(plan, VendorRole.Stitching, date);
@@ -816,6 +823,48 @@ public class PlanService {
             return s;
         }
         return String.valueOf(statusColumn);
+    }
+
+    /**
+     * Updates plan total and sizeQuantityPairs from user-supplied final quantity during a transition.
+     * If finalQuantity is null or matches the current total and no new pairs provided, this is a no-op.
+     */
+    private void applyFinalQuantity(Plan plan, Integer finalQuantity, String newSizeQuantityPairs) {
+        if (finalQuantity == null && (newSizeQuantityPairs == null || newSizeQuantityPairs.isBlank())) {
+            return;
+        }
+        int newTotal = finalQuantity != null ? finalQuantity : plan.getTotal();
+        String newPairs = (newSizeQuantityPairs != null && !newSizeQuantityPairs.isBlank())
+                ? newSizeQuantityPairs : plan.getSizeQuantityPairs();
+
+        if (newTotal <= 0) {
+            throw new IllegalArgumentException("Final quantity must be greater than zero.");
+        }
+
+        // Validate that size:quantity pairs sum to the new total
+        int sum = 0;
+        String[] pairs = newPairs.split(",");
+        for (String pair : pairs) {
+            if (pair.trim().isEmpty()) continue;
+            String[] parts = pair.trim().split(":");
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("Invalid size:quantity format: " + pair.trim());
+            }
+            int qty = Integer.parseInt(parts[1].trim());
+            if (qty <= 0) {
+                throw new IllegalArgumentException("All size quantities must be greater than zero.");
+            }
+            sum += qty;
+        }
+        if (sum != newTotal) {
+            throw new IllegalArgumentException(String.format(
+                    "Final quantity (%d) does not match the sum (%d) of size:quantity pairs.", newTotal, sum));
+        }
+
+        log.info("applyFinalQuantity: plan={} oldTotal={} newTotal={} newPairs={}",
+                plan.getPlanNumber(), plan.getTotal(), newTotal, newPairs);
+        plan.setTotal(newTotal);
+        plan.setSizeQuantityPairs(newPairs);
     }
 
     private void updateUpperStockFromPlan(Plan plan) {

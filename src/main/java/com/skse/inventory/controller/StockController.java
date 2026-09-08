@@ -271,6 +271,58 @@ public class StockController {
         }
     }
 
+    @GetMapping("/cleanup-upper")
+    public String showCleanupUpperForm(Model model) {
+        model.addAttribute("upperStock", stockService.getAllUpperStock());
+        model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("colors", colorService.getAllColors());
+        return "stock/cleanup-upper";
+    }
+
+    @PostMapping("/cleanup-upper")
+    public String cleanupUpperStock(@RequestParam String articleName,
+                                    @RequestParam String sizeQuantityPairs,
+                                    @RequestParam String color,
+                                    Model model) {
+        try {
+            Article article = articleService.getArticleByName(articleName);
+            if (article == null) {
+                model.addAttribute("error", "Article not found");
+                model.addAttribute("upperStock", stockService.getAllUpperStock());
+                model.addAttribute("articles", articleService.getAllArticles());
+                model.addAttribute("colors", colorService.getAllColors());
+                return "stock/cleanup-upper";
+            }
+
+            String[] pairs = sizeQuantityPairs.split(",");
+            int totalDeleted = 0;
+
+            for (String pair : pairs) {
+                String[] parts = pair.trim().split(":");
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException("Invalid format. Use size:quantity (e.g., 6:50, 7:30)");
+                }
+                String size = parts[0].trim();
+                int quantity = Integer.parseInt(parts[1].trim());
+                stockService.deleteFromUpperStock(article, size, color, quantity);
+                totalDeleted += quantity;
+            }
+
+            model.addAttribute("success",
+                    String.format("Successfully removed %d units of %s (%s) from upper stock",
+                            totalDeleted, articleName, color));
+        } catch (NumberFormatException e) {
+            model.addAttribute("error", "Invalid quantity format. Please use numbers only.");
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to cleanup stock: " + e.getMessage());
+        }
+
+        model.addAttribute("upperStock", stockService.getAllUpperStock());
+        model.addAttribute("articles", articleService.getAllArticles());
+        model.addAttribute("colors", colorService.getAllColors());
+        return "stock/cleanup-upper";
+    }
+
     @GetMapping("/move-to-finished")
     public String showMoveToFinishedForm(Model model) {
         model.addAttribute("upperStock", stockService.getAllUpperStock());

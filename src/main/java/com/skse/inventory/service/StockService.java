@@ -122,6 +122,39 @@ public class StockService {
         stockMovementRepository.save(movement);
     }
 
+    @Transactional
+    public void deleteFromUpperStock(Article article, String size, String color, int quantity) {
+        log.info("deleteFromUpperStock: article={} size={} color={} qty={}", article.getName(), size, color, quantity);
+
+        Optional<UpperStock> upperStockOpt = upperStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
+                article.getName(), size, color);
+
+        if (!upperStockOpt.isPresent()) {
+            throw new IllegalStateException(
+                    String.format("No upper stock found for Article: %s, Size: %s, Color: %s",
+                            article.getName(), size, color));
+        }
+
+        UpperStock upperStock = upperStockOpt.get();
+        if (upperStock.getQuantity() < quantity) {
+            throw new IllegalStateException(
+                    String.format("Insufficient upper stock for Article: %s, Size: %s, Color: %s. Requested: %d, Available: %d",
+                            article.getName(), size, color, quantity, upperStock.getQuantity()));
+        }
+
+        upperStock.setQuantity(upperStock.getQuantity() - quantity);
+        upperStockRepository.save(upperStock);
+
+        StockMovementRequest movement = new StockMovementRequest();
+        movement.setArticleName(article.getName());
+        movement.setColor(color);
+        movement.setSize(size);
+        movement.setQuantity(quantity);
+        movement.setMovementDate(LocalDate.now());
+        movement.setMovementType("UPPER_CLEANUP");
+        stockMovementRepository.save(movement);
+    }
+
     public List<StockMovementRequest> getStockMovements(LocalDate startDate, LocalDate endDate) {
         return stockMovementRepository.findByMovementDateBetween(startDate, endDate);
     }
