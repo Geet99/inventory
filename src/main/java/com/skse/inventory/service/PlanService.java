@@ -137,20 +137,19 @@ public class PlanService {
     }
 
     private boolean isCuttingCompletedForAccounting(Plan plan) {
-        return plan.getCuttingEndDate() != null
-                || (plan.getStatus() != null && plan.getStatus().compareTo(PlanStatus.Pending_Printing) >= 0)
+        // Use stored status and vendor order as authorities — NOT endDate alone,
+        // because dates can be set manually via the edit form without a proper transition.
+        return (plan.getStatus() != null && plan.getStatus().compareTo(PlanStatus.Pending_Printing) >= 0)
                 || vendorService.hasVendorOrderForPlanWithRole(plan.getPlanNumber(), VendorRole.Cutting);
     }
 
     private boolean isPrintingCompletedForAccounting(Plan plan) {
-        return plan.getPrintingEndDate() != null
-                || (plan.getStatus() != null && plan.getStatus().compareTo(PlanStatus.Pending_Stitching) >= 0)
+        return (plan.getStatus() != null && plan.getStatus().compareTo(PlanStatus.Pending_Stitching) >= 0)
                 || vendorService.hasVendorOrderForPlanWithRole(plan.getPlanNumber(), VendorRole.Printing);
     }
 
     private boolean isStitchingCompletedForAccounting(Plan plan) {
-        return plan.getStitchingEndDate() != null
-                || plan.getStatus() == PlanStatus.Completed
+        return plan.getStatus() == PlanStatus.Completed
                 || vendorService.hasVendorOrderForPlanWithRole(plan.getPlanNumber(), VendorRole.Stitching);
     }
 
@@ -758,15 +757,17 @@ public class PlanService {
             String normalized = Article.normalizeNameKey(plan.getArticleName());
 
             // Check cutting (rate head comes from article)
+            // Use isCuttingCompletedForAccounting (status-based) instead of raw endDate check
             if (affectedArticleNames.contains(normalized)
                     && articleRoles.get(normalized).contains(VendorRole.Cutting)
-                    && plan.getCuttingEndDate() != null
+                    && isCuttingCompletedForAccounting(plan)
                     && plan.getCuttingVendor() != null) {
-                double amount = calculatePayment(plan, VendorRole.Cutting, plan.getCuttingEndDate());
+                LocalDate endDate = plan.getCuttingEndDate() != null ? plan.getCuttingEndDate() : LocalDate.now();
+                double amount = calculatePayment(plan, VendorRole.Cutting, endDate);
                 if (Math.abs(amount - plan.getCuttingVendorPaymentDue()) > 0.001) {
                     plan.setCuttingVendorPaymentDue(amount);
                     vendorService.syncVendorOrderForPlanRole(
-                            plan.getPlanNumber(), VendorRole.Cutting, plan.getCuttingVendor(), amount, plan.getCuttingEndDate());
+                            plan.getPlanNumber(), VendorRole.Cutting, plan.getCuttingVendor(), amount, endDate);
                     changed = true;
                 }
             }
@@ -780,12 +781,13 @@ public class PlanService {
                     && articleRoles.getOrDefault(normalized, Set.of()).contains(VendorRole.Printing)) {
                 printingAffected = true;
             }
-            if (printingAffected && plan.getPrintingEndDate() != null && plan.getPrintingVendor() != null) {
-                double amount = calculatePayment(plan, VendorRole.Printing, plan.getPrintingEndDate());
+            if (printingAffected && isPrintingCompletedForAccounting(plan) && plan.getPrintingVendor() != null) {
+                LocalDate endDate = plan.getPrintingEndDate() != null ? plan.getPrintingEndDate() : LocalDate.now();
+                double amount = calculatePayment(plan, VendorRole.Printing, endDate);
                 if (Math.abs(amount - plan.getPrintingVendorPaymentDue()) > 0.001) {
                     plan.setPrintingVendorPaymentDue(amount);
                     vendorService.syncVendorOrderForPlanRole(
-                            plan.getPlanNumber(), VendorRole.Printing, plan.getPrintingVendor(), amount, plan.getPrintingEndDate());
+                            plan.getPlanNumber(), VendorRole.Printing, plan.getPrintingVendor(), amount, endDate);
                     changed = true;
                 }
             }
@@ -793,13 +795,14 @@ public class PlanService {
             // Check stitching (rate head comes from article)
             if (affectedArticleNames.contains(normalized)
                     && articleRoles.get(normalized).contains(VendorRole.Stitching)
-                    && plan.getStitchingEndDate() != null
+                    && isStitchingCompletedForAccounting(plan)
                     && plan.getStitchingVendor() != null) {
-                double amount = calculatePayment(plan, VendorRole.Stitching, plan.getStitchingEndDate());
+                LocalDate endDate = plan.getStitchingEndDate() != null ? plan.getStitchingEndDate() : LocalDate.now();
+                double amount = calculatePayment(plan, VendorRole.Stitching, endDate);
                 if (Math.abs(amount - plan.getStitchingVendorPaymentDue()) > 0.001) {
                     plan.setStitchingVendorPaymentDue(amount);
                     vendorService.syncVendorOrderForPlanRole(
-                            plan.getPlanNumber(), VendorRole.Stitching, plan.getStitchingVendor(), amount, plan.getStitchingEndDate());
+                            plan.getPlanNumber(), VendorRole.Stitching, plan.getStitchingVendor(), amount, endDate);
                     changed = true;
                 }
             }
