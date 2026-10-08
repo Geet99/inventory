@@ -168,31 +168,43 @@ public class PlanService {
     private void syncCompletedVendorChargesAfterEdit(Plan beforeEdit, Plan plan) {
         String planNumber = plan.getPlanNumber();
 
-        if (isCuttingCompletedForAccounting(beforeEdit)) {
+        boolean cuttingCompleted = isCuttingCompletedForAccounting(beforeEdit);
+        boolean printingCompleted = isPrintingCompletedForAccounting(beforeEdit);
+        boolean stitchingCompleted = isStitchingCompletedForAccounting(beforeEdit);
+        log.info("syncVendorCharges: plan={} status={} cuttingCompleted={} printingCompleted={} stitchingCompleted={}",
+                planNumber, beforeEdit.getStatus(), cuttingCompleted, printingCompleted, stitchingCompleted);
+
+        if (cuttingCompleted) {
             double amount = 0.0;
             if (plan.getCuttingVendor() != null) {
                 amount = calculatePayment(plan, VendorRole.Cutting, plan.getCuttingEndDate());
             }
+            log.info("syncVendorCharges: plan={} cutting vendor={} amount={} endDate={}",
+                    planNumber, plan.getCuttingVendor() != null ? plan.getCuttingVendor().getName() : "NONE", amount, plan.getCuttingEndDate());
             plan.setCuttingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
                     planNumber, VendorRole.Cutting, plan.getCuttingVendor(), amount, plan.getCuttingEndDate());
         }
 
-        if (isPrintingCompletedForAccounting(beforeEdit)) {
+        if (printingCompleted) {
             double amount = 0.0;
             if (plan.getPrintingVendor() != null) {
                 amount = calculatePayment(plan, VendorRole.Printing, plan.getPrintingEndDate());
             }
+            log.info("syncVendorCharges: plan={} printing vendor={} amount={} endDate={}",
+                    planNumber, plan.getPrintingVendor() != null ? plan.getPrintingVendor().getName() : "NONE", amount, plan.getPrintingEndDate());
             plan.setPrintingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
                     planNumber, VendorRole.Printing, plan.getPrintingVendor(), amount, plan.getPrintingEndDate());
         }
 
-        if (isStitchingCompletedForAccounting(beforeEdit)) {
+        if (stitchingCompleted) {
             double amount = 0.0;
             if (plan.getStitchingVendor() != null) {
                 amount = calculatePayment(plan, VendorRole.Stitching, plan.getStitchingEndDate());
             }
+            log.info("syncVendorCharges: plan={} stitching vendor={} amount={} endDate={}",
+                    planNumber, plan.getStitchingVendor() != null ? plan.getStitchingVendor().getName() : "NONE", amount, plan.getStitchingEndDate());
             plan.setStitchingVendorPaymentDue(amount);
             vendorService.syncVendorOrderForPlanRole(
                     planNumber, VendorRole.Stitching, plan.getStitchingVendor(), amount, plan.getStitchingEndDate());
@@ -919,11 +931,14 @@ public class PlanService {
         }
     }
 
+    @Transactional
     public void assignVendorToPlan(String planNumber, VendorAssignmentRequest vendorAssignmentRequest) {
         Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
+
+        Plan beforeEdit = snapshotForRecalculation(plan);
 
         // Assign the vendor based on the role
         switch (vendorAssignmentRequest.getRole()) {
@@ -940,15 +955,20 @@ public class PlanService {
                 throw new IllegalArgumentException("Invalid vendor role: " + vendorAssignmentRequest.getRole());
         }
 
+        // Sync payments for any completed stages affected by the vendor change
+        syncCompletedVendorChargesAfterEdit(beforeEdit, plan);
         planRepository.save(plan);
     }
     
+    @Transactional
     public void assignVendorsToPlan(String planNumber, Long cuttingVendorId, Long printingVendorId, Long stitchingVendorId) {
         log.info("assignVendorsToPlan: plan={} cutting={} printing={} stitching={}", planNumber, cuttingVendorId, printingVendorId, stitchingVendorId);
         Plan plan = findPlanByNumberOrNull(planNumber);
         if (plan == null) {
             throw new IllegalArgumentException("Plan not found with number: " + planNumber);
         }
+
+        Plan beforeEdit = snapshotForRecalculation(plan);
 
         // null = no change, 0 = unassign, >0 = assign that vendor
         if (cuttingVendorId != null) {
@@ -987,6 +1007,8 @@ public class PlanService {
             }
         }
 
+        // Sync payments for any completed stages affected by the vendor change
+        syncCompletedVendorChargesAfterEdit(beforeEdit, plan);
         planRepository.save(plan);
     }
 
