@@ -155,6 +155,39 @@ public class StockService {
         stockMovementRepository.save(movement);
     }
 
+    @Transactional
+    public void deleteFromFinishedStock(Article article, String size, String color, int quantity) {
+        log.info("deleteFromFinishedStock: article={} size={} color={} qty={}", article.getName(), size, color, quantity);
+
+        Optional<FinishedStock> finishedStockOpt = finishedStockRepository.findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
+                article.getName(), size, color);
+
+        if (!finishedStockOpt.isPresent()) {
+            throw new IllegalStateException(
+                    String.format("No finished stock found for Article: %s, Size: %s, Color: %s",
+                            article.getName(), size, color));
+        }
+
+        FinishedStock finishedStock = finishedStockOpt.get();
+        if (finishedStock.getQuantity() < quantity) {
+            throw new IllegalStateException(
+                    String.format("Insufficient finished stock for Article: %s, Size: %s, Color: %s. Requested: %d, Available: %d",
+                            article.getName(), size, color, quantity, finishedStock.getQuantity()));
+        }
+
+        finishedStock.setQuantity(finishedStock.getQuantity() - quantity);
+        finishedStockRepository.save(finishedStock);
+
+        StockMovementRequest movement = new StockMovementRequest();
+        movement.setArticleName(article.getName());
+        movement.setColor(color);
+        movement.setSize(size);
+        movement.setQuantity(quantity);
+        movement.setMovementDate(LocalDate.now());
+        movement.setMovementType("FINISHED_CLEANUP");
+        stockMovementRepository.save(movement);
+    }
+
     public List<StockMovementRequest> getStockMovements(LocalDate startDate, LocalDate endDate) {
         return stockMovementRepository.findByMovementDateBetween(startDate, endDate);
     }
