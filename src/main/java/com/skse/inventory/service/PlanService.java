@@ -655,9 +655,19 @@ public class PlanService {
         };
     }
 
-    /** Next workflow state after {@link #getEffectiveStatus(Plan)}. */
+    /**
+     * Next workflow state based on stored status (NOT effective status).
+     * Using stored status ensures transitions happen one step at a time, so manually-set dates
+     * cannot cause stages to be skipped — each stage's payment and stock logic runs in order.
+     * The hasExistingOrder guard inside moveToNextState prevents double-processing if a
+     * stage was already completed.
+     */
     public PlanStatus getNextStatus(Plan plan) {
-        return nextStatusAfter(getEffectiveStatus(plan));
+        PlanStatus stored = plan.getStatus();
+        if (stored == null) {
+            return PlanStatus.Cutting;
+        }
+        return nextStatusAfter(stored);
     }
 
     private static PlanStatus nextStatusAfter(PlanStatus current) {
