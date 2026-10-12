@@ -32,8 +32,10 @@ public class StockController {
 
     @GetMapping
     public String stockDashboard(Model model) {
-        List<UpperStock> upperStocks = stockService.getAllUpperStock();
-        List<FinishedStock> finishedStocks = stockService.getAllFinishedStock();
+        List<UpperStock> upperStocks = stockService.getAllUpperStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList();
+        List<FinishedStock> finishedStocks = stockService.getAllFinishedStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList();
         
         int totalUpperQuantity = upperStocks.stream().mapToInt(UpperStock::getQuantity).sum();
         int totalFinishedQuantity = finishedStocks.stream().mapToInt(FinishedStock::getQuantity).sum();
@@ -94,6 +96,8 @@ public class StockController {
             sizeBreakdown.put(size, sizeBreakdown.getOrDefault(size, 0) + quantity);
         }
         
+        // Remove entries where total quantity is zero (e.g. after stock cleanup)
+        grouped.entrySet().removeIf(e -> (int) e.getValue().get("totalQuantity") <= 0);
         return grouped;
     }
 
@@ -273,7 +277,8 @@ public class StockController {
 
     @GetMapping("/cleanup-finished")
     public String showCleanupFinishedForm(Model model) {
-        model.addAttribute("finishedStock", stockService.getAllFinishedStock());
+        model.addAttribute("finishedStock", stockService.getAllFinishedStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList());
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         return "stock/cleanup-finished";
@@ -288,7 +293,8 @@ public class StockController {
             Article article = articleService.getArticleByName(articleName);
             if (article == null) {
                 model.addAttribute("error", "Article not found");
-                model.addAttribute("finishedStock", stockService.getAllFinishedStock());
+                model.addAttribute("finishedStock", stockService.getAllFinishedStock().stream()
+                        .filter(s -> s.getQuantity() > 0).toList());
                 model.addAttribute("articles", articleService.getAllArticles());
                 model.addAttribute("colors", colorService.getAllColors());
                 return "stock/cleanup-finished";
@@ -317,7 +323,8 @@ public class StockController {
             model.addAttribute("error", "Failed to cleanup stock: " + e.getMessage());
         }
 
-        model.addAttribute("finishedStock", stockService.getAllFinishedStock());
+        model.addAttribute("finishedStock", stockService.getAllFinishedStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList());
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         return "stock/cleanup-finished";
@@ -325,7 +332,8 @@ public class StockController {
 
     @GetMapping("/cleanup-upper")
     public String showCleanupUpperForm(Model model) {
-        model.addAttribute("upperStock", stockService.getAllUpperStock());
+        model.addAttribute("upperStock", stockService.getAllUpperStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList());
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         return "stock/cleanup-upper";
@@ -340,7 +348,8 @@ public class StockController {
             Article article = articleService.getArticleByName(articleName);
             if (article == null) {
                 model.addAttribute("error", "Article not found");
-                model.addAttribute("upperStock", stockService.getAllUpperStock());
+                model.addAttribute("upperStock", stockService.getAllUpperStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList());
                 model.addAttribute("articles", articleService.getAllArticles());
                 model.addAttribute("colors", colorService.getAllColors());
                 return "stock/cleanup-upper";
@@ -369,7 +378,8 @@ public class StockController {
             model.addAttribute("error", "Failed to cleanup stock: " + e.getMessage());
         }
 
-        model.addAttribute("upperStock", stockService.getAllUpperStock());
+        model.addAttribute("upperStock", stockService.getAllUpperStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList());
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         return "stock/cleanup-upper";
@@ -377,7 +387,8 @@ public class StockController {
 
     @GetMapping("/move-to-finished")
     public String showMoveToFinishedForm(Model model) {
-        model.addAttribute("upperStock", stockService.getAllUpperStock());
+        model.addAttribute("upperStock", stockService.getAllUpperStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList());
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         return "stock/move-to-finished";
@@ -392,7 +403,8 @@ public class StockController {
             Article article = articleService.getArticleByName(articleName);
             if (article == null) {
                 model.addAttribute("error", "Article not found");
-                model.addAttribute("upperStock", stockService.getAllUpperStock());
+                model.addAttribute("upperStock", stockService.getAllUpperStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList());
                 model.addAttribute("articles", articleService.getAllArticles());
                 model.addAttribute("colors", colorService.getAllColors());
                 return "stock/move-to-finished";
@@ -424,7 +436,8 @@ public class StockController {
             model.addAttribute("error", "Failed to move stock: " + e.getMessage());
         }
         
-        model.addAttribute("upperStock", stockService.getAllUpperStock());
+        model.addAttribute("upperStock", stockService.getAllUpperStock().stream()
+                .filter(s -> s.getQuantity() > 0).toList());
         model.addAttribute("articles", articleService.getAllArticles());
         model.addAttribute("colors", colorService.getAllColors());
         return "stock/move-to-finished";
