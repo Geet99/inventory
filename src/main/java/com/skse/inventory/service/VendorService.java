@@ -440,14 +440,21 @@ public class VendorService {
 
         mp.setTotalDue(Math.max(0, newTotal));
         mp.setLastUpdatedDate(LocalDate.now());
-        if (mp.getPaidAmount() >= mp.getTotalDue() - 1e-6) {
-            mp.setStatus(PaymentStatus.PAID);
-        } else if (mp.getPaidAmount() > 1e-6) {
-            mp.setStatus(PaymentStatus.PARTIAL);
+
+        // If both totalDue and paidAmount are zero, delete the empty record entirely
+        // (happens when a vendor is reassigned after stage completion)
+        if (mp.getTotalDue() < 1e-6 && mp.getPaidAmount() < 1e-6) {
+            vendorMonthlyPaymentRepository.delete(mp);
         } else {
-            mp.setStatus(PaymentStatus.PENDING);
+            if (mp.getPaidAmount() >= mp.getTotalDue() - 1e-6) {
+                mp.setStatus(PaymentStatus.PAID);
+            } else if (mp.getPaidAmount() > 1e-6) {
+                mp.setStatus(PaymentStatus.PARTIAL);
+            } else {
+                mp.setStatus(PaymentStatus.PENDING);
+            }
+            vendorMonthlyPaymentRepository.save(mp);
         }
-        vendorMonthlyPaymentRepository.save(mp);
 
         vendor.setPaymentDue(vendor.getPaymentDue() - amount);
         vendorRepository.save(vendor);
