@@ -238,6 +238,69 @@
                 font-weight: 700;
                 font-size: 1.35rem;
             }
+            /* Searchable select component */
+            .searchable-wrap {
+                position: relative;
+            }
+            .searchable-wrap > select {
+                position: absolute;
+                left: -9999px;
+                width: 1px;
+                height: 1px;
+            }
+            .searchable-input {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-size: 16px !important;
+                font-weight: 600 !important;
+                box-sizing: border-box;
+                background: white;
+            }
+            .searchable-input::placeholder {
+                color: #999;
+                font-weight: 400 !important;
+            }
+            .searchable-dropdown {
+                display: none;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 100%;
+                margin-top: 2px;
+                max-height: 220px;
+                overflow-y: auto;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+            }
+            .searchable-dropdown.show {
+                display: block;
+            }
+            .searchable-option {
+                padding: 10px 14px;
+                cursor: pointer;
+                font-size: 15px;
+                font-weight: 500;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .searchable-option:last-child {
+                border-bottom: none;
+            }
+            .searchable-option:hover,
+            .searchable-option.highlight {
+                background-color: #e8f4fd;
+                color: #007bff;
+            }
+            .searchable-empty {
+                padding: 12px 14px;
+                color: #999;
+                font-style: italic;
+                text-align: center;
+            }
             @media (max-width: 768px) {
                 .nav-container {
                     flex-direction: column;
@@ -245,6 +308,116 @@
                 }
             }
         </style>
+    </th:block>
+
+    <!-- Searchable select script: include at bottom of <body> -->
+    <th:block th:fragment="searchable-select-script">
+        <script>
+        (function() {
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('select.searchable').forEach(initSearchable);
+            });
+            function initSearchable(sel) {
+                if (sel.dataset.searchableInit) return;
+                sel.dataset.searchableInit = '1';
+                var wrap = document.createElement('div');
+                wrap.className = 'searchable-wrap';
+                sel.parentNode.insertBefore(wrap, sel);
+                wrap.appendChild(sel);
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'searchable-input';
+                input.autocomplete = 'off';
+                input.placeholder = sel.options[0] && sel.options[0].value === '' ? sel.options[0].text : 'Search...';
+                if (sel.required) input.setAttribute('data-required', 'true');
+                wrap.insertBefore(input, sel);
+                var dd = document.createElement('div');
+                dd.className = 'searchable-dropdown';
+                wrap.appendChild(dd);
+                var opts = [];
+                for (var i = 0; i < sel.options.length; i++) {
+                    var o = sel.options[i];
+                    if (i === 0 && o.value === '') continue;
+                    opts.push({ value: o.value, text: o.textContent.trim(), search: (o.getAttribute('data-search') || o.textContent || '').toLowerCase() });
+                }
+                var hlIdx = -1;
+                function filter(q) {
+                    q = (q || '').trim().toLowerCase();
+                    return opts.filter(function(o) { return !q || o.search.indexOf(q) !== -1; });
+                }
+                function render(items) {
+                    dd.innerHTML = '';
+                    if (items.length === 0) {
+                        var em = document.createElement('div');
+                        em.className = 'searchable-empty';
+                        em.textContent = 'No matches found';
+                        dd.appendChild(em);
+                    } else {
+                        items.forEach(function(item, i) {
+                            var d = document.createElement('div');
+                            d.className = 'searchable-option' + (i === hlIdx ? ' highlight' : '');
+                            d.textContent = item.text;
+                            d.setAttribute('data-value', item.value);
+                            d.setAttribute('data-text', item.text);
+                            d.addEventListener('mousedown', function(e) { e.preventDefault(); choose(item); });
+                            dd.appendChild(d);
+                        });
+                    }
+                }
+                function choose(item) {
+                    input.value = item.text;
+                    sel.value = item.value;
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    close();
+                }
+                function open() {
+                    var items = filter(input.value);
+                    hlIdx = items.length > 0 ? 0 : -1;
+                    render(items);
+                    dd.classList.add('show');
+                }
+                function close() {
+                    dd.classList.remove('show');
+                    hlIdx = -1;
+                }
+                input.addEventListener('focus', open);
+                input.addEventListener('input', function() { sel.value = ''; open(); });
+                input.addEventListener('keydown', function(e) {
+                    var items = dd.querySelectorAll('.searchable-option');
+                    if (e.key === 'Escape') { close(); input.blur(); return; }
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (dd.classList.contains('show') && items[hlIdx]) {
+                            choose({ value: items[hlIdx].getAttribute('data-value'), text: items[hlIdx].getAttribute('data-text') });
+                        }
+                        return;
+                    }
+                    if (e.key === 'ArrowDown') { e.preventDefault(); if (hlIdx < items.length - 1) { hlIdx++; render(filter(input.value)); } return; }
+                    if (e.key === 'ArrowUp') { e.preventDefault(); if (hlIdx > 0) { hlIdx--; render(filter(input.value)); } else if (hlIdx === 0) { hlIdx = -1; render(filter(input.value)); } return; }
+                });
+                document.addEventListener('click', function(e) {
+                    if (dd.classList.contains('show') && !wrap.contains(e.target)) close();
+                });
+                // Set initial value if select already has a selection
+                if (sel.value) {
+                    var match = opts.find(function(o) { return o.value === sel.value; });
+                    if (match) input.value = match.text;
+                }
+                // Form validation: copy required and sync on submit
+                var form = sel.closest('form');
+                if (form && sel.required) {
+                    form.addEventListener('submit', function(e) {
+                        if (!sel.value) {
+                            e.preventDefault();
+                            input.style.borderColor = '#dc3545';
+                            input.focus();
+                        }
+                    });
+                    input.addEventListener('input', function() { input.style.borderColor = '#ddd'; });
+                }
+            }
+        })();
+        </script>
     </th:block>
 </body>
 </html>

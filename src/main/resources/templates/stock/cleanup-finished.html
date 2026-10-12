@@ -215,7 +215,7 @@
             <form th:action="@{/stock/cleanup-finished}" method="post">
                 <div class="form-group">
                     <label for="articleName">Article *</label>
-                    <select id="articleName" name="articleName" required>
+                    <select id="articleName" name="articleName" required class="searchable">
                         <option value="">Select Article</option>
                         <option th:each="article : ${articles}"
                                 th:value="${article.name}"
@@ -225,7 +225,7 @@
 
                 <div class="form-group">
                     <label for="color">Color *</label>
-                    <select id="color" name="color" required>
+                    <select id="color" name="color" required class="searchable">
                         <option value="">Select Color</option>
                         <option th:each="color : ${colors}"
                                 th:value="${color.name}"
@@ -427,5 +427,6 @@
             }
         }
     </script>
+    <th:block th:replace="~{fragments/navigation :: searchable-select-script}"></th:block>
 </body>
 </html>

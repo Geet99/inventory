@@ -36,14 +36,14 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="upper-article">Article *</label>
-                        <select id="upper-article" name="articleName" required>
+                        <select id="upper-article" name="articleName" required class="searchable">
                             <option value="">Select article</option>
                             <option th:each="a : ${articles}" th:value="${a.name}" th:text="${a.name}"></option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="upper-color">Color *</label>
-                        <select id="upper-color" name="color" required>
+                        <select id="upper-color" name="color" required class="searchable">
                             <option value="">Select color</option>
                             <option th:each="c : ${colors}" th:value="${c.name}" th:text="${c.name}"></option>
                         </select>
@@ -70,14 +70,14 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="fin-article">Article *</label>
-                        <select id="fin-article" name="articleName" required>
+                        <select id="fin-article" name="articleName" required class="searchable">
                             <option value="">Select article</option>
                             <option th:each="a : ${articles}" th:value="${a.name}" th:text="${a.name}"></option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="fin-color">Color *</label>
-                        <select id="fin-color" name="color" required>
+                        <select id="fin-color" name="color" required class="searchable">
                             <option value="">Select color</option>
                             <option th:each="c : ${colors}" th:value="${c.name}" th:text="${c.name}"></option>
                         </select>
@@ -99,5 +99,6 @@
 
         <a th:href="@{/stock}" class="btn btn-secondary">Back to Stock Dashboard</a>
     </div>
+    <th:block th:replace="~{fragments/navigation :: searchable-select-script}"></th:block>
 </body>
 </html>

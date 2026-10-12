@@ -166,10 +166,10 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="cuttingRateHeadId">Cutting Rate Head *</label>
-                        <select id="cuttingRateHeadId" name="cuttingRateHeadId" class="form-control" required>
+                        <select id="cuttingRateHeadId" name="cuttingRateHeadId" class="form-control searchable" required>
                             <option value="">-- Select Cutting Rate Head --</option>
-                            <option th:each="rateHead : ${cuttingRateHeads}" 
-                                    th:value="${rateHead.id}" 
+                            <option th:each="rateHead : ${cuttingRateHeads}"
+                                    th:value="${rateHead.id}"
                                     th:selected="${article.cuttingRateHead != null && article.cuttingRateHead.id == rateHead.id}"
                                     th:text="${rateHead.name + ' (₹' + #numbers.formatDecimal(rateHead.cost, 1, 2) + ')'}"></option>
                         </select>
@@ -181,10 +181,10 @@
                     
                     <div class="form-group">
                         <label for="printingRateHeadId">Printing Rate Head *</label>
-                        <select id="printingRateHeadId" name="printingRateHeadId" class="form-control" required>
+                        <select id="printingRateHeadId" name="printingRateHeadId" class="form-control searchable" required>
                             <option value="">-- Select Printing Rate Head --</option>
-                            <option th:each="rateHead : ${printingRateHeads}" 
-                                    th:value="${rateHead.id}" 
+                            <option th:each="rateHead : ${printingRateHeads}"
+                                    th:value="${rateHead.id}"
                                     th:selected="${article.printingRateHead != null && article.printingRateHead.id == rateHead.id}"
                                     th:text="${rateHead.name + ' (₹' + #numbers.formatDecimal(rateHead.cost, 1, 2) + ')'}"></option>
                         </select>
@@ -198,10 +198,10 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="stitchingRateHeadId">Stitching Rate Head *</label>
-                        <select id="stitchingRateHeadId" name="stitchingRateHeadId" class="form-control" required>
+                        <select id="stitchingRateHeadId" name="stitchingRateHeadId" class="form-control searchable" required>
                             <option value="">-- Select Stitching Rate Head --</option>
-                            <option th:each="rateHead : ${stitchingRateHeads}" 
-                                    th:value="${rateHead.id}" 
+                            <option th:each="rateHead : ${stitchingRateHeads}"
+                                    th:value="${rateHead.id}"
                                     th:selected="${article.stitchingRateHead != null && article.stitchingRateHead.id == rateHead.id}"
                                     th:text="${rateHead.name + ' (₹' + #numbers.formatDecimal(rateHead.cost, 1, 2) + ')'}"></option>
                         </select>
@@ -220,5 +220,6 @@
             </form>
         </div>
     </div>
+    <th:block th:replace="~{fragments/navigation :: searchable-select-script}"></th:block>
 </body>
 </html>

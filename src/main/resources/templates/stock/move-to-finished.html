@@ -266,20 +266,20 @@
             <form th:action="@{/stock/move-to-finished}" method="post">
                 <div class="form-group">
                     <label for="articleName">Article *</label>
-                    <select id="articleName" name="articleName" required>
+                    <select id="articleName" name="articleName" required class="searchable">
                         <option value="">Select Article</option>
-                        <option th:each="article : ${articles}" 
-                                th:value="${article.name}" 
+                        <option th:each="article : ${articles}"
+                                th:value="${article.name}"
                                 th:text="${article.name}"></option>
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="color">Color *</label>
-                    <select id="color" name="color" required>
+                    <select id="color" name="color" required class="searchable">
                         <option value="">Select Color</option>
-                        <option th:each="color : ${colors}" 
-                                th:value="${color.name}" 
+                        <option th:each="color : ${colors}"
+                                th:value="${color.name}"
                                 th:text="${color.name}"></option>
                     </select>
                 </div>
@@ -505,6 +505,7 @@
             }
         }
     </script>
+    <th:block th:replace="~{fragments/navigation :: searchable-select-script}"></th:block>
 </body>
 </html>
 
