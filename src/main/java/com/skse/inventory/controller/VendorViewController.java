@@ -136,6 +136,38 @@ public class VendorViewController {
         }
     }
 
+    @PostMapping("/cleanup-all-payments")
+    public String cleanupAllOrphanedPayments(RedirectAttributes redirectAttributes) {
+        try {
+            int deleted = vendorService.cleanupAllOrphanedPayments();
+            if (deleted > 0) {
+                redirectAttributes.addFlashAttribute("success",
+                        "Cleaned up " + deleted + " orphaned payment record(s) across all vendors.");
+            } else {
+                redirectAttributes.addFlashAttribute("success", "No orphaned payment records found.");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Cleanup failed: " + e.getMessage());
+        }
+        return "redirect:/vendors/summary";
+    }
+
+    @PostMapping("/{id}/cleanup-payments")
+    public String cleanupOrphanedPayments(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            int deleted = vendorService.cleanupOrphanedPayments(id);
+            if (deleted > 0) {
+                redirectAttributes.addFlashAttribute("success",
+                        "Cleaned up " + deleted + " orphaned payment record(s).");
+            } else {
+                redirectAttributes.addFlashAttribute("success", "No orphaned payment records found.");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Cleanup failed: " + e.getMessage());
+        }
+        return "redirect:/vendors/" + id + "/details";
+    }
+
     @GetMapping("/report")
     public String vendorReport(Model model,
                               @RequestParam(required = false) String startDate,

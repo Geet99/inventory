@@ -202,11 +202,17 @@
     <div th:replace="~{fragments/navigation :: navbar}"></div>
     
     <div class="container">
+        <div th:if="${success}" style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px; font-weight: bold;" th:text="${success}"></div>
+        <div th:if="${error}" style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px; font-weight: bold;" th:text="${error}"></div>
         <div class="page-header">
             <h2>💰 Vendor Payment Summary</h2>
             <div>
                 <a th:href="@{/vendors}" class="btn btn-info">All Vendors</a>
                 <a th:href="@{/vendors/report}" class="btn btn-primary">Payment Report</a>
+                <form th:action="@{/vendors/cleanup-all-payments}" method="post" style="display: inline;"
+                      onsubmit="return confirm('Remove all orphaned payment entries (no backing order history) across all vendors?');">
+                    <button type="submit" class="btn" style="background-color: #dc3545; color: white;">🗑 Cleanup Stale Payments</button>
+                </form>
             </div>
         </div>
         

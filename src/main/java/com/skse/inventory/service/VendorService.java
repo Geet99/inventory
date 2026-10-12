@@ -1020,4 +1020,77 @@ public class VendorService {
             default -> month;
         };
     }
+
+    /**
+     * Removes orphaned VendorMonthlyPayment entries across ALL vendors.
+     * @return number of entries deleted
+     */
+    @Transactional
+    public int cleanupAllOrphanedPayments() {
+        List<Vendor> vendors = vendorRepository.findAll();
+        int total = 0;
+        for (Vendor v : vendors) {
+            total += cleanupOrphanedPayments(v.getId());
+        }
+        return total;
+    }
+
+    /**
+     * Removes orphaned VendorMonthlyPayment entries for a vendor.
+     * An entry is orphaned when no VendorOrderHistory ORDER records back it
+     * (same vendor, same monthYear derived from orderDate, same role).
+     * Only deletes entries with paidAmount == 0 to avoid losing settlement data.
+     *
+     * @return number of entries deleted
+     */
+    @Transactional
+    public int cleanupOrphanedPayments(Long vendorId) {
+        Vendor vendor = getVendorById(vendorId);
+        if (vendor == null) return 0;
+
+        List<VendorMonthlyPayment> allPayments = vendorMonthlyPaymentRepository.findByVendorOrderByMonthYearDesc(vendor);
+        List<VendorOrderHistory> allOrders = vendorOrderHistoryRepository.findByVendorIdAndType(vendorId, "ORDER");
+
+        // Build a set of (monthYear, role) keys backed by real orders
+        Set<String> backedKeys = new HashSet<>();
+        for (VendorOrderHistory order : allOrders) {
+            if (order.getOrderDate() != null && order.getRole() != null) {
+                String monthYear = VendorMonthlyPayment.getMonthYearString(order.getOrderDate());
+                backedKeys.add(monthYear + "|" + order.getRole().name());
+            }
+        }
+
+        int deleted = 0;
+        double adjustedDue = 0;
+        for (VendorMonthlyPayment mp : allPayments) {
+            boolean orphaned;
+            if (mp.getOperationType() == null) {
+                orphaned = true;
+            } else {
+                String key = mp.getMonthYear() + "|" + mp.getOperationType().name();
+                orphaned = !backedKeys.contains(key);
+            }
+
+            if (orphaned) {
+                if (mp.getPaidAmount() > 1e-6) {
+                    log.warn("Skipping orphaned payment id={} (monthYear={}, role={}, totalDue={}, paidAmount={}) — has settlements",
+                            mp.getId(), mp.getMonthYear(), mp.getOperationType(), mp.getTotalDue(), mp.getPaidAmount());
+                    continue;
+                }
+                log.info("Deleting orphaned payment id={} monthYear={} role={} totalDue={}",
+                        mp.getId(), mp.getMonthYear(), mp.getOperationType(), mp.getTotalDue());
+                adjustedDue += mp.getTotalDue();
+                vendorMonthlyPaymentRepository.delete(mp);
+                deleted++;
+            }
+        }
+
+        if (adjustedDue > 0) {
+            vendor.setPaymentDue(Math.max(0, vendor.getPaymentDue() - adjustedDue));
+            vendorRepository.save(vendor);
+            log.info("Adjusted vendor {} paymentDue by -{}", vendor.getName(), adjustedDue);
+        }
+
+        return deleted;
+    }
 }
