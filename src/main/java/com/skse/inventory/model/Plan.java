@@ -12,6 +12,7 @@ import java.util.Map;
 public class Plan {
     @Id
     private String planNumber; // Unique plan identifier
+    private String brandName = "Nomilite"; // "Rajat" or "Nomilite"
     private String articleName;
     private String color;
     
@@ -73,6 +74,14 @@ public class Plan {
 
     public void setPlanNumber(String planNumber) {
         this.planNumber = planNumber;
+    }
+
+    public String getBrandName() {
+        return brandName;
+    }
+
+    public void setBrandName(String brandName) {
+        this.brandName = brandName;
     }
 
     public String getArticleName() {

@@ -83,6 +83,7 @@ public class PlanService {
             plan.setTotal(updatedPlan.getTotal());
             plan.setSizeQuantityPairs(updatedPlan.getSizeQuantityPairs());
 
+            plan.setBrandName(updatedPlan.getBrandName() != null ? updatedPlan.getBrandName() : "Nomilite");
             plan.setArticleName(updatedPlan.getArticleName());
             plan.setColor(updatedPlan.getColor());
             plan.setDescription(updatedPlan.getDescription());

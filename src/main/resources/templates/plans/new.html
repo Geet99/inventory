@@ -167,6 +167,13 @@
                         <small class="text-muted">Unique identifier for the plan (e.g., PLAN-2024-001)</small>
                     </div>
                     <div class="form-group">
+                        <label for="brandName">Brand *</label>
+                        <select id="brandName" th:field="*{brandName}" required>
+                            <option value="Nomilite">Nomilite</option>
+                            <option value="Rajat">Rajat</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="createDate">Plan Date</label>
                         <input type="date" id="createDate" th:field="*{createDate}">
                         <small class="text-muted">Date of plan creation (default: today)</small>

@@ -389,6 +389,7 @@
                 <thead>
                     <tr>
                         <th>Plan Number</th>
+                        <th>Brand</th>
                         <th>Article</th>
                         <th>Color</th>
                         <th>Description</th>
@@ -405,6 +406,7 @@
                 <tbody>
                     <tr th:each="plan : ${plans}" th:attr="data-plan-number=${plan.planNumber}">
                         <td th:text="${plan.planNumber}"></td>
+                        <td th:text="${plan.brandName ?: 'Nomilite'}"></td>
                         <td th:text="${plan.articleName}"></td>
                         <td th:text="${plan.color}"></td>
                         <td class="plan-desc"
