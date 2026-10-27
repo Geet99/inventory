@@ -413,25 +413,52 @@ public class PlanService {
         }
         String canonicalPlanNumber = plan.getPlanNumber();
 
-        PlanStatus nextStatus = getNextStatus(plan);
-        if (nextStatus == null) {
-            throw new IllegalStateException("Invalid status transition");
-        }
-
-        log.info("moveToNextState: plan={} currentStatus={} effectiveStatus={} -> nextStatus={}",
-                canonicalPlanNumber, plan.getStatus(), getEffectiveStatus(plan), nextStatus);
+        PlanStatus effective = getEffectiveStatus(plan);
+        PlanStatus stored = plan.getStatus() != null ? plan.getStatus() : PlanStatus.Pending_Cutting;
 
         // Use transition date everywhere: plan timestamps and vendor payment month (financial)
         LocalDate date = transitionDate != null ? transitionDate : LocalDate.now();
 
+        // Fast-forward through intermediate stages so payments/stock are processed for each
+        while (statusOrder(stored) < statusOrder(effective)) {
+            PlanStatus intermediate = nextStatusAfter(stored);
+            if (intermediate == null) break;
+            log.info("moveToNextState: fast-forwarding plan={} through {} (dates were set manually)",
+                    canonicalPlanNumber, intermediate);
+            applyTransition(plan, intermediate, date, null, null, canonicalPlanNumber);
+            plan.setStatus(intermediate);
+            stored = intermediate;
+        }
+
+        // Now process the actual next transition the user requested
+        PlanStatus nextStatus = nextStatusAfter(effective);
+        if (nextStatus == null) {
+            throw new IllegalStateException("Invalid status transition");
+        }
+
+        log.info("moveToNextState: plan={} effectiveStatus={} -> nextStatus={}",
+                canonicalPlanNumber, effective, nextStatus);
+
+        applyTransition(plan, nextStatus, date, finalQuantity, newSizeQuantityPairs, canonicalPlanNumber);
+        plan.setStatus(nextStatus);
+        return planRepository.save(plan);
+    }
+
+    /**
+     * Applies the side-effects of a single status transition (dates, payments, stock).
+     * For intermediate fast-forward stages, finalQuantity/newSizeQuantityPairs are null (no-op).
+     */
+    private void applyTransition(Plan plan, PlanStatus nextStatus, LocalDate date,
+                                  Integer finalQuantity, String newSizeQuantityPairs,
+                                  String canonicalPlanNumber) {
         switch (nextStatus) {
             case Pending_Cutting:
                 break;
             case Cutting:
-                plan.setCuttingStartDate(date);
+                if (plan.getCuttingStartDate() == null) plan.setCuttingStartDate(date);
                 break;
             case Pending_Printing:
-                plan.setCuttingEndDate(date);
+                if (plan.getCuttingEndDate() == null) plan.setCuttingEndDate(date);
                 applyFinalQuantity(plan, finalQuantity, newSizeQuantityPairs);
                 boolean hasExistingOrder = vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Cutting);
                 log.info("Pending_Printing: plan={} hasExistingCuttingOrder={} cuttingVendor={}",
@@ -452,10 +479,10 @@ public class PlanService {
                 }
                 break;
             case Printing:
-                plan.setPrintingStartDate(date);
+                if (plan.getPrintingStartDate() == null) plan.setPrintingStartDate(date);
                 break;
             case Pending_Stitching:
-                plan.setPrintingEndDate(date);
+                if (plan.getPrintingEndDate() == null) plan.setPrintingEndDate(date);
                 applyFinalQuantity(plan, finalQuantity, newSizeQuantityPairs);
                 if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Printing)) {
                     if (plan.getPrintingVendor() != null) {
@@ -468,10 +495,10 @@ public class PlanService {
                 }
                 break;
             case Stitching:
-                plan.setStitchingStartDate(date);
+                if (plan.getStitchingStartDate() == null) plan.setStitchingStartDate(date);
                 break;
             case Completed:
-                plan.setStitchingEndDate(date);
+                if (plan.getStitchingEndDate() == null) plan.setStitchingEndDate(date);
                 applyFinalQuantity(plan, finalQuantity, newSizeQuantityPairs);
                 if (!vendorService.hasVendorOrderForPlanWithRole(canonicalPlanNumber, VendorRole.Stitching)) {
                     if (plan.getStitchingVendor() != null) {
@@ -484,9 +511,6 @@ public class PlanService {
                 }
                 break;
         }
-
-        plan.setStatus(nextStatus);
-        return planRepository.save(plan);
     }
 
     public Plan sendToMachine(String planNumber) {
@@ -657,18 +681,16 @@ public class PlanService {
     }
 
     /**
-     * Next workflow state based on stored status (NOT effective status).
-     * Using stored status ensures transitions happen one step at a time, so manually-set dates
-     * cannot cause stages to be skipped — each stage's payment and stock logic runs in order.
-     * The hasExistingOrder guard inside moveToNextState prevents double-processing if a
-     * stage was already completed.
+     * Next workflow state based on effective status (max of stored status and date-inferred status).
+     * This ensures that when dates are manually edited ahead of the stored status,
+     * the "Next" button proposes the correct forward transition.
      */
     public PlanStatus getNextStatus(Plan plan) {
-        PlanStatus stored = plan.getStatus();
-        if (stored == null) {
-            return PlanStatus.Cutting;
+        PlanStatus effective = getEffectiveStatus(plan);
+        if (effective == PlanStatus.Completed) {
+            return null;
         }
-        return nextStatusAfter(stored);
+        return nextStatusAfter(effective);
     }
 
     private static PlanStatus nextStatusAfter(PlanStatus current) {
