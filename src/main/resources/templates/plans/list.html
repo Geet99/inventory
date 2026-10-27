@@ -376,9 +376,14 @@
                     <label for="createDateTo">Create date to</label>
                     <input type="date" id="createDateTo" name="createDateTo" th:value="${filterCreateDateTo != null ? #temporals.format(filterCreateDateTo, 'yyyy-MM-dd') : ''}">
                 </div>
+                <div class="filter-group" style="display: flex; align-items: center; gap: 6px; padding-top: 18px;">
+                    <input type="checkbox" id="noPrintingCost" name="noPrintingCost" value="true"
+                           th:checked="${filterNoPrintingCost != null and filterNoPrintingCost}">
+                    <label for="noPrintingCost" style="margin: 0; font-weight: normal;">No printing cost</label>
+                </div>
                 <div class="filter-actions">
                     <button type="submit" class="btn btn-primary">Filter</button>
-                    <a th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or (filterArticleName != null and !#strings.isEmpty(filterArticleName)) or filterStatus != null or filterCreateDateFrom != null or filterCreateDateTo != null}"
+                    <a th:if="${(filterPlanNumber != null and !#strings.isEmpty(filterPlanNumber)) or (filterArticleName != null and !#strings.isEmpty(filterArticleName)) or filterStatus != null or filterCreateDateFrom != null or filterCreateDateTo != null or (filterNoPrintingCost != null and filterNoPrintingCost)}"
                        th:href="@{/plans}" class="btn btn-secondary">Clear</a>
                 </div>
             </form>

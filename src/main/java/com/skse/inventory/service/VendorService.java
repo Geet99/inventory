@@ -699,21 +699,25 @@ public class VendorService {
     // ========== PRINT/RECEIPT METHODS ==========
     
     /**
-     * Get all plans/tasks assigned to this vendor for the task slip (any date, including backdated).
-     * Start/end dates come from workflow transitions (e.g. cutting start date from Cutting transition).
+     * Get completed tasks for this vendor in a given month.
+     * Only includes plans where the vendor's stage finished (endDate) in the specified month.
+     * @param monthYear format "yyyy-MM"
      */
-    public List<Map<String, Object>> getVendorTasksForSlip(Long vendorId) {
+    public List<Map<String, Object>> getVendorTasksForSlip(Long vendorId, String monthYear) {
         Vendor vendor = getVendorById(vendorId);
         if (vendor == null) {
             return List.of();
         }
+
+        java.time.YearMonth ym = java.time.YearMonth.parse(monthYear);
+        LocalDate monthStart = ym.atDay(1);
+        LocalDate monthEnd = ym.atEndOfMonth();
 
         List<Plan> allPlans = planRepository.findAll();
         List<Map<String, Object>> tasks = new java.util.ArrayList<>();
 
         for (Plan plan : allPlans) {
             boolean isAssigned = false;
-            String status = "Not Started";
             LocalDate startDate = null;
             LocalDate endDate = null;
             double paymentDue = 0.0;
@@ -722,66 +726,54 @@ public class VendorService {
             double rateHeadCost = 0.0;
 
             if (plan.getCuttingVendor() != null && plan.getCuttingVendor().getId().equals(vendorId)) {
-                isAssigned = true;
-                operationType = "Cutting";
-                String articleKey = Article.normalizeNameKey(plan.getArticleName());
-                Article article = articleKey == null
-                        ? null
-                        : articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey).orElse(null);
-                if (article != null && article.getCuttingRateHead() != null) {
-                    RateHead rh = article.getCuttingRateHead();
-                    rateHeadName = rh.getName();
-                    LocalDate rateDate = plan.getCuttingEndDate() != null ? plan.getCuttingEndDate() : LocalDate.now();
-                    Double cost = rateHeadService.getCostForDate(rh, rateDate);
-                    rateHeadCost = cost != null ? cost : 0.0;
-                }
-                startDate = plan.getCuttingStartDate();
                 endDate = plan.getCuttingEndDate();
-                paymentDue = plan.getCuttingVendorPaymentDue();
-                if (endDate != null) {
-                    status = "Completed";
-                } else if (startDate != null) {
-                    status = "In Progress";
+                if (endDate != null && !endDate.isBefore(monthStart) && !endDate.isAfter(monthEnd)) {
+                    isAssigned = true;
+                    operationType = "Cutting";
+                    String articleKey = Article.normalizeNameKey(plan.getArticleName());
+                    Article article = articleKey == null
+                            ? null
+                            : articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey).orElse(null);
+                    if (article != null && article.getCuttingRateHead() != null) {
+                        RateHead rh = article.getCuttingRateHead();
+                        rateHeadName = rh.getName();
+                        Double cost = rateHeadService.getCostForDate(rh, endDate);
+                        rateHeadCost = cost != null ? cost : 0.0;
+                    }
+                    startDate = plan.getCuttingStartDate();
+                    paymentDue = plan.getCuttingVendorPaymentDue();
                 }
             } else if (plan.getPrintingVendor() != null && plan.getPrintingVendor().getId().equals(vendorId)) {
-                isAssigned = true;
-                operationType = "Printing";
-                if (plan.getPrintingRateHead() != null) {
-                    RateHead rh = plan.getPrintingRateHead();
-                    rateHeadName = rh.getName();
-                    LocalDate rateDate = plan.getPrintingEndDate() != null ? plan.getPrintingEndDate() : LocalDate.now();
-                    Double cost = rateHeadService.getCostForDate(rh, rateDate);
-                    rateHeadCost = cost != null ? cost : 0.0;
-                }
-                startDate = plan.getPrintingStartDate();
                 endDate = plan.getPrintingEndDate();
-                paymentDue = plan.getPrintingVendorPaymentDue();
-                if (endDate != null) {
-                    status = "Completed";
-                } else if (startDate != null) {
-                    status = "In Progress";
+                if (endDate != null && !endDate.isBefore(monthStart) && !endDate.isAfter(monthEnd)) {
+                    isAssigned = true;
+                    operationType = "Printing";
+                    if (plan.getPrintingRateHead() != null) {
+                        RateHead rh = plan.getPrintingRateHead();
+                        rateHeadName = rh.getName();
+                        Double cost = rateHeadService.getCostForDate(rh, endDate);
+                        rateHeadCost = cost != null ? cost : 0.0;
+                    }
+                    startDate = plan.getPrintingStartDate();
+                    paymentDue = plan.getPrintingVendorPaymentDue();
                 }
             } else if (plan.getStitchingVendor() != null && plan.getStitchingVendor().getId().equals(vendorId)) {
-                isAssigned = true;
-                operationType = "Stitching";
-                String articleKey = Article.normalizeNameKey(plan.getArticleName());
-                Article article = articleKey == null
-                        ? null
-                        : articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey).orElse(null);
-                if (article != null && article.getStitchingRateHead() != null) {
-                    RateHead rh = article.getStitchingRateHead();
-                    rateHeadName = rh.getName();
-                    LocalDate rateDate = plan.getStitchingEndDate() != null ? plan.getStitchingEndDate() : LocalDate.now();
-                    Double cost = rateHeadService.getCostForDate(rh, rateDate);
-                    rateHeadCost = cost != null ? cost : 0.0;
-                }
-                startDate = plan.getStitchingStartDate();
                 endDate = plan.getStitchingEndDate();
-                paymentDue = plan.getStitchingVendorPaymentDue();
-                if (endDate != null) {
-                    status = "Completed";
-                } else if (startDate != null) {
-                    status = "In Progress";
+                if (endDate != null && !endDate.isBefore(monthStart) && !endDate.isAfter(monthEnd)) {
+                    isAssigned = true;
+                    operationType = "Stitching";
+                    String articleKey = Article.normalizeNameKey(plan.getArticleName());
+                    Article article = articleKey == null
+                            ? null
+                            : articleRepository.findFirstByNameNormalizedOrderByIdAsc(articleKey).orElse(null);
+                    if (article != null && article.getStitchingRateHead() != null) {
+                        RateHead rh = article.getStitchingRateHead();
+                        rateHeadName = rh.getName();
+                        Double cost = rateHeadService.getCostForDate(rh, endDate);
+                        rateHeadCost = cost != null ? cost : 0.0;
+                    }
+                    startDate = plan.getStitchingStartDate();
+                    paymentDue = plan.getStitchingVendorPaymentDue();
                 }
             }
 
@@ -792,7 +784,6 @@ public class VendorService {
                 task.put("color", plan.getColor());
                 task.put("sizeQuantityPairs", plan.getSizeQuantityPairs());
                 task.put("quantity", plan.getTotal());
-                task.put("status", status);
                 task.put("operationType", operationType);
                 task.put("rateHeadName", rateHeadName);
                 task.put("rateHeadCost", rateHeadCost);
@@ -802,6 +793,16 @@ public class VendorService {
                 tasks.add(task);
             }
         }
+
+        // Sort by end date ascending
+        tasks.sort((t1, t2) -> {
+            LocalDate d1 = (LocalDate) t1.get("endDate");
+            LocalDate d2 = (LocalDate) t2.get("endDate");
+            if (d1 == null && d2 == null) return 0;
+            if (d1 == null) return 1;
+            if (d2 == null) return -1;
+            return d1.compareTo(d2);
+        });
 
         return tasks;
     }

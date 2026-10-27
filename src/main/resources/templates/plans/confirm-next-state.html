@@ -80,7 +80,15 @@
             }
 
             var finalQuantityInput = document.getElementById('finalQuantity');
-            if (!finalQuantityInput) return; // Not a stage-ending transition
+            if (!finalQuantityInput) {
+                // Non-stage-ending transition: only need double-click prevention
+                window.validateForm = function () {
+                    var btn = document.getElementById('submitBtn');
+                    if (btn) { btn.disabled = true; btn.textContent = 'Processing\u2026'; }
+                    return true;
+                };
+                return;
+            }
 
             var originalTotal = /*[[${plan.total}]]*/ 0;
             var originalPairs = /*[[${plan.sizeQuantityPairs}]]*/ '';
@@ -165,6 +173,9 @@
                     // Total unchanged, clear the textarea so backend ignores it
                     pairsTextarea.value = '';
                 }
+                // Prevent double-click: disable submit after first valid submission
+                var btn = document.getElementById('submitBtn');
+                if (btn) { btn.disabled = true; btn.textContent = 'Processing\u2026'; }
                 return true;
             };
         })();

@@ -23,10 +23,20 @@ public interface FinishedStockRepository extends JpaRepository<FinishedStock, Lo
               AND lower(trim(f.color)) = lower(trim(:color))
             ORDER BY f.id ASC
             """)
-    Optional<FinishedStock> findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
+    List<FinishedStock> findAllByArticleNameAndSizeAndColor(
             @Param("articleName") String articleName,
             @Param("size") String size,
             @Param("color") String color);
+
+    /**
+     * Returns the first matching FinishedStock (oldest by id).
+     * Custom @Query ignores the findFirst prefix, so we wrap a List query manually.
+     */
+    default Optional<FinishedStock> findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
+            String articleName, String size, String color) {
+        List<FinishedStock> results = findAllByArticleNameAndSizeAndColor(articleName, size, color);
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
 
     @Query("SELECT f.size, f.color, SUM(f.quantity) FROM FinishedStock f GROUP BY f.size, f.color")
     List<Object[]> getFinishedStockSummary();
