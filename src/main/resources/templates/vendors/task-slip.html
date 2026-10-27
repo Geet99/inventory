@@ -58,20 +58,21 @@
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            font-size: 10pt;
+            font-size: 9pt;
         }
-        
+
         .tasks-table th {
             background: #2c3e50;
             color: white;
-            padding: 10px;
+            padding: 6px 5px;
             text-align: left;
-            font-size: 11pt;
+            font-size: 9pt;
             font-weight: 800;
+            white-space: nowrap;
         }
-        
+
         .tasks-table td {
-            padding: 8px;
+            padding: 5px;
             border: 1px solid #ddd;
             font-weight: 700;
         }
@@ -108,25 +109,6 @@
             margin-top: 10px;
         }
         
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #000;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            font-size: 11pt;
-        }
-        
-        .signature-box {
-            text-align: center;
-        }
-        
-        .signature-line {
-            margin-top: 50px;
-            border-top: 2px solid #000;
-            padding-top: 5px;
-        }
         
         .btn {
             padding: 10px 20px;
@@ -174,7 +156,7 @@
         <div><strong>Vendor Name:</strong> <span th:text="${vendor.name}">Vendor Name</span></div>
         <div><strong>Role:</strong> <span th:text="${vendor.role}">Role</span></div>
         <div><strong>Period:</strong> <span th:text="${period}">November 2024</span></div>
-        <div><strong>Date Issued:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd-MMM-yyyy')}">Date</span></div>
+        <div><strong>Date Issued:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yy')}">Date</span></div>
     </div>
     
     <div th:if="${tasks.isEmpty()}" class="no-tasks">
@@ -188,33 +170,30 @@
         <table class="tasks-table">
             <thead>
                 <tr>
-                    <th>Plan No.</th>
+                    <th>Plan</th>
                     <th>Article</th>
                     <th>Color</th>
                     <th>Sizes</th>
-                    <th>Quantity</th>
-                    <th>Operation</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Payment Due</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Period</th>
+                    <th style="text-align: right;">Amt</th>
                 </tr>
             </thead>
             <tbody>
                 <tr th:each="task : ${tasks}">
-                    <td th:text="${task.planNumber}">PLAN-001</td>
-                    <td th:text="${task.articleName}">Nike Classic</td>
-                    <td th:text="${task.color}">Red</td>
+                    <td th:text="${task.planNumber}">2892</td>
+                    <td th:text="${task.articleName}">KIRAN-13</td>
+                    <td th:text="${task.color}">BL-BZ</td>
                     <td th:text="${task.sizeQuantityPairs}">6:50, 7:30</td>
-                    <td th:text="${task.quantity} + ' pairs'">100 pairs</td>
+                    <td th:text="${task.quantity}">100</td>
                     <td>
-                        <span th:if="${task.rateHeadName != null and !task.rateHeadName.isEmpty()}"
-                              th:text="${task.operationType} + ' (' + ${task.rateHeadName} + ' - ₹' + ${#numbers.formatDecimal(task.rateHeadCost, 1, 2)} + ')'">Printing (Premium Printing - ₹18.00)</span>
-                        <span th:if="${task.rateHeadName == null or task.rateHeadName.isEmpty()}"
-                              th:text="${task.operationType}">Cutting</span>
+                        <span th:if="${task.rateHeadCost > 0}"
+                              th:text="'₹' + ${#numbers.formatDecimal(task.rateHeadCost, 1, 2)}">₹18.00</span>
+                        <span th:if="${task.rateHeadCost <= 0}">-</span>
                     </td>
-                    <td th:text="${task.startDate != null ? #temporals.format(task.startDate, 'dd-MMM-yyyy') : '-'}">-</td>
-                    <td th:text="${task.endDate != null ? #temporals.format(task.endDate, 'dd-MMM-yyyy') : '-'}">-</td>
-                    <td th:text="'₹' + ${#numbers.formatDecimal(task.paymentDue, 1, 2)}">₹0.00</td>
+                    <td th:text="${(task.startDate != null ? #temporals.format(task.startDate, 'dd/MM/yy') : '') + ' - ' + (task.endDate != null ? #temporals.format(task.endDate, 'dd/MM/yy') : '')}">01/10/26 - 15/10/26</td>
+                    <td style="text-align: right;" th:text="'₹' + ${#numbers.formatDecimal(task.paymentDue, 1, 2)}">₹0.00</td>
                 </tr>
             </tbody>
         </table>
@@ -227,7 +206,7 @@
             </div>
             <div class="summary-row">
                 <span>Total Quantity:</span>
-                <span th:text="${totalQuantity} + ' pairs'">0 pairs</span>
+                <span th:text="${totalQuantity}">0</span>
             </div>
             <div class="summary-row total">
                 <span>Total Payment Due:</span>
@@ -236,22 +215,8 @@
         </div>
     </div>
     
-    <div class="footer">
-        <div class="signature-box">
-            <div><strong>Vendor Signature</strong></div>
-            <div class="signature-line">_______________________</div>
-            <div style="margin-top: 5px;">Date: ______________</div>
-        </div>
-        <div class="signature-box">
-            <div><strong>Authorized By</strong></div>
-            <div class="signature-line">_______________________</div>
-            <div style="margin-top: 5px;">Date: ______________</div>
-        </div>
-    </div>
-    
-    <div style="text-align: center; margin-top: 30px; font-size: 10pt; color: #666;">
-        <p>This is a computer-generated task slip.</p>
-        <p>Please verify all details before starting work.</p>
+    <div style="text-align: center; margin-top: 30px; font-size: 9pt; color: #666;">
+        <p>This is a computer-generated task slip. Please verify all details.</p>
     </div>
 </body>
 </html>
