@@ -73,7 +73,7 @@ public class PlanViewController {
         PlanStatus statusFilter = parsePlanStatusOrNull(status);
         List<Plan> plans = planService.getPlansFiltered(planNumber, articleName, statusFilter, createDateFrom, createDateTo);
         if (Boolean.TRUE.equals(noPrintingCost)) {
-            plans = plans.stream().filter(p -> p.getPrintingVendorPaymentDue() == 0).toList();
+            plans = plans.stream().filter(p -> p.getPrintingRateHead() == null).toList();
         }
         model.addAttribute("plans", plans);
         model.addAttribute("filterPlanNumber", planNumber != null ? planNumber : "");
