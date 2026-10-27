@@ -67,10 +67,14 @@ public class PlanViewController {
                            @RequestParam(required = false) String status,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createDateFrom,
                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createDateTo,
+                           @RequestParam(required = false) Boolean noPrintingCost,
                            Model model) {
         model.addAttribute("title", "Plans");
         PlanStatus statusFilter = parsePlanStatusOrNull(status);
         List<Plan> plans = planService.getPlansFiltered(planNumber, articleName, statusFilter, createDateFrom, createDateTo);
+        if (Boolean.TRUE.equals(noPrintingCost)) {
+            plans = plans.stream().filter(p -> p.getPrintingVendorPaymentDue() == 0).toList();
+        }
         model.addAttribute("plans", plans);
         model.addAttribute("filterPlanNumber", planNumber != null ? planNumber : "");
         model.addAttribute("filterArticleName", articleName != null ? articleName : "");
@@ -81,6 +85,7 @@ public class PlanViewController {
         }
         model.addAttribute("filterCreateDateFrom", createDateFrom);
         model.addAttribute("filterCreateDateTo", createDateTo);
+        model.addAttribute("filterNoPrintingCost", noPrintingCost);
         return "plans/list";
     }
 

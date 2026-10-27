@@ -80,26 +80,6 @@
             background: #f8f9fa;
         }
         
-        .task-status {
-            font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 3px;
-        }
-        
-        .status-pending {
-            background: #ffc107;
-            color: #000;
-        }
-        
-        .status-in-progress {
-            background: #17a2b8;
-            color: white;
-        }
-        
-        .status-completed {
-            background: #28a745;
-            color: white;
-        }
         
         .summary-box {
             margin: 30px 0;
@@ -175,6 +155,13 @@
 </head>
 <body>
     <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <form style="display: inline-flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <input type="hidden" name="vendorId" th:value="${vendorId}">
+            <label for="month" style="font-weight: bold;">Month:</label>
+            <input type="month" id="month" name="month" th:value="${selectedMonth}" style="padding: 6px 10px; font-size: 12pt; border: 2px solid #000; font-weight: bold;">
+            <button type="submit" class="btn">Load</button>
+        </form>
+        <br>
         <button class="btn" onclick="window.print()">🖨️ Print Task Slip</button>
         <button class="btn" onclick="window.close()">✖ Close</button>
     </div>
@@ -191,13 +178,13 @@
     </div>
     
     <div th:if="${tasks.isEmpty()}" class="no-tasks">
-        <strong>⚠️ NO ASSIGNED TASKS</strong>
-        <p>This vendor has no plans assigned for cutting, printing, or stitching.</p>
+        <strong>⚠️ NO COMPLETED TASKS</strong>
+        <p>No tasks were completed by this vendor in <span th:text="${period}"></span>.</p>
     </div>
     
     <div th:if="${!tasks.isEmpty()}">
-        <h3 style="font-size: 14pt; border-bottom: 2px solid #000; padding-bottom: 5px;">ASSIGNED TASKS</h3>
-        
+        <h3 style="font-size: 14pt; border-bottom: 2px solid #000; padding-bottom: 5px;">COMPLETED TASKS</h3>
+
         <table class="tasks-table">
             <thead>
                 <tr>
@@ -207,7 +194,6 @@
                     <th>Sizes</th>
                     <th>Quantity</th>
                     <th>Operation</th>
-                    <th>Status</th>
                     <th>Start Date</th>
                     <th>End Date</th>
                     <th>Payment Due</th>
@@ -221,15 +207,10 @@
                     <td th:text="${task.sizeQuantityPairs}">6:50, 7:30</td>
                     <td th:text="${task.quantity} + ' pairs'">100 pairs</td>
                     <td>
-                        <span th:if="${task.rateHeadName != null and !task.rateHeadName.isEmpty()}" 
+                        <span th:if="${task.rateHeadName != null and !task.rateHeadName.isEmpty()}"
                               th:text="${task.operationType} + ' (' + ${task.rateHeadName} + ' - ₹' + ${#numbers.formatDecimal(task.rateHeadCost, 1, 2)} + ')'">Printing (Premium Printing - ₹18.00)</span>
-                        <span th:if="${task.rateHeadName == null or task.rateHeadName.isEmpty()}" 
+                        <span th:if="${task.rateHeadName == null or task.rateHeadName.isEmpty()}"
                               th:text="${task.operationType}">Cutting</span>
-                    </td>
-                    <td>
-                        <span class="task-status" 
-                              th:classappend="${task.status == 'Completed' ? 'status-completed' : (task.status == 'In Progress' ? 'status-in-progress' : 'status-pending')}"
-                              th:text="${task.status}">Pending</span>
                     </td>
                     <td th:text="${task.startDate != null ? #temporals.format(task.startDate, 'dd-MMM-yyyy') : '-'}">-</td>
                     <td th:text="${task.endDate != null ? #temporals.format(task.endDate, 'dd-MMM-yyyy') : '-'}">-</td>

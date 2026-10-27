@@ -192,12 +192,16 @@ public class VendorViewController {
     }
     
     @GetMapping("/{id}/task-slip")
-    public String printTaskSlip(@PathVariable Long id, Model model) {
+    public String printTaskSlip(@PathVariable Long id,
+                                @RequestParam(required = false) String month,
+                                Model model) {
         Vendor vendor = vendorService.getVendorById(id);
         if (vendor == null) {
             return "redirect:/vendors";
         }
-        List<Map<String, Object>> tasks = vendorService.getVendorTasksForSlip(id);
+        String selectedMonth = (month != null && !month.isBlank()) ? month
+                : java.time.YearMonth.now().toString();
+        List<Map<String, Object>> tasks = vendorService.getVendorTasksForSlip(id, selectedMonth);
 
         int totalQuantity = tasks.stream()
             .mapToInt(task -> ((Number) task.get("quantity")).intValue())
@@ -207,13 +211,16 @@ public class VendorViewController {
             .mapToDouble(task -> ((Number) task.get("paymentDue")).doubleValue())
             .sum();
 
-        String period = "All assigned tasks";
+        java.time.YearMonth ym = java.time.YearMonth.parse(selectedMonth);
+        String period = ym.getMonth().getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH) + " " + ym.getYear();
 
         model.addAttribute("vendor", vendor);
         model.addAttribute("tasks", tasks);
         model.addAttribute("totalQuantity", totalQuantity);
         model.addAttribute("totalPaymentDue", totalPaymentDue);
         model.addAttribute("period", period);
+        model.addAttribute("selectedMonth", selectedMonth);
+        model.addAttribute("vendorId", id);
 
         return "vendors/task-slip";
     }

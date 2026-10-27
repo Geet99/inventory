@@ -21,10 +21,20 @@ public interface UpperStockRepository extends JpaRepository<UpperStock, Long> {
               AND lower(trim(u.color)) = lower(trim(:color))
             ORDER BY u.id ASC
             """)
-    Optional<UpperStock> findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
+    List<UpperStock> findAllByArticleNameAndSizeAndColor(
             @Param("articleName") String articleName,
             @Param("size") String size,
             @Param("color") String color);
+
+    /**
+     * Returns the first matching UpperStock (oldest by id).
+     * Custom @Query ignores the findFirst prefix, so we wrap a List query manually.
+     */
+    default Optional<UpperStock> findFirstByArticleNameAndSizeAndColorOrderByIdAsc(
+            String articleName, String size, String color) {
+        List<UpperStock> results = findAllByArticleNameAndSizeAndColor(articleName, size, color);
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
 
     @Query("SELECT u.size AS size, u.color AS color, SUM(u.quantity) AS totalQuantity FROM UpperStock u GROUP BY u.size, u.color")
     List<Object[]> getUpperStockSummary();
