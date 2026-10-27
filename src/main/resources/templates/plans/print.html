@@ -14,10 +14,10 @@
             body { margin: 0; }
         }
         
-        body { 
+        body {
             font-family: 'Courier New', monospace;
-            margin: 20px;
-            font-size: 12pt;
+            margin: 15px;
+            font-size: 11pt;
             font-weight: bold;
         }
         
@@ -30,7 +30,7 @@
         
         .print-header h1 {
             margin: 0;
-            font-size: 24pt;
+            font-size: 18pt;
             font-weight: bold;
         }
         
@@ -45,9 +45,9 @@
         
         .info-row {
             display: grid;
-            grid-template-columns: 200px 1fr;
-            margin: 8px 0;
-            font-size: 12pt;
+            grid-template-columns: 150px 1fr;
+            margin: 4px 0;
+            font-size: 11pt;
             font-weight: bold;
         }
         
@@ -61,11 +61,11 @@
         
         .section-title {
             font-weight: bold;
-            font-size: 14pt;
-            margin-top: 25px;
-            margin-bottom: 15px;
+            font-size: 12pt;
+            margin-top: 15px;
+            margin-bottom: 10px;
             border-bottom: 2px solid #000;
-            padding-bottom: 5px;
+            padding-bottom: 3px;
         }
         
         .size-breakdown {
@@ -74,35 +74,34 @@
         }
         
         .vendor-section {
-            margin: 30px 0;
-            padding: 20px;
-            border: 3px dashed #000;
+            margin: 15px 0;
+            padding: 12px;
+            border: 2px dashed #000;
             background: #f9f9f9;
             page-break-inside: avoid;
         }
-        
+
         .vendor-section h3 {
-            margin: 0 0 15px 0;
-            font-size: 14pt;
+            margin: -12px -12px 10px -12px;
+            font-size: 12pt;
             text-align: center;
             background: #2c3e50;
             color: white;
-            padding: 10px;
-            margin: -20px -20px 15px -20px;
+            padding: 6px;
         }
-        
+
         .task-details {
             background: white;
-            padding: 15px;
-            margin: 10px 0;
+            padding: 8px 12px;
+            margin: 6px 0;
             border: 1px solid #ddd;
         }
-        
+
         .task-details h4 {
-            margin: 0 0 10px 0;
-            font-size: 12pt;
+            margin: 0 0 6px 0;
+            font-size: 11pt;
             border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
+            padding-bottom: 3px;
         }
         
         .footer {
@@ -113,15 +112,6 @@
             font-size: 10pt;
         }
         
-        .signature-line {
-            margin-top: 50px;
-            text-align: right;
-            font-size: 11pt;
-        }
-        
-        .signature-line div {
-            margin: 5px 0;
-        }
         
         .btn {
             padding: 10px 20px;
@@ -172,12 +162,12 @@
         
         <div class="info-row">
             <div class="info-label">Total Quantity:</div>
-            <div class="info-value" th:text="${plan.total} + ' pairs'">100 pairs</div>
+            <div class="info-value" th:text="${plan.total}">100</div>
         </div>
-        
+
         <div class="info-row">
             <div class="info-label">Created Date:</div>
-            <div class="info-value" th:text="${plan.createDate != null ? #temporals.format(plan.createDate, 'dd-MMM-yyyy') : 'N/A'}">01-Jan-2024</div>
+            <div class="info-value" th:text="${plan.createDate != null ? #temporals.format(plan.createDate, 'dd/MM/yy') : 'N/A'}">01/01/24</div>
         </div>
         
         <div class="info-row">
@@ -189,10 +179,7 @@
     <div class="section-title">SIZE BREAKDOWN</div>
     <div class="size-breakdown" th:text="${plan.sizeQuantityPairs}">6:50, 7:30, 8:20</div>
     
-    <div class="section-title">📋 INDIVIDUAL VENDOR TASK SLIPS</div>
-    <p style="text-align: center; font-size: 11pt; color: #666; margin: 10px 0 30px 0;">
-        ✂️ Cut along the dashed lines and hand each section to the respective vendor
-    </p>
+    <div class="section-title">VENDOR TASK SLIPS</div>
     
     <!-- CUTTING VENDOR TASK SLIP -->
     <div class="vendor-section">
@@ -218,7 +205,7 @@
             </div>
             <div class="info-row">
                 <div class="info-label">Total Quantity:</div>
-                <div class="info-value" th:text="${plan.total} + ' pairs'">100 pairs</div>
+                <div class="info-value" th:text="${plan.total}">100</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Size Breakdown:</div>
@@ -233,39 +220,30 @@
                 <div class="info-value" th:text="${plan.cuttingVendor != null ? plan.cuttingVendor.name : '—'}">—</div>
             </div>
             <div class="info-row">
-                <div class="info-label">Operation:</div>
+                <div class="info-label">Rate:</div>
                 <div class="info-value">
-                    <span th:if="${article != null and article.cuttingRateHead != null}" 
-                          th:text="'Cutting (' + ${article.cuttingRateHead.name} + ')'">Cutting (Standard Cutting)</span>
-                    <span th:if="${article == null or article.cuttingRateHead == null}">Cutting</span>
+                    <span th:if="${article != null and article.cuttingRateHead != null}"
+                          th:text="'₹' + ${#numbers.formatDecimal(article.cuttingRateHead.cost, 1, 2)}">₹18.00</span>
+                    <span th:if="${article == null or article.cuttingRateHead == null}">-</span>
                 </div>
             </div>
             <div class="info-row">
                 <div class="info-label">Start Date:</div>
                 <div class="info-value">
-                    <span th:if="${plan.cuttingStartDate != null}" th:text="${#temporals.format(plan.cuttingStartDate, 'dd-MMM-yyyy')}"></span>
-                    <span th:if="${plan.cuttingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                    <span th:if="${plan.cuttingStartDate != null}" th:text="${#temporals.format(plan.cuttingStartDate, 'dd/MM/yy')}"></span>
+                    <span th:if="${plan.cuttingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 10em;">&nbsp;</span>
                 </div>
             </div>
             <div class="info-row">
                 <div class="info-label">End Date:</div>
                 <div class="info-value">
-                    <span th:if="${plan.cuttingEndDate != null}" th:text="${#temporals.format(plan.cuttingEndDate, 'dd-MMM-yyyy')}"></span>
-                    <span th:if="${plan.cuttingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                    <span th:if="${plan.cuttingEndDate != null}" th:text="${#temporals.format(plan.cuttingEndDate, 'dd/MM/yy')}"></span>
+                    <span th:if="${plan.cuttingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 10em;">&nbsp;</span>
                 </div>
             </div>
         </div>
-        
-        <div style="margin-top: 20px; text-align: center;">
-            <div style="display: inline-block; margin: 0 30px;">
-                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Vendor Signature</div>
-            </div>
-            <div style="display: inline-block; margin: 0 30px;">
-                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Date</div>
-            </div>
-        </div>
     </div>
-    
+
     <!-- PRINTING VENDOR TASK SLIP -->
     <div class="vendor-section">
         <h3>🖨️ PRINTING VENDOR - TASK SLIP</h3>
@@ -290,15 +268,11 @@
             </div>
             <div class="info-row">
                 <div class="info-label">Total Quantity:</div>
-                <div class="info-value" th:text="${plan.total} + ' pairs'">100 pairs</div>
+                <div class="info-value" th:text="${plan.total}">100</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Size Breakdown:</div>
                 <div class="info-value" th:text="${plan.sizeQuantityPairs}">6:50, 7:30, 8:20</div>
-            </div>
-            <div class="info-row" th:if="${plan.printingRateHead != null}">
-                <div class="info-label">Printing Type:</div>
-                <div class="info-value" th:text="${plan.printingRateHead.name}">Basic Printing</div>
             </div>
         </div>
         
@@ -309,39 +283,30 @@
                 <div class="info-value" th:text="${plan.printingVendor != null ? plan.printingVendor.name : '—'}">—</div>
             </div>
             <div class="info-row">
-                <div class="info-label">Operation:</div>
+                <div class="info-label">Rate:</div>
                 <div class="info-value">
-                    <span th:if="${plan.printingRateHead != null}" 
-                          th:text="'Printing (' + ${plan.printingRateHead.name} + ')'">Printing (Premium Printing)</span>
-                    <span th:if="${plan.printingRateHead == null}">Printing</span>
+                    <span th:if="${plan.printingRateHead != null}"
+                          th:text="'₹' + ${#numbers.formatDecimal(plan.printingRateHead.cost, 1, 2)}">₹18.00</span>
+                    <span th:if="${plan.printingRateHead == null}">-</span>
                 </div>
             </div>
             <div class="info-row">
                 <div class="info-label">Start Date:</div>
                 <div class="info-value">
-                    <span th:if="${plan.printingStartDate != null}" th:text="${#temporals.format(plan.printingStartDate, 'dd-MMM-yyyy')}"></span>
-                    <span th:if="${plan.printingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                    <span th:if="${plan.printingStartDate != null}" th:text="${#temporals.format(plan.printingStartDate, 'dd/MM/yy')}"></span>
+                    <span th:if="${plan.printingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 10em;">&nbsp;</span>
                 </div>
             </div>
             <div class="info-row">
                 <div class="info-label">End Date:</div>
                 <div class="info-value">
-                    <span th:if="${plan.printingEndDate != null}" th:text="${#temporals.format(plan.printingEndDate, 'dd-MMM-yyyy')}"></span>
-                    <span th:if="${plan.printingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                    <span th:if="${plan.printingEndDate != null}" th:text="${#temporals.format(plan.printingEndDate, 'dd/MM/yy')}"></span>
+                    <span th:if="${plan.printingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 10em;">&nbsp;</span>
                 </div>
             </div>
         </div>
-        
-        <div style="margin-top: 20px; text-align: center;">
-            <div style="display: inline-block; margin: 0 30px;">
-                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Vendor Signature</div>
-            </div>
-            <div style="display: inline-block; margin: 0 30px;">
-                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Date</div>
-            </div>
-        </div>
     </div>
-    
+
     <!-- STITCHING VENDOR TASK SLIP -->
     <div class="vendor-section">
         <h3>🧵 STITCHING VENDOR - TASK SLIP</h3>
@@ -366,7 +331,7 @@
             </div>
             <div class="info-row">
                 <div class="info-label">Total Quantity:</div>
-                <div class="info-value" th:text="${plan.total} + ' pairs'">100 pairs</div>
+                <div class="info-value" th:text="${plan.total}">100</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Size Breakdown:</div>
@@ -381,48 +346,32 @@
                 <div class="info-value" th:text="${plan.stitchingVendor != null ? plan.stitchingVendor.name : '—'}">—</div>
             </div>
             <div class="info-row">
-                <div class="info-label">Operation:</div>
+                <div class="info-label">Rate:</div>
                 <div class="info-value">
-                    <span th:if="${article != null and article.stitchingRateHead != null}" 
-                          th:text="'Stitching (' + ${article.stitchingRateHead.name} + ')'">Stitching (Standard Stitching)</span>
-                    <span th:if="${article == null or article.stitchingRateHead == null}">Stitching</span>
+                    <span th:if="${article != null and article.stitchingRateHead != null}"
+                          th:text="'₹' + ${#numbers.formatDecimal(article.stitchingRateHead.cost, 1, 2)}">₹18.00</span>
+                    <span th:if="${article == null or article.stitchingRateHead == null}">-</span>
                 </div>
             </div>
             <div class="info-row">
                 <div class="info-label">Start Date:</div>
                 <div class="info-value">
-                    <span th:if="${plan.stitchingStartDate != null}" th:text="${#temporals.format(plan.stitchingStartDate, 'dd-MMM-yyyy')}"></span>
-                    <span th:if="${plan.stitchingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                    <span th:if="${plan.stitchingStartDate != null}" th:text="${#temporals.format(plan.stitchingStartDate, 'dd/MM/yy')}"></span>
+                    <span th:if="${plan.stitchingStartDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 10em;">&nbsp;</span>
                 </div>
             </div>
             <div class="info-row">
                 <div class="info-label">End Date:</div>
                 <div class="info-value">
-                    <span th:if="${plan.stitchingEndDate != null}" th:text="${#temporals.format(plan.stitchingEndDate, 'dd-MMM-yyyy')}"></span>
-                    <span th:if="${plan.stitchingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 12em;">&nbsp;</span>
+                    <span th:if="${plan.stitchingEndDate != null}" th:text="${#temporals.format(plan.stitchingEndDate, 'dd/MM/yy')}"></span>
+                    <span th:if="${plan.stitchingEndDate == null}" style="border-bottom: 2px solid #000; display: inline-block; min-width: 10em;">&nbsp;</span>
                 </div>
             </div>
         </div>
-        
-        <div style="margin-top: 20px; text-align: center;">
-            <div style="display: inline-block; margin: 0 30px;">
-                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Vendor Signature</div>
-            </div>
-            <div style="display: inline-block; margin: 0 30px;">
-                <div style="margin-top: 40px; border-top: 2px solid #000; padding-top: 5px;">Date</div>
-            </div>
-        </div>
     </div>
-    
-    <div class="signature-line">
-        <div>_________________________</div>
-        <div>Authorized Signature</div>
-        <div th:text="${#temporals.format(#temporals.createNow(), 'dd-MMM-yyyy HH:mm')}">Date & Time</div>
-    </div>
-    
+
     <div class="footer">
-        <p>This is a computer-generated document. No signature is required.</p>
-        <p>SKSE Inventory Management System</p>
+        <p>This is a computer-generated document.</p>
     </div>
 </body>
 </html>
